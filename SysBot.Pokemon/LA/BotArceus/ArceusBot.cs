@@ -228,10 +228,10 @@ namespace SysBot.Pokemon
                 var delta = DateTime.Now;
                 var cd = TimeSpan.FromMinutes(Settings.SpecialConditions.WaitTimeDistortion);
                 Log($"Waiting {Settings.SpecialConditions.WaitTimeDistortion} minutes then starting the next one...");
-                while (DateTime.Now - delta < cd)
+                while (DateTime.Now - delta < cd && !token.IsCancellationRequested)
                 {
                     await Task.Delay(5_000).ConfigureAwait(false);
-                    Log($"Elapsed Time: {DateTime.Now - delta}");
+                    Log($"Time Remaining: {cd - (DateTime.Now - delta)}");
                 }
 
                 await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0x5280010A), MainNsoBase + 0x024672A4, token).ConfigureAwait(false);
@@ -272,12 +272,11 @@ namespace SysBot.Pokemon
                     await Task.Delay(2_000).ConfigureAwait(false);
                     if (Settings.AlphaScanConditions.SpawnIsStaticAlpha)
                     {
-                        await TimeTest(token).ConfigureAwait(false);
-                        await Task.Delay(2_000).ConfigureAwait(false);
-                        await TimeTest(token).ConfigureAwait(false);
-                        await Task.Delay(2_000).ConfigureAwait(false);
-                        await TimeTest(token).ConfigureAwait(false);
-                        await Task.Delay(2_000).ConfigureAwait(false);
+                        for (int i = 0; i < 2; i++)
+                        {
+                            await TimeTest(token).ConfigureAwait(false);
+                            await Task.Delay(2_000).ConfigureAwait(false);
+                        }
                     }
                     await TeleportToSpawnZone(token).ConfigureAwait(false);
                     Log("Trying to enter battle!");
@@ -291,9 +290,9 @@ namespace SysBot.Pokemon
                         int tries = 0;
                         while (overworldcheck == 1)
                         {
-                            if (tries == 20)
+                            if (tries == 6)
                             {
-                                Log("Tried 20 times, is the encounter present? Changing time to try again.");
+                                Log("Tried 6 times, is the encounter present? Changing time to try again.");
                                 await TimeTest(token).ConfigureAwait(false);
                                 await TeleportToSpawnZone(token).ConfigureAwait(false);
                                 break;
@@ -498,9 +497,9 @@ namespace SysBot.Pokemon
                         int tries = 0;
                         while (overworldcheck == 1)
                         {
-                            if (tries == 20)
+                            if (tries == 6)
                             {
-                                Log("Tried 20 times, is the encounter present? Going back to camp to try again.");
+                                Log("Tried 6 times, is the encounter present? Going back to camp to try again.");
                                 await TeleportToCampZone(token).ConfigureAwait(false);
                                 break;
                             }
