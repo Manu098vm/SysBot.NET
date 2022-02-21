@@ -14,7 +14,6 @@ namespace SysBot.Pokemon
         private readonly PokeTradeHub<PA8> Hub;
         private readonly IDumper DumpSetting;
         private readonly ArceusBotSettings Settings;
-        public ICountSettings Counts => (ICountSettings)Settings;
 
         public static CancellationTokenSource EmbedSource = new();
         public static bool EmbedsInitialized;
@@ -705,12 +704,7 @@ namespace SysBot.Pokemon
                 var group_seed = (BitConverter.ToUInt64(GeneratorSeed, 0) - 0x82A2B175229D6A5B) & 0xFFFFFFFFFFFFFFFF;
                 Log($"Group Seed: {string.Format("0x{0:X}", group_seed)}");
                 SpawnerID = i;
-                var match = GenerateNextShiny(SpawnerSpecies, i, group_seed);
-                if (match != 0)
-                {
-                    Log($"Match found!");
-                    return;
-                }
+                GenerateNextShiny(SpawnerSpecies, i, group_seed);
             }
         }
 
@@ -795,7 +789,11 @@ namespace SysBot.Pokemon
                 {
                     Log($"\nAdvances: {i}\nAlpha: {SpawnerSpecies} - {shinytype} | SpawnerID: {spawnerid}\nEC: {encryption_constant:X8}\nPID: {pid:X8}\nIVs: {ivs[0]}/{ivs[1]}/{ivs[2]}/{ivs[3]}/{ivs[4]}/{ivs[5]}\nSeed: {generator_seed:X16}");
                     newseed = generator_seed;
-                    Settings.StopOnMatch = true;
+                    if (Settings.SpecialConditions.SpeciesToHunt.Length != 0 && Settings.SpecialConditions.SpeciesToHunt.Contains($"{SpawnerSpecies}") || Settings.SpecialConditions.SpeciesToHunt.Length == 0)
+                    {
+                        Log("Desired Species found!");
+                        Settings.StopOnMatch = true;
+                    }
                     break;
                 }
                 mainrng = new Xoroshiro128Plus(mainrng.Next());
