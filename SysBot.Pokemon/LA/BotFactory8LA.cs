@@ -13,6 +13,7 @@ namespace SysBot.Pokemon
                 or PokeRoutineType.Dump
                 => new PokeTradeBotLA(Hub, cfg),
 
+            PokeRoutineType.ArceusBot => new ArceusBot(cfg, Hub),
             PokeRoutineType.RemoteControl => new RemoteControlBot(cfg),
 
             _ => throw new ArgumentException(nameof(cfg.NextRoutineType)),
@@ -26,6 +27,7 @@ namespace SysBot.Pokemon
                 or PokeRoutineType.Dump
                 => true,
 
+            PokeRoutineType.ArceusBot => true,
             PokeRoutineType.RemoteControl => true,
 
             _ => false,

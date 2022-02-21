@@ -238,5 +238,135 @@ namespace SysBot.Pokemon
             var data = await SwitchConnection.PointerPeek(1, Offsets.TextSpeedPointer, token).ConfigureAwait(false);
             return (TextSpeedOption)data[0];
         }
+
+        public async Task Sleep(CancellationToken token, bool gameClosed = false)
+        {
+            Log($"Sleep Mode Activated!");
+            await PressAndHold(HOME, 2_000, 0, token).ConfigureAwait(false);
+            await Click(A, 1_000, token).ConfigureAwait(false);
+            await DetachController(token).ConfigureAwait(false);
+        }
+
+
+        // Arceus Bot Additions
+
+        public async Task<ulong> NewParsePointer(string pointer, CancellationToken token, bool heaprealtive = false) //Code from LiveHex
+        {
+            var ptr = pointer;
+            if (string.IsNullOrWhiteSpace(ptr) || ptr.IndexOfAny(new char[] { '-', '/', '*' }) != -1)
+                return 0;
+            while (ptr.Contains("]]"))
+                ptr = ptr.Replace("]]", "]+0]");
+            uint? finadd = null;
+            if (!ptr.EndsWith("]"))
+            {
+                finadd = Util.GetHexValue(ptr.Split('+').Last());
+                ptr = ptr.Substring(0, ptr.LastIndexOf('+'));
+            }
+            var jumps = ptr.Replace("main", "").Replace("[", "").Replace("]", "").Split(new[] { "+" }, StringSplitOptions.RemoveEmptyEntries);
+            if (jumps.Length == 0)
+                return 0;
+
+            var initaddress = Util.GetHexValue(jumps[0].Trim());
+            ulong address = BitConverter.ToUInt64(await SwitchConnection.ReadBytesMainAsync(initaddress, 0x8, token).ConfigureAwait(false), 0);
+            foreach (var j in jumps)
+            {
+                var val = Util.GetHexValue(j.Trim());
+                if (val == initaddress)
+                    continue;
+                address = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(address + val, 0x8, token).ConfigureAwait(false), 0);
+            }
+            if (finadd != null) address += (ulong)finadd;
+            if (heaprealtive)
+            {
+                ulong heap = await SwitchConnection.GetHeapBaseAsync(token);
+                address -= heap;
+            }
+            return address;
+        }
+        public async Task ResetStick(CancellationToken token)
+        {
+            // If aborting the sequence, we might have the stick set at some position. Clear it just in case.
+            await SetStick(SwitchStick.LEFT, 0, 0, 0_500, token).ConfigureAwait(false); // reset
+        }
+
+        public async Task ArceusSaveGame(CancellationToken token)
+        {
+            Log("Saving the game...");
+            await Click(DUP, 1_000, token).ConfigureAwait(false);
+            await Click(A, 1_800, token).ConfigureAwait(false);
+            await Click(A, 1_000, token).ConfigureAwait(false);
+            await Click(B, 1_000, token).ConfigureAwait(false);
+        }
+
+        public (bool shiny, string shinyxor, ulong EC, ulong PID, int[] IVs, ulong ability, ulong gender, Nature, ulong) GenerateFromSeed(ulong seed, int rolls, int guranteedivs)
+        {
+            bool shiny = false;
+            ulong EC;
+            ulong pid = 0;
+            int[] ivs;
+            ulong ability;
+            ulong gender;
+            Nature nature;
+            ulong sseed = 0;
+            uint shinyXor = 0;
+            var rng = new Xoroshiro128Plus(seed);
+            EC = rng.Next() & GetMask(0xFFFFFFFF);
+            var sidtid = rng.Next() & GetMask(0xFFFFFFFF);
+            for (int i = 0; i < rolls; i++)
+            {
+                pid = rng.Next() & GetMask(0xFFFFFFFF);
+                shiny = ((pid >> 16) ^ (sidtid >> 16) ^ (pid & 0xFFFF) ^ (sidtid & 0xFFFF)) < 0x10;
+                shinyXor = (uint)((pid & 0xFFFF) ^ (sidtid & 0xFFFF) ^ (pid >> 16) ^ (sidtid >> 16));
+                if (shiny)
+                {
+                    sseed = rng.GetState().s0;
+                    break;
+                }
+            }
+            string shinytype = string.Empty;
+            if (shinyXor == 0)
+                shinytype = $"■ - Square Shiny";
+            if (shinyXor != 0 && shinyXor <= 16)
+                shinytype = $"★ - Star Shiny";
+
+            ivs = new int[] { -1, -1, -1, -1, -1, -1 };
+            for (int i = 0; i < guranteedivs; i++)
+            {
+                var index = rng.Next() & GetMask(6);
+                while ((int)index >= 6)
+                    index = rng.Next() & GetMask(6);
+
+
+                while (ivs[index] != -1)
+                {
+                    index = rng.Next() & GetMask(6);
+                    while ((int)index >= 6)
+                        index = rng.Next() & GetMask(6);
+
+                }
+
+                ivs[index] = 31;
+            }
+            for (int i = 0; i < 6; i++)
+            {
+                if (ivs[i] == -1)
+                    ivs[i] = (int)(rng.Next() & GetMask(32));
+            }
+            ability = rng.Next() & GetMask(2);
+            gender = (rng.Next() & GetMask(252)) + 1;
+            nature = (Nature)(rng.Next() & GetMask(25));
+            return (shiny, shinytype, EC, pid, ivs, ability, gender, nature, sseed);
+        }
+
+        public uint GetMask(uint maximum)
+        {
+            maximum -= 1;
+            for (int i = 0; i < 6; i++)
+            {
+                maximum |= maximum >> (1 << i);
+            }
+            return maximum;
+        }
     }
 }

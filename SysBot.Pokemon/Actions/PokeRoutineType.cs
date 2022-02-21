@@ -68,6 +68,8 @@
 
         /// <summary> Resets Swords Of Justice via the camp method. </summary>
         RollingRaid = 6008,
+
+        ArceusBot = 9001,
     }
 
     public static class PokeRoutineTypeExtensions
