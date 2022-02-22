@@ -299,7 +299,7 @@ namespace SysBot.Pokemon
             await Click(B, 1_000, token).ConfigureAwait(false);
         }
 
-        public (bool shiny, string shinyxor, ulong EC, ulong PID, int[] IVs, ulong ability, ulong gender, Nature, ulong) GenerateFromSeed(ulong seed, int rolls, int guranteedivs)
+        public (bool shiny, string shinyxor, ulong EC, ulong PID, int[] IVs, ulong ability, ulong gender, Nature nature, ulong shinyseed) GenerateFromSeed(ulong seed, int rolls, int guranteedivs)
         {
             bool shiny = false;
             ulong EC;
@@ -308,7 +308,7 @@ namespace SysBot.Pokemon
             ulong ability;
             ulong gender;
             Nature nature;
-            ulong sseed = 0;
+            ulong newseed = 0;
             uint shinyXor = 0;
             var rng = new Xoroshiro128Plus(seed);
             EC = rng.Next() & GetMask(0xFFFFFFFF);
@@ -320,7 +320,7 @@ namespace SysBot.Pokemon
                 shinyXor = (uint)((pid & 0xFFFF) ^ (sidtid & 0xFFFF) ^ (pid >> 16) ^ (sidtid >> 16));
                 if (shiny)
                 {
-                    sseed = rng.GetState().s0;
+                    newseed = rng.GetState().s0;
                     break;
                 }
             }
@@ -355,8 +355,8 @@ namespace SysBot.Pokemon
             }
             ability = rng.Next() & GetMask(2);
             gender = (rng.Next() & GetMask(252)) + 1;
-            nature = (Nature)(rng.Next() & GetMask(25));
-            return (shiny, shinytype, EC, pid, ivs, ability, gender, nature, sseed);
+            nature = (Nature)(rng.NextInt(25));
+            return (shiny, shinytype, EC, pid, ivs, ability, gender, nature, newseed);
         }
 
         public uint GetMask(uint maximum)

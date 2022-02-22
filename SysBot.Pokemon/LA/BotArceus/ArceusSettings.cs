@@ -51,6 +51,9 @@ namespace SysBot.Pokemon
             [Category(Arceus), Description("Enter number of shiny rolls.")]
             public int ShinyRolls { get; set; } = 2;
 
+            [Category(Arceus), Description("If you have a desired IV spread enter it here, else leave empty. (EX: 31/31/31/31/31/0 for a 5IV 0SPE spread.")]
+            public int[] SearchForIvs { get; set; } = { };
+
             [Category(Arceus), Description("Toggle true if you just entered the map and didn't spawn the Pokémon")]
             public bool InItSpawn { get; set; } = true;
 
@@ -60,7 +63,7 @@ namespace SysBot.Pokemon
             [Category(Arceus), Description("Toggle true if spawn is 100% alpha.")]
             public bool SpawnIsStaticAlpha { get; set; } = false;
 
-            [Category(Arceus), Description("Toggle true if spawn is in water.")]
+            [Category(Arceus), Description("Toggle true if spawn is in water. This is a little tricky as water encounters either go far away or hide under making it a little more difficult to encounter.")]
             public bool IsSpawnInWater { get; set; } = false;
         }
 
@@ -94,7 +97,7 @@ namespace SysBot.Pokemon
             [Category(Arceus), Description("Enter your player coordinates for Spawn Location Z Coordinate. Should be 8 characters long.")]
             public string SpawnZoneZ { get; set; } = "";
 
-            [Category(Arceus), Description("Wait time in minutes before starting a new distortion.")]
+            [Category(Arceus), Description("Wait time in minutes before starting a new distortion. If one does not spawn initially, stop and start the bot again.")]
             public int WaitTimeDistortion { get; set; } = 2;
         }
         

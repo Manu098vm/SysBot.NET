@@ -146,7 +146,7 @@ namespace SysBot.Pokemon
             {
                 var rstring = GetMarkName(r);
                 if (!string.IsNullOrEmpty(rstring))
-                    set += $"\nPokémon found to have **{GetMarkName(r)}**!";
+                    set += $"\nPokémon found to have **{GetMarkName(r)}**!";                
             }
             return set;
         }
@@ -170,7 +170,7 @@ namespace SysBot.Pokemon
         {
             string alpha = string.Empty;
             if (pk.IsAlpha) alpha = $"Alpha - ";
-            var set = $"{alpha}{(pk.ShinyXor == 0 ? "■ - " : pk.ShinyXor <= 16 ? "★ - " : "") }{SpeciesName.GetSpeciesNameGeneration(pk.Species, 2, 8)}{TradeExtensions<PK8>.FormOutput(pk.Species, pk.Form, out _)}\nIVs: {pk.IV_HP}/{pk.IV_ATK}/{pk.IV_DEF}/{pk.IV_SPA}/{pk.IV_SPD}/{pk.IV_SPE}";
+            var set = $"{alpha}{(pk.ShinyXor == 0 ? "■ - " : pk.ShinyXor <= 16 ? "★ - " : "") }{SpeciesName.GetSpeciesNameGeneration(pk.Species, 2, 8)}{TradeExtensions<PK8>.FormOutput(pk.Species, pk.Form, out _)}\nIVs: {pk.IV_HP}/{pk.IV_ATK}/{pk.IV_DEF}/{pk.IV_SPA}/{pk.IV_SPD}/{pk.IV_SPE}\nNature: {(Nature)pk.Nature}";
             return set;
         }
     }

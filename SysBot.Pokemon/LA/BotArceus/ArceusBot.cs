@@ -14,10 +14,6 @@ namespace SysBot.Pokemon
         private readonly PokeTradeHub<PA8> Hub;
         private readonly IDumper DumpSetting;
         private readonly ArceusBotSettings Settings;
-
-        public static CancellationTokenSource EmbedSource = new();
-        public static bool EmbedsInitialized;
-        public static (PA8?, string, byte[])? EmbedInfo;
         public ArceusBot(PokeBotState cfg, PokeTradeHub<PA8> hub) : base(cfg)
         {
             Hub = hub;
@@ -218,7 +214,6 @@ namespace SysBot.Pokemon
 
         public async Task DistortionSpammer(CancellationToken token)
         {
-            await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0x7100052A), MainNsoBase + 0x024672A4, token).ConfigureAwait(false);
             while (!token.IsCancellationRequested)
             {
                 Log("Whipping up a distortion...");
@@ -290,9 +285,9 @@ namespace SysBot.Pokemon
                         int tries = 0;
                         while (overworldcheck == 1)
                         {
-                            if (tries == 6)
+                            if (tries == 3)
                             {
-                                Log("Tried 6 times, is the encounter present? Changing time to try again.");
+                                Log("Tried 3 times, is the encounter present? Changing time to try again.");
                                 await TimeTest(token).ConfigureAwait(false);
                                 await TeleportToSpawnZone(token).ConfigureAwait(false);
                                 break;
@@ -320,7 +315,6 @@ namespace SysBot.Pokemon
                             await Click(ZL, 1_000, token).ConfigureAwait(false);
                             tries++;
                         }
-                        tries = 0;
                     }
                     if (overworldcheck == 0)
                     {
@@ -329,14 +323,11 @@ namespace SysBot.Pokemon
                         if (pk != null)
                         {
                             success++;
-                            var print = Hub.Config.StopConditions.GetAlphaPrintName(pk);
+                            var print = Hub.Config.StopConditions.GetPrintName(pk);
                             if (pk.IsAlpha) alpha = "Alpha - ";
                             if (pk.IsShiny)
                             {
                                 Log($"In battle with {print}!");
-                                string match = $"A match has been found!\nIn battle with {print}";
-                                var arr = Connection.Screengrab(token).Result.ToArray();
-                                EmbedInfo = new(pk, match, arr);
 
                                 if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
                                     DumpPokemon(DumpSetting.DumpFolder, "advances", pk);
@@ -398,7 +389,6 @@ namespace SysBot.Pokemon
                     await Click(B, 1_000, token).ConfigureAwait(false);// Random B incase of button miss
                     await Click(A, 1_000, token).ConfigureAwait(false);
                     var menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(offset, 2, token).ConfigureAwait(false), 0);
-                    Log($"Menu check: {menucheck}");
                     if (menucheck == 66)
                         await Click(A, 0_800, token).ConfigureAwait(false);
                     while (menucheck == 64 || menucheck == 0)
@@ -497,9 +487,9 @@ namespace SysBot.Pokemon
                         int tries = 0;
                         while (overworldcheck == 1)
                         {
-                            if (tries == 6)
+                            if (tries == 3)
                             {
-                                Log("Tried 6 times, is the encounter present? Going back to camp to try again.");
+                                Log("Tried 3 times, is the encounter present? Going back to camp to try again.");
                                 await TeleportToCampZone(token).ConfigureAwait(false);
                                 break;
                             }
@@ -526,7 +516,6 @@ namespace SysBot.Pokemon
                             await Click(ZL, 1_000, token).ConfigureAwait(false);
                             tries++;
                         }
-                        tries = 0;
                     }
                     if (overworldcheck == 0)
                     {
@@ -539,9 +528,6 @@ namespace SysBot.Pokemon
                             if (pk.IsShiny)
                             {
                                 Log($"In battle with {print}!");
-                                string match = $"A match has been found!\nIn battle with {print}";
-                                var arr = Connection.Screengrab(token).Result.ToArray();
-                                EmbedInfo = new(pk, match, arr);
 
                                 if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
                                     DumpPokemon(DumpSetting.DumpFolder, "advances", pk);
@@ -723,11 +709,12 @@ namespace SysBot.Pokemon
                     await Click(A, 1_000, token).ConfigureAwait(false);
                 for (int i = 0; i < 4; i++)
                 {
-                    ofs = await NewParsePointer($"[[[[main+427C470]+2B0]+58]+18]+{20 + (i * 50)}", token).ConfigureAwait(false);
-                    Species species = (Species)BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(ofs, 2, token).ConfigureAwait(false), 0);
+                    var ofs = new long[] { 0x427C470, 0x2B0, 0x58, 0x18, 0x20 + i * 0x50 };
+                    var outbreakptr = SwitchConnection.PointerAll(ofs, token).Result;
+                    Species species = (Species)BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr, 2, token).ConfigureAwait(false), 0);
                     if (species != Species.None)
                     {
-                        var spawncount = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(ofs + 0x40, 2, token).ConfigureAwait(false), 0);
+                        var spawncount = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr + 0x40, 2, token).ConfigureAwait(false), 0);
                         Log($"Outbreak found for: {species} | Total Spawn Count: {spawncount}.");
                         if (Settings.SpecialConditions.SpeciesToHunt.Contains($"{species}"))
                         {
@@ -756,6 +743,7 @@ namespace SysBot.Pokemon
 
         public ulong GenerateNextShiny(string species, int spawnerid, ulong seed, ulong seed1 = 0x82A2B175229D6A5B)
         {
+            int hits = 0;
             var mode = Settings.ScanLocation;
             ulong newseed = 0;
             var mainrng = new Xoroshiro128Plus(seed);
@@ -786,14 +774,39 @@ namespace SysBot.Pokemon
 
                 if (shiny)
                 {
-                    Log($"\nAdvances: {i}\nAlpha: {SpawnerSpecies} - {shinytype} | SpawnerID: {spawnerid}\nEC: {encryption_constant:X8}\nPID: {pid:X8}\nIVs: {ivs[0]}/{ivs[1]}/{ivs[2]}/{ivs[3]}/{ivs[4]}/{ivs[5]}\nSeed: {generator_seed:X16}");
-                    newseed = generator_seed;
-                    if (Settings.SpecialConditions.SpeciesToHunt.Length != 0 && Settings.SpecialConditions.SpeciesToHunt.Contains($"{SpawnerSpecies}") || Settings.SpecialConditions.SpeciesToHunt.Length == 0)
+                    if (Settings.SpecialConditions.SpeciesToHunt.Length != 0 && !Settings.SpecialConditions.SpeciesToHunt.Contains(SpawnerSpecies))
+                        break;
+
+                    if (Settings.AlphaScanConditions.SearchForIvs.Length != 0)
                     {
-                        Log("Desired Species found!");
-                        Settings.StopOnMatch = true;
+
+                        if (Settings.AlphaScanConditions.SearchForIvs[0] == ivs[0] && Settings.AlphaScanConditions.SearchForIvs[1] == ivs[1] && Settings.AlphaScanConditions.SearchForIvs[2] == ivs[2] && Settings.AlphaScanConditions.SearchForIvs[3] == ivs[3] && Settings.AlphaScanConditions.SearchForIvs[4] == ivs[4] && Settings.AlphaScanConditions.SearchForIvs[5] == ivs[5])
+                        {
+                            Log($"\nAdvances: {i}\nAlpha: {SpawnerSpecies} - {shinytype} | SpawnerID: {spawnerid}\nEC: {encryption_constant:X8}\nPID: {pid:X8}\nIVs: {ivs[0]}/{ivs[1]}/{ivs[2]}/{ivs[3]}/{ivs[4]}/{ivs[5]}\nNature: {nature}\nSeed: {shinyseed:X16}");
+                            newseed = generator_seed;
+                            Settings.StopOnMatch = true;
+                            hits++;
+
+                            if (hits == 3)
+                            {
+                                Log($"First three shiny results for {SpawnerSpecies} found.");
+                                break;
+                            }
+                        }
                     }
-                    break;
+                    if (Settings.AlphaScanConditions.SearchForIvs.Length == 0)
+                    {
+                        Log($"\nAdvances: {i}\nAlpha: {SpawnerSpecies} - {shinytype} | SpawnerID: {spawnerid}\nEC: {encryption_constant:X8}\nPID: {pid:X8}\nIVs: {ivs[0]}/{ivs[1]}/{ivs[2]}/{ivs[3]}/{ivs[4]}/{ivs[5]}\nNature: {nature}\nSeed: {shinyseed:X16}");
+                        newseed = generator_seed;
+                        Settings.StopOnMatch = true;
+                        hits++;
+
+                        if (hits == 3)
+                        {
+                            Log($"First three shiny results for {SpawnerSpecies} found.");
+                            break;
+                        }
+                    }
                 }
                 mainrng = new Xoroshiro128Plus(mainrng.Next());
                 if (i == Settings.AlphaScanConditions.MaxAdvancesToSearch - 1 && !shiny)
