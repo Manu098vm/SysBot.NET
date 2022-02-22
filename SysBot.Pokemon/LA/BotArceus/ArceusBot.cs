@@ -716,13 +716,13 @@ namespace SysBot.Pokemon
                     {
                         var spawncount = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr + 0x40, 2, token).ConfigureAwait(false), 0);
                         Log($"Outbreak found for: {species} | Total Spawn Count: {spawncount}.");
-                        if (Settings.SpecialConditions.SpeciesToHunt.Contains($"{species}"))
+                        if (Settings.SpeciesToHunt.Contains($"{species}"))
                         {
                             Log($"Outbreak for {species} has been found! Stopping routine execution!");
-                            Array.Clear(Settings.SpecialConditions.SpeciesToHunt, 0, Settings.SpecialConditions.SpeciesToHunt.Length);
-                            List<string> list = new List<string>(Settings.SpecialConditions.SpeciesToHunt.ToList());
+                            Array.Clear(Settings.SpeciesToHunt, 0, Settings.SpeciesToHunt.Length);
+                            List<string> list = new List<string>(Settings.SpeciesToHunt.ToList());
                             list.Add($"{species}");
-                            Settings.SpecialConditions.SpeciesToHunt = list.ToArray();
+                            Settings.SpeciesToHunt = list.ToArray();
                             Log($"Clearing out Species list and setting it to {species}");
                             return;
                         }
@@ -774,13 +774,13 @@ namespace SysBot.Pokemon
 
                 if (shiny)
                 {
-                    if (Settings.SpecialConditions.SpeciesToHunt.Length != 0 && !Settings.SpecialConditions.SpeciesToHunt.Contains(SpawnerSpecies))
+                    if (Settings.SpeciesToHunt.Length != 0 && !Settings.SpeciesToHunt.Contains(SpawnerSpecies))
                         break;
 
-                    if (Settings.AlphaScanConditions.SearchForIvs.Length != 0)
+                    if (Settings.SearchForIVs.Length != 0)
                     {
 
-                        if (Settings.AlphaScanConditions.SearchForIvs[0] == ivs[0] && Settings.AlphaScanConditions.SearchForIvs[1] == ivs[1] && Settings.AlphaScanConditions.SearchForIvs[2] == ivs[2] && Settings.AlphaScanConditions.SearchForIvs[3] == ivs[3] && Settings.AlphaScanConditions.SearchForIvs[4] == ivs[4] && Settings.AlphaScanConditions.SearchForIvs[5] == ivs[5])
+                        if (Settings.SearchForIVs[0] == ivs[0] && Settings.SearchForIVs[1] == ivs[1] && Settings.SearchForIVs[2] == ivs[2] && Settings.SearchForIVs[3] == ivs[3] && Settings.SearchForIVs[4] == ivs[4] && Settings.SearchForIVs[5] == ivs[5])
                         {
                             Log($"\nAdvances: {i}\nAlpha: {SpawnerSpecies} - {shinytype} | SpawnerID: {spawnerid}\nEC: {encryption_constant:X8}\nPID: {pid:X8}\nIVs: {ivs[0]}/{ivs[1]}/{ivs[2]}/{ivs[3]}/{ivs[4]}/{ivs[5]}\nNature: {nature}\nSeed: {shinyseed:X16}");
                             newseed = generator_seed;
@@ -794,7 +794,7 @@ namespace SysBot.Pokemon
                             }
                         }
                     }
-                    if (Settings.AlphaScanConditions.SearchForIvs.Length == 0)
+                    if (Settings.SearchForIVs.Length == 0)
                     {
                         Log($"\nAdvances: {i}\nAlpha: {SpawnerSpecies} - {shinytype} | SpawnerID: {spawnerid}\nEC: {encryption_constant:X8}\nPID: {pid:X8}\nIVs: {ivs[0]}/{ivs[1]}/{ivs[2]}/{ivs[3]}/{ivs[4]}/{ivs[5]}\nNature: {nature}\nSeed: {shinyseed:X16}");
                         newseed = generator_seed;

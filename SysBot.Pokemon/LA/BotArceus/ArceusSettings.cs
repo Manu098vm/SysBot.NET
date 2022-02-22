@@ -22,13 +22,13 @@ namespace SysBot.Pokemon
         public ArceupMap ScanLocation { get; set; } = ArceupMap.ObsidianFieldlands;
 
         [Category(Arceus), Description("Enter number of advances to do.")]
-        public int Advances { get; set; } = 1;             
+        public int Advances { get; set; } = 1;
 
-        [Category(Arceus), Description("When enabled, the bot will stop the routine when match found.")]
-        public bool StopOnMatch { get; set; } = false;
+        [Category(Arceus), Description("Will hunt for the desired outbreak species if not empty.")]
+        public string[] SpeciesToHunt { get; set; } = { };
 
-        [Category(Arceus), Description("When enabled, the screen will be turned off during normal bot loop operation to save power.")]
-        public bool ScreenOff { get; set; } = false;
+        [Category(Arceus), Description("If you have a desired IV spread enter it here, else leave empty. (EX: 31/31/31/31/31/0 for a 5IV 0SPE spread.")]
+        public int[] SearchForIVs { get; set; } = { };
 
         [Category(Arceus), Description("Special Conditions"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
         public SpecialFiltersCategory SpecialConditions { get; set; } = new();
@@ -36,8 +36,11 @@ namespace SysBot.Pokemon
         [Category(Arceus), Description("AlphaScan Conditions"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
         public AlphaScanFiltersCategory AlphaScanConditions { get; set; } = new();
 
-        [Category(Arceus), Description("Enter Discord channel ID(s) to post Arceus embeds to. Feature has to be initialized via \"$arceusEmbed\" after every client restart.")]
-        public string ArceusEmbedChannels { get; set; } = string.Empty;
+        [Category(Arceus), Description("When enabled, the bot will stop the routine when match found.")]
+        public bool StopOnMatch { get; set; } = false;
+
+        [Category(Arceus), Description("When enabled, the screen will be turned off during normal bot loop operation to save power.")]
+        public bool ScreenOff { get; set; } = false;
 
         [Category(Arceus)]
         [TypeConverter(typeof(AlphaScanFiltersCategoryConverter))]
@@ -50,9 +53,6 @@ namespace SysBot.Pokemon
 
             [Category(Arceus), Description("Enter number of shiny rolls.")]
             public int ShinyRolls { get; set; } = 2;
-
-            [Category(Arceus), Description("If you have a desired IV spread enter it here, else leave empty. (EX: 31/31/31/31/31/0 for a 5IV 0SPE spread.")]
-            public int[] SearchForIvs { get; set; } = { };
 
             [Category(Arceus), Description("Toggle true if you just entered the map and didn't spawn the Pokémon")]
             public bool InItSpawn { get; set; } = true;
@@ -72,9 +72,6 @@ namespace SysBot.Pokemon
         public class SpecialFiltersCategory
         {
             public override string ToString() => "Special Conditions";
-
-            [Category(Arceus), Description("Will hunt for the desired outbreak species if not empty.")]
-            public string[] SpeciesToHunt { get; set; } = { };
 
             [Category(Arceus), Description("Wait time between teleporting and scanning.")]
             public int WaitMsBetweenTeleports { get; set; } = 1000;
