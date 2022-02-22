@@ -14,6 +14,10 @@ namespace SysBot.Pokemon
         private readonly PokeTradeHub<PA8> Hub;
         private readonly IDumper DumpSetting;
         private readonly ArceusBotSettings Settings;
+
+        public static CancellationTokenSource EmbedSource = new();
+        public static bool EmbedsInitialized;
+        public static (PA8?, bool) EmbedMon;
         public ArceusBot(PokeBotState cfg, PokeTradeHub<PA8> hub) : base(cfg)
         {
             Hub = hub;
@@ -238,6 +242,8 @@ namespace SysBot.Pokemon
         public async Task TimeSeedAdvancer(CancellationToken token)
         {
             int success = 0;
+            int heal = 0;
+            uint offset = 0x04296764;
             string[] coords = { Settings.SpecialConditions.SpawnZoneX, Settings.SpecialConditions.SpawnZoneY, Settings.SpecialConditions.SpawnZoneZ };
             for (int a = 0; a < coords.Length; a++)
             {
@@ -255,6 +261,7 @@ namespace SysBot.Pokemon
             await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD28008AA), MainNsoBase + 0x007AB30C, token).ConfigureAwait(false);
             await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD28008A9), MainNsoBase + 0x007AB31C, token).ConfigureAwait(false);
 
+            await GetDefaultCampCoords(token).ConfigureAwait(false);
             while (!token.IsCancellationRequested)
             {
                 string alpha = string.Empty;
@@ -290,6 +297,7 @@ namespace SysBot.Pokemon
                                 Log("Tried 3 times, is the encounter present? Changing time to try again.");
                                 await TimeTest(token).ConfigureAwait(false);
                                 await TeleportToSpawnZone(token).ConfigureAwait(false);
+                                adv = adv - 1;
                                 break;
                             }
                             await PressAndHold(ZL, 0_800, 0, token).ConfigureAwait(false);
@@ -323,11 +331,13 @@ namespace SysBot.Pokemon
                         if (pk != null)
                         {
                             success++;
-                            var print = Hub.Config.StopConditions.GetPrintName(pk);
+                            heal++;
+                            var print = Hub.Config.StopConditions.GetAlphaPrintName(pk);
                             if (pk.IsAlpha) alpha = "Alpha - ";
                             if (pk.IsShiny)
                             {
                                 Log($"In battle with {print}!");
+                                EmbedMon = (pk, true);
 
                                 if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
                                     DumpPokemon(DumpSetting.DumpFolder, "advances", pk);
@@ -351,6 +361,31 @@ namespace SysBot.Pokemon
                     }
                     if (adv == Settings.Advances)
                         return;
+                    if (heal == 3)
+                    {
+                        Log("Returning to camp to heal our party!");
+                        await TeleportToCampZone(token).ConfigureAwait(false);
+                        var menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(offset, 2, token).ConfigureAwait(false), 0);
+                        //Log($"Menu check: {menucheck}");
+                        if (menucheck == 66)
+                            await Click(A, 0_800, token).ConfigureAwait(false);
+                        while (menucheck == 64 || menucheck == 0)
+                        {
+                            Log("Wrong menu opened? Backing out now and trying to reposition.");
+                            await Click(B, 1_500, token).ConfigureAwait(false);
+                            await Reposition(token).ConfigureAwait(false);
+                            await Click(B, 1_500, token).ConfigureAwait(false);
+                            menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(offset, 2, token).ConfigureAwait(false), 0);
+                            if (menucheck == 66)
+                                break;
+                        }
+                        await Click(A, 1_000, token).ConfigureAwait(false);
+                        Log("Resting for a little while!");
+                        await Click(A, 12_000, token).ConfigureAwait(false);
+                        await Click(A, 1_000, token).ConfigureAwait(false);
+                        await TeleportToSpawnZone(token).ConfigureAwait(false);
+
+                    }
                     if (success == 50)
                     {
                         Log("Saving in case of a game crash!");
@@ -389,6 +424,7 @@ namespace SysBot.Pokemon
                     await Click(B, 1_000, token).ConfigureAwait(false);// Random B incase of button miss
                     await Click(A, 1_000, token).ConfigureAwait(false);
                     var menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(offset, 2, token).ConfigureAwait(false), 0);
+                    //Log($"Menu check: {menucheck}");
                     if (menucheck == 66)
                         await Click(A, 0_800, token).ConfigureAwait(false);
                     while (menucheck == 64 || menucheck == 0)
@@ -528,6 +564,7 @@ namespace SysBot.Pokemon
                             if (pk.IsShiny)
                             {
                                 Log($"In battle with {print}!");
+                                EmbedMon = (pk, true);
 
                                 if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
                                     DumpPokemon(DumpSetting.DumpFolder, "advances", pk);
@@ -779,7 +816,6 @@ namespace SysBot.Pokemon
 
                     if (Settings.SearchForIVs.Length != 0)
                     {
-
                         if (Settings.SearchForIVs[0] == ivs[0] && Settings.SearchForIVs[1] == ivs[1] && Settings.SearchForIVs[2] == ivs[2] && Settings.SearchForIVs[3] == ivs[3] && Settings.SearchForIVs[4] == ivs[4] && Settings.SearchForIVs[5] == ivs[5])
                         {
                             Log($"\nAdvances: {i}\nAlpha: {SpawnerSpecies} - {shinytype} | SpawnerID: {spawnerid}\nEC: {encryption_constant:X8}\nPID: {pid:X8}\nIVs: {ivs[0]}/{ivs[1]}/{ivs[2]}/{ivs[3]}/{ivs[4]}/{ivs[5]}\nNature: {nature}\nSeed: {shinyseed:X16}");
