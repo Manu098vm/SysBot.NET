@@ -324,7 +324,7 @@ namespace SysBot.Pokemon
                     break;
                 }
             }
-            string shinytype = string.Empty;
+            string shinytype = "Shiny: No";
             if (shinyXor == 0)
                 shinytype = $"■ - Square Shiny";
             if (shinyXor != 0 && shinyXor <= 16)

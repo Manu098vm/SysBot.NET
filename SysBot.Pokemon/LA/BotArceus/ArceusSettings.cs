@@ -22,8 +22,11 @@ namespace SysBot.Pokemon
         [Category(Arceus), Description("Enter number of advances to do.")]
         public int Advances { get; set; } = 1;
 
-        [Category(Arceus), Description("Will hunt for the desired outbreak species if not empty.")]
-        public string[] SpeciesToHunt { get; set; } = { };
+        [Category(Arceus), Description("Enter number of shiny rolls.")]
+        public int ShinyRolls { get; set; } = 2;
+
+        [Category(Arceus), Description("Will hunt for the desired outbreak species if not empty. Separate species with a comma. Ex: Eevee,Rotom,Voltorb")]
+        public string SpeciesToHunt { get; set; } = string.Empty;
 
         [Category(Arceus), Description("If you have a desired IV spread enter it here, else leave empty. (EX: 31/31/31/31/31/0 for a 5IV 0SPE spread.")]
         public int[] SearchForIVs { get; set; } = { };
@@ -40,6 +43,9 @@ namespace SysBot.Pokemon
         [Category(Arceus), Description("When enabled, the screen will be turned off during normal bot loop operation to save power.")]
         public bool ScreenOff { get; set; } = false;
 
+        [Category(Arceus), Description("Enter Discord channel ID(s) to post Arceus embeds to. Feature has to be initialized via \"$arceusEmbed\" after every client restart.")]
+        public string ArceusEmbedChannels { get; set; } = string.Empty;
+
         [Category(Arceus)]
         [TypeConverter(typeof(AlphaScanFiltersCategoryConverter))]
         public class AlphaScanFiltersCategory
@@ -48,9 +54,6 @@ namespace SysBot.Pokemon
 
             [Category(Arceus), Description("Enter number of advances to search.")]
             public int MaxAdvancesToSearch { get; set; } = 50;
-
-            [Category(Arceus), Description("Enter number of shiny rolls.")]
-            public int ShinyRolls { get; set; } = 2;
 
             [Category(Arceus), Description("Toggle true if you just entered the map and didn't spawn the Pokémon")]
             public bool InItSpawn { get; set; } = true;
@@ -71,8 +74,14 @@ namespace SysBot.Pokemon
         {
             public override string ToString() => "Special Conditions";
 
+            [Category(Arceus), Description("When enabled, the bot will teleport instead of walk/run for Outbreak Hunter.")]
+            public bool TeleportToHunt { get; set; } = false;
+
             [Category(Arceus), Description("Wait time between teleporting and scanning.")]
             public int WaitMsBetweenTeleports { get; set; } = 1000;
+
+            [Category(Arceus), Description("Duration in Ms for how long to hold B when returning to town for Outbreak Hunter.")]
+            public int HoldBMs { get; set; } = 5000;
 
             [Category(Arceus), Description("Enter your player coordinates for Camp Location X Coordinate. Should be 8 characters long.")]
             public string CampZoneX { get; set; } = "";
@@ -86,7 +95,7 @@ namespace SysBot.Pokemon
             [Category(Arceus), Description("Enter your player coordinates for Spawn Location X Coordinate. Should be 8 characters long.")]
             public string SpawnZoneX { get; set; } = "";
 
-          [Category(Arceus), Description("Enter your player coordinates for Spawn Location Y Coordinate. Should be 8 characters long.")]
+            [Category(Arceus), Description("Enter your player coordinates for Spawn Location Y Coordinate. Should be 8 characters long.")]
             public string SpawnZoneY { get; set; } = "";
 
             [Category(Arceus), Description("Enter your player coordinates for Spawn Location Z Coordinate. Should be 8 characters long.")]
@@ -95,7 +104,7 @@ namespace SysBot.Pokemon
             [Category(Arceus), Description("Wait time in minutes before starting a new distortion. If one does not spawn initially, stop and start the bot again.")]
             public int WaitTimeDistortion { get; set; } = 2;
         }
-        
+
         public class SpecialFiltersCategoryConverter : TypeConverter
         {
             public override bool GetPropertiesSupported(ITypeDescriptorContext context) => true;

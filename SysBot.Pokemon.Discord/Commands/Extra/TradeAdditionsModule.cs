@@ -18,6 +18,7 @@ namespace SysBot.Pokemon.Discord
         private readonly ExtraCommandUtil<T> Util = new();
         private readonly LairBotSettings LairSettings = SysCord<T>.Runner.Hub.Config.Lair;
         private readonly RollingRaidSettings RollingRaidSettings = SysCord<T>.Runner.Hub.Config.RollingRaid;
+        private readonly ArceusBotSettings ArceusSettings = SysCord<T>.Runner.Hub.Config.Arceus;
         private readonly object _lock = new();
 
         [Command("giveawayqueue")]
@@ -464,6 +465,73 @@ namespace SysBot.Pokemon.Discord
                 return true;
             }
             return false;
+        }
+
+        [Command("arceusEmbed")]
+        [Alias("ae")]
+        [Summary("Initialize posting of ArceusBot embeds to specified Discord channels.")]
+        [RequireSudo]
+        public async Task InitializArceusEmbeds()
+        {
+            if (ArceusSettings.ArceusEmbedChannels == string.Empty)
+            {
+                await ReplyAsync("No channels to post embeds in.").ConfigureAwait(false);
+                return;
+            }
+
+            List<ulong> channels = new();
+            foreach (var channel in ArceusSettings.ArceusEmbedChannels.Split(',', ' '))
+            {
+                if (ulong.TryParse(channel, out ulong result) && !channels.Contains(result))
+                    channels.Add(result);
+            }
+
+            if (channels.Count == 0)
+            {
+                await ReplyAsync("No valid channels found.").ConfigureAwait(false);
+                return;
+            }
+
+            await ReplyAsync(!ArceusBot.EmbedsInitialized ? "Arceus Embed task started!" : "Arceus Embed task stopped!").ConfigureAwait(false);
+            if (ArceusBot.EmbedsInitialized)
+                ArceusBot.EmbedSource.Cancel();
+            else _ = Task.Run(async () => await ArceusEmbedLoop(channels));
+            ArceusBot.EmbedsInitialized ^= true;
+        }
+
+        private async Task ArceusEmbedLoop(List<ulong> channels)
+        {
+            while (!ArceusBot.EmbedSource.IsCancellationRequested)
+            {
+                if (ArceusBot.EmbedMon.Item1 != null)
+                {
+                    var location = Hub.Config.Arceus.ScanLocation;
+                    string match = "Match found!";
+                    var url = TradeExtensions<PA8>.PokeImg(ArceusBot.EmbedMon.Item1, ArceusBot.EmbedMon.Item1.CanGigantamax, SysCord<T>.Runner.Hub.Config.TradeCord.UseFullSizeImages);
+                    string shinyurl = "https://img.favpng.com/6/14/25/computer-icons-icon-design-photography-royalty-free-png-favpng-mtjTHeWQe8FUAUB3RdJ3B2KJG.jpg";
+                    if (ArceusBot.EmbedMon.Item1.IsAlpha)
+                        shinyurl = "https://cdn.discordapp.com/emojis/944278189000228894.webp?size=96&quality=lossless";
+                    string stats = string.Empty;
+                    stats = $"{(ArceusBot.EmbedMon.Item1.ShinyXor == 0 ? "■ - " : ArceusBot.EmbedMon.Item1.ShinyXor <= 16 ? "★ - " : "")}{SpeciesName.GetSpeciesNameGeneration(ArceusBot.EmbedMon.Item1.Species, 2, 8)}{TradeExtensions<T>.FormOutput(ArceusBot.EmbedMon.Item1.Species, ArceusBot.EmbedMon.Item1.Form, out _)}\nIVs: {ArceusBot.EmbedMon.Item1.IV_HP}/{ArceusBot.EmbedMon.Item1.IV_ATK}/{ArceusBot.EmbedMon.Item1.IV_DEF}/{ArceusBot.EmbedMon.Item1.IV_SPA}/{ArceusBot.EmbedMon.Item1.IV_SPD}/{ArceusBot.EmbedMon.Item1.IV_SPE}";
+                    var author = new EmbedAuthorBuilder { IconUrl = shinyurl, Name = ArceusBot.EmbedMon.Item2 ? match : "Unwanted match..." };
+                    var footer = new EmbedFooterBuilder { Text = $"Found in {location}." };
+                    if (Hub.Config.Arceus.BotType == ArceusMode.DistortionReader)
+                        footer = new EmbedFooterBuilder { Text = $"Found in a space-time distortion." };
+                    var embed = new EmbedBuilder
+                    { Color = Color.Gold, ThumbnailUrl = url }.WithAuthor(author).WithDescription(stats).WithFooter(footer);
+                    foreach (var guild in Context.Client.Guilds)
+                    {
+                        foreach (var channel in channels)
+                        {
+                            if (guild.Channels.FirstOrDefault(x => x.Id == channel) != default)
+                                await guild.GetTextChannel(channel).SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                        }
+                    }
+                    ArceusBot.EmbedMon.Item1 = null;
+                }
+                else await Task.Delay(1_000).ConfigureAwait(false);
+            }
+            ArceusBot.EmbedSource = new();
         }
     }
 }

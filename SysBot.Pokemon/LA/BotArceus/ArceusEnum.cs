@@ -8,6 +8,7 @@
         PlayerCoordScan,
         TimeSeedAdvancer,
         DistortionSpammer,
+        DistortionReader,
     }
     public enum ArceusAutoFill
     {
