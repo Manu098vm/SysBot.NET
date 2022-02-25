@@ -227,6 +227,8 @@ namespace SysBot.Pokemon
 
         public async Task DistortionReader(CancellationToken token)
         {
+            List<PA8> matchlist = new List<PA8>();
+            List<string> loglist = new List<string>();
             Log($"Starting Distortion Scanner for {Settings.ScanLocation}...");
             var mode = Settings.ScanLocation;
             int count = 0;
@@ -256,17 +258,18 @@ namespace SysBot.Pokemon
                     }
                     var SpawnerOff = SwitchConnection.PointerAll(disofs, token).Result;
                     var GeneratorSeed = SwitchConnection.ReadBytesAbsoluteAsync(SpawnerOff, 8, token).Result;
-                    Log($"Generator Seed: {BitConverter.ToString(GeneratorSeed).Replace("-", "")}");
+                    //Log($"Generator Seed: {BitConverter.ToString(GeneratorSeed).Replace("-", "")}");
                     var group_seed = (BitConverter.ToUInt64(GeneratorSeed, 0) - 0x82A2B175229D6A5B) & 0xFFFFFFFFFFFFFFFF;
                     if (group_seed != 0)
-                    {                        
+                    {
                         //Log($"Group Seed: {string.Format("0x{0:X}", group_seed)}");
                         if (i >= 13 && i <= 15 && Settings.ScanLocation == ArceupMap.CrimsonMirelands)
                         {
                             encounter_slot_sum = 118;
                             encounter_slot_range = Enumerable.Range(0, 118);
                         }
-                        var (match, shiny) = ReadDistortionSeed(i, group_seed, Settings.ShinyRolls, 0, encounter_slot_sum, encounter_slot_range);
+                        var (match, shiny, logs) = ReadDistortionSeed(i, group_seed, Settings.ShinyRolls, 0, encounter_slot_sum, encounter_slot_range);
+                        loglist.Add(logs);
                         if (shiny)
                         {
                             string[] monlist = Settings.SpeciesToHunt.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
@@ -276,12 +279,27 @@ namespace SysBot.Pokemon
                                 if (!huntedspecies)
                                 {
                                     EmbedMon = (match, false);
-                                    Log($"Found a shiny {(Species)match.Species} but it isn't what I wanted...");
+                                    Log(logs);
+                                    break;
+                                }
+                            }
+                            matchlist.Add(match);
+                        }
+                    }
+                    foreach (PA8 match in matchlist)
+                    {
+                        if (match.IsShiny)
+                        {
+                            if (Settings.SpecialConditions.DistortionAlphaOnly)
+                            {
+                                if (!match.IsAlpha)
+                                {
+                                    EmbedMon = (match, false);
                                     break;
                                 }
                             }
                             EmbedMon = (match, true);
-                            Log($"{Hub.Config.StopConditions.MatchFoundEchoMention} a shiny {(Species)match.Species} will spawn in a space-time distortion soon!\nAwaiting confirmation...");
+                            Log(loglist.Last());
                             await Click(HOME, 1_000, token).ConfigureAwait(false);
                             IsWaiting = true;
                             while (IsWaiting)
@@ -291,7 +309,13 @@ namespace SysBot.Pokemon
                                 await Click(HOME, 1_000, token).ConfigureAwait(false);
                         }
                     }
+                    matchlist.Clear();
+                    new List<PA8>(matchlist);
                 }
+                string report = string.Join(Environment.NewLine, loglist);
+                Log(report);
+                loglist.Clear();
+                new List<string>(loglist);
                 tries++;
                 await CloseGame(Hub.Config, token).ConfigureAwait(false);
                 await StartGame(Hub.Config, token).ConfigureAwait(false);
@@ -365,13 +389,13 @@ namespace SysBot.Pokemon
                         if (encslot < 100) pk.Species = (int)Species.Sneasel;
                         if (encslot > 100 && encslot < 101)
                         {
-                            pk.Species = (int)Species.Sneasel; 
+                            pk.Species = (int)Species.Sneasel;
                             pk.IsAlpha = true;
                         }
                         if (encslot > 101 && encslot < 111) pk.Species = (int)Species.Weavile;
                         if (encslot > 111 && encslot < 112)
                         {
-                            pk.Species = (int)Species.Weavile; 
+                            pk.Species = (int)Species.Weavile;
                             pk.IsAlpha = true;
                         }
                     }
@@ -381,37 +405,37 @@ namespace SysBot.Pokemon
                         if (encslot < 100) pk.Species = (int)Species.Porygon;
                         if (encslot > 100 && encslot < 101)
                         {
-                            pk.Species = (int)Species.Porygon; 
+                            pk.Species = (int)Species.Porygon;
                             pk.IsAlpha = true;
                         }
                         if (encslot > 101 && encslot < 111) pk.Species = (int)Species.Porygon2;
                         if (encslot > 111 && encslot < 112)
                         {
-                            pk.Species = (int)Species.Porygon2; 
+                            pk.Species = (int)Species.Porygon2;
                             pk.IsAlpha = true;
                         }
                         if (encslot > 112 && encslot < 117) pk.Species = (int)Species.PorygonZ;
                         if (encslot > 117 && encslot < 118)
-                        { 
-                            pk.Species = (int)Species.PorygonZ; 
-                            pk.IsAlpha = true; 
+                        {
+                            pk.Species = (int)Species.PorygonZ;
+                            pk.IsAlpha = true;
                         }
                         if (encslot > 118 && encslot < 218) pk.Species = (int)Species.Cyndaquil;
                         if (encslot > 218 && encslot < 219)
                         {
-                            pk.Species = (int)Species.Cyndaquil; 
+                            pk.Species = (int)Species.Cyndaquil;
                             pk.IsAlpha = true;
                         }
                         if (encslot > 219 && encslot < 269) pk.Species = (int)Species.Quilava;
                         if (encslot > 269 && encslot < 270)
                         {
-                            pk.Species = (int)Species.Quilava; 
+                            pk.Species = (int)Species.Quilava;
                             pk.IsAlpha = true;
                         }
                         if (encslot > 270 && encslot < 275) pk.Species = (int)Species.Typhlosion;
                         if (encslot >= 275)
                         {
-                            pk.Species = (int)Species.Typhlosion; 
+                            pk.Species = (int)Species.Typhlosion;
                             pk.IsAlpha = true;
                         }
                     }
@@ -427,13 +451,13 @@ namespace SysBot.Pokemon
                         if (encslot > 101 && encslot < 151) pk.Species = (int)Species.Magneton;
                         if (encslot > 151 && encslot < 152)
                         {
-                            pk.Species = (int)Species.Magneton; 
+                            pk.Species = (int)Species.Magneton;
                             pk.IsAlpha = true;
                         }
                         if (encslot > 152 && encslot < 162) pk.Species = (int)Species.Magnezone;
                         if (encslot >= 162)
                         {
-                            pk.Species = (int)Species.Magnezone; 
+                            pk.Species = (int)Species.Magnezone;
                             pk.IsAlpha = true;
                         }
                     }
@@ -443,19 +467,19 @@ namespace SysBot.Pokemon
                         if (encslot < 100) pk.Species = (int)Species.Cranidos;
                         if (encslot > 100 && encslot < 101)
                         {
-                            pk.Species = (int)Species.Cranidos; 
+                            pk.Species = (int)Species.Cranidos;
                             pk.IsAlpha = true;
                         }
                         if (encslot > 101 && encslot < 111) pk.Species = (int)Species.Rampardos;
                         if (encslot > 111 && encslot < 112)
                         {
-                            pk.Species = (int)Species.Rampardos; 
+                            pk.Species = (int)Species.Rampardos;
                             pk.IsAlpha = true;
                         }
                         if (encslot > 112 && encslot < 212) pk.Species = (int)Species.Shieldon;
                         if (encslot > 212 && encslot < 213)
                         {
-                            pk.Species = (int)Species.Shieldon; 
+                            pk.Species = (int)Species.Shieldon;
                             pk.IsAlpha = true;
                         }
                         if (encslot > 213 && encslot < 223) pk.Species = (int)Species.Bastiodon;
@@ -467,7 +491,7 @@ namespace SysBot.Pokemon
                         if (encslot > 224 && encslot < 324) pk.Species = (int)Species.Rowlet;
                         if (encslot > 324 && encslot < 325)
                         {
-                            pk.Species = (int)Species.Rowlet; 
+                            pk.Species = (int)Species.Rowlet;
                             pk.IsAlpha = true;
                         }
                         if (encslot > 325 && encslot < 375) pk.Species = (int)Species.Dartrix;
@@ -489,13 +513,13 @@ namespace SysBot.Pokemon
                         if (encslot < 100) pk.Species = (int)Species.Scizor;
                         if (encslot > 100 && encslot < 101)
                         {
-                            pk.Species = (int)Species.Scizor; 
+                            pk.Species = (int)Species.Scizor;
                             pk.IsAlpha = true;
                         }
                         if (encslot > 101 && encslot < 201) pk.Species = (int)Species.Oshawott;
                         if (encslot > 201 && encslot < 202)
                         {
-                            pk.Species = (int)Species.Oshawott; 
+                            pk.Species = (int)Species.Oshawott;
                             pk.IsAlpha = true;
                         }
                         if (encslot > 202 && encslot < 252) pk.Species = (int)Species.Dewott;
@@ -507,7 +531,7 @@ namespace SysBot.Pokemon
                         if (encslot > 253 && encslot < 258) pk.Species = (int)Species.Samurott;
                         if (encslot > 258)
                         {
-                            pk.Species = (int)Species.Samurott; 
+                            pk.Species = (int)Species.Samurott;
                             pk.IsAlpha = true;
                         }
                     }
@@ -1094,8 +1118,9 @@ namespace SysBot.Pokemon
             }
         }
 
-        public (PA8 match, bool shiny) ReadDistortionSeed(int id, ulong group_seed, int rolls, int guaranteedivs, int encslotsum, object encslotrange)
+        public (PA8 match, bool shiny, string log) ReadDistortionSeed(int id, ulong group_seed, int rolls, int guaranteedivs, int encslotsum, object encslotrange)
         {
+            string logs = string.Empty;
             var groupseed = group_seed;
             var mainrng = new Xoroshiro128Plus(groupseed);
             var generator_seed = mainrng.Next();
@@ -1107,9 +1132,9 @@ namespace SysBot.Pokemon
             string location = GetDistortionSpeciesLocation(id);
             if (id == 0 || id == 4 || id == 8 || id == 12 || id == 16 || id == 20)
             {
-                Log($"Ignoring Common Spawner from GroupID: {id}.");
-                return (pk, false);
-            }            
+                logs += $"Ignoring Common Spawner from GroupID: {id}.";
+                return (pk, false, logs);
+            }
 
             pk.IV_HP = ivs[0]; pk.IV_ATK = ivs[1]; pk.IV_DEF = ivs[2]; pk.IV_SPA = ivs[3]; pk.IV_SPD = ivs[4]; pk.IV_SPE = ivs[5]; pk.Nature = (int)nature; pk.EncryptionConstant = (uint)encryption_constant; pk.PID = (uint)pid;
             if (shinytype.Contains("Star"))
@@ -1117,12 +1142,11 @@ namespace SysBot.Pokemon
             if (shinytype.Contains("Square"))
                 CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
             var print = Hub.Config.StopConditions.GetAlphaPrintName(pk);
-            Log($"\nGroup: {id}\n{shinytype}\n{print}\nEncounter Slot: {encounter_slot}\nLocation: {location}");
-
+            logs += $"Group: {id}\n{shinytype}\n{print}\nEncounter Slot: {encounter_slot}\nLocation: {location}";
             mainrng.Next();
             mainrng.Next();
             _ = new Xoroshiro128Plus(mainrng.Next());
-            return (pk, shiny);
+            return (pk, shiny, logs);
         }
         public ulong GenerateNextShiny(string species, int spawnerid, ulong seed, ulong seed1 = 0x82A2B175229D6A5B)
         {

@@ -501,19 +501,23 @@ namespace SysBot.Pokemon.Discord
 
         private async Task ArceusEmbedLoop(List<ulong> channels)
         {
+            var ping = SysCord<T>.Runner.Hub.Config.StopConditions.MatchFoundEchoMention;
             while (!ArceusBot.EmbedSource.IsCancellationRequested)
             {
                 if (ArceusBot.EmbedMon.Item1 != null)
                 {
                     var location = Hub.Config.Arceus.ScanLocation;
                     string match = "Match found!";
+                    string nomatch = "Unwanted match...";
+                    if (Hub.Config.Arceus.SpecialConditions.DistortionAlphaOnly && !ArceusBot.EmbedMon.Item1.IsAlpha)
+                        nomatch = "Not an Alpha...";
                     var url = TradeExtensions<PA8>.PokeImg(ArceusBot.EmbedMon.Item1, ArceusBot.EmbedMon.Item1.CanGigantamax, SysCord<T>.Runner.Hub.Config.TradeCord.UseFullSizeImages);
                     string shinyurl = "https://img.favpng.com/6/14/25/computer-icons-icon-design-photography-royalty-free-png-favpng-mtjTHeWQe8FUAUB3RdJ3B2KJG.jpg";
                     if (ArceusBot.EmbedMon.Item1.IsAlpha)
                         shinyurl = "https://cdn.discordapp.com/emojis/944278189000228894.webp?size=96&quality=lossless";
                     string stats = string.Empty;
                     stats = $"{(ArceusBot.EmbedMon.Item1.ShinyXor == 0 ? "■ - " : ArceusBot.EmbedMon.Item1.ShinyXor <= 16 ? "★ - " : "")}{SpeciesName.GetSpeciesNameGeneration(ArceusBot.EmbedMon.Item1.Species, 2, 8)}{TradeExtensions<T>.FormOutput(ArceusBot.EmbedMon.Item1.Species, ArceusBot.EmbedMon.Item1.Form, out _)}\nIVs: {ArceusBot.EmbedMon.Item1.IV_HP}/{ArceusBot.EmbedMon.Item1.IV_ATK}/{ArceusBot.EmbedMon.Item1.IV_DEF}/{ArceusBot.EmbedMon.Item1.IV_SPA}/{ArceusBot.EmbedMon.Item1.IV_SPD}/{ArceusBot.EmbedMon.Item1.IV_SPE}";
-                    var author = new EmbedAuthorBuilder { IconUrl = shinyurl, Name = ArceusBot.EmbedMon.Item2 ? match : "Unwanted match..." };
+                    var author = new EmbedAuthorBuilder { IconUrl = shinyurl, Name = ArceusBot.EmbedMon.Item2 ? match : nomatch };
                     var footer = new EmbedFooterBuilder { Text = $"Found in {location}." };
                     if (Hub.Config.Arceus.BotType == ArceusMode.DistortionReader)
                         footer = new EmbedFooterBuilder { Text = $"Found in a space-time distortion." };
@@ -524,7 +528,12 @@ namespace SysBot.Pokemon.Discord
                         foreach (var channel in channels)
                         {
                             if (guild.Channels.FirstOrDefault(x => x.Id == channel) != default)
-                                await guild.GetTextChannel(channel).SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                            {
+                                if (ArceusBot.EmbedMon.Item2 == true)
+                                    await guild.GetTextChannel(channel).SendMessageAsync(ping, embed: embed.Build()).ConfigureAwait(false);
+                                if (ArceusBot.EmbedMon.Item2 == false)
+                                    await guild.GetTextChannel(channel).SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+                            }
                         }
                     }
                     ArceusBot.EmbedMon.Item1 = null;
