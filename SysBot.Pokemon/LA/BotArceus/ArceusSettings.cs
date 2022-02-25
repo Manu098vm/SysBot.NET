@@ -103,6 +103,9 @@ namespace SysBot.Pokemon
 
             [Category(Arceus), Description("Wait time in minutes before starting a new distortion. If one does not spawn initially, stop and start the bot again.")]
             public int WaitTimeDistortion { get; set; } = 2;
+
+            [Category(Arceus), Description("When enabled, the bot will only stop on Alpha Shinies in Distortions.")]
+            public bool DistortionAlphaOnly { get; set; } = false;
         }
 
         public class SpecialFiltersCategoryConverter : TypeConverter

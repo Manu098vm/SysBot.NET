@@ -227,6 +227,8 @@ namespace SysBot.Pokemon
 
         public async Task DistortionReader(CancellationToken token)
         {
+            List<PA8> matchlist = new List<PA8>();
+            List<string> loglist = new List<string>();
             Log($"Starting Distortion Scanner for {Settings.ScanLocation}...");
             var mode = Settings.ScanLocation;
             int count = 0;
@@ -256,7 +258,7 @@ namespace SysBot.Pokemon
                     }
                     var SpawnerOff = SwitchConnection.PointerAll(disofs, token).Result;
                     var GeneratorSeed = SwitchConnection.ReadBytesAbsoluteAsync(SpawnerOff, 8, token).Result;
-                    Log($"Generator Seed: {BitConverter.ToString(GeneratorSeed).Replace("-", "")}");
+                    //Log($"Generator Seed: {BitConverter.ToString(GeneratorSeed).Replace("-", "")}");
                     var group_seed = (BitConverter.ToUInt64(GeneratorSeed, 0) - 0x82A2B175229D6A5B) & 0xFFFFFFFFFFFFFFFF;
                     if (group_seed != 0)
                     {                        
@@ -266,7 +268,8 @@ namespace SysBot.Pokemon
                             encounter_slot_sum = 118;
                             encounter_slot_range = Enumerable.Range(0, 118);
                         }
-                        var (match, shiny) = ReadDistortionSeed(i, group_seed, Settings.ShinyRolls, 0, encounter_slot_sum, encounter_slot_range);
+                        var (match, shiny, logs) = ReadDistortionSeed(i, group_seed, Settings.ShinyRolls, 0, encounter_slot_sum, encounter_slot_range);
+                        loglist.Add(logs);
                         if (shiny)
                         {
                             string[] monlist = Settings.SpeciesToHunt.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
@@ -280,6 +283,21 @@ namespace SysBot.Pokemon
                                     break;
                                 }
                             }
+                            matchlist.Add(match);
+                        }
+                    }
+                    foreach (PA8 match in matchlist)
+                    {
+                        if (match.IsShiny)
+                        {
+                            if (Settings.SpecialConditions.DistortionAlphaOnly)
+                            {
+                                if (!match.IsAlpha)
+                                {
+                                    EmbedMon = (match, false);
+                                    break;
+                                }
+                            }
                             EmbedMon = (match, true);
                             Log($"{Hub.Config.StopConditions.MatchFoundEchoMention} a shiny {(Species)match.Species} will spawn in a space-time distortion soon!\nAwaiting confirmation...");
                             await Click(HOME, 1_000, token).ConfigureAwait(false);
@@ -289,9 +307,13 @@ namespace SysBot.Pokemon
 
                             if (!IsWaiting)
                                 await Click(HOME, 1_000, token).ConfigureAwait(false);
-                        }
+                        }                                                
                     }
+                    matchlist.Clear();
+                    new List<PA8>(matchlist);
                 }
+                string report = string.Join(Environment.NewLine, loglist);
+                Log(report);
                 tries++;
                 await CloseGame(Hub.Config, token).ConfigureAwait(false);
                 await StartGame(Hub.Config, token).ConfigureAwait(false);
@@ -1094,8 +1116,9 @@ namespace SysBot.Pokemon
             }
         }
 
-        public (PA8 match, bool shiny) ReadDistortionSeed(int id, ulong group_seed, int rolls, int guaranteedivs, int encslotsum, object encslotrange)
+        public (PA8 match, bool shiny, string log) ReadDistortionSeed(int id, ulong group_seed, int rolls, int guaranteedivs, int encslotsum, object encslotrange)
         {
+            string logs = string.Empty;
             var groupseed = group_seed;
             var mainrng = new Xoroshiro128Plus(groupseed);
             var generator_seed = mainrng.Next();
@@ -1107,8 +1130,8 @@ namespace SysBot.Pokemon
             string location = GetDistortionSpeciesLocation(id);
             if (id == 0 || id == 4 || id == 8 || id == 12 || id == 16 || id == 20)
             {
-                Log($"Ignoring Common Spawner from GroupID: {id}.");
-                return (pk, false);
+                logs += $"Ignoring Common Spawner from GroupID: {id}.";
+                return (pk, false, logs);
             }            
 
             pk.IV_HP = ivs[0]; pk.IV_ATK = ivs[1]; pk.IV_DEF = ivs[2]; pk.IV_SPA = ivs[3]; pk.IV_SPD = ivs[4]; pk.IV_SPE = ivs[5]; pk.Nature = (int)nature; pk.EncryptionConstant = (uint)encryption_constant; pk.PID = (uint)pid;
@@ -1117,12 +1140,11 @@ namespace SysBot.Pokemon
             if (shinytype.Contains("Square"))
                 CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
             var print = Hub.Config.StopConditions.GetAlphaPrintName(pk);
-            Log($"\nGroup: {id}\n{shinytype}\n{print}\nEncounter Slot: {encounter_slot}\nLocation: {location}");
-
+            logs += $"Group: {id}\n{shinytype}\n{print}\nEncounter Slot: {encounter_slot}\nLocation: {location}";
             mainrng.Next();
             mainrng.Next();
             _ = new Xoroshiro128Plus(mainrng.Next());
-            return (pk, shiny);
+            return (pk, shiny, logs);
         }
         public ulong GenerateNextShiny(string species, int spawnerid, ulong seed, ulong seed1 = 0x82A2B175229D6A5B)
         {
