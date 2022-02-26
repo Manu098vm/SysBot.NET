@@ -237,7 +237,7 @@ namespace SysBot.Pokemon
             int encounter_slot_sum = 0;
             switch (mode)
             {
-                case ArceupMap.ObsidianFieldlands: count = 13; break;
+                case ArceupMap.ObsidianFieldlands: count = 16; break;
                 case ArceupMap.CrimsonMirelands: count = 24; break;
                 case ArceupMap.CobaltCoastlands: count = 20; break;
                 case ArceupMap.CoronetHighlands: count = 20; break;
@@ -258,7 +258,7 @@ namespace SysBot.Pokemon
                     }
                     var SpawnerOff = SwitchConnection.PointerAll(disofs, token).Result;
                     var GeneratorSeed = SwitchConnection.ReadBytesAbsoluteAsync(SpawnerOff, 8, token).Result;
-                    //Log($"Generator Seed: {BitConverter.ToString(GeneratorSeed).Replace("-", "")}");
+                    Log($"GroupID: {i} | Generator Seed: {BitConverter.ToString(GeneratorSeed).Replace("-", "")}");
                     var group_seed = (BitConverter.ToUInt64(GeneratorSeed, 0) - 0x82A2B175229D6A5B) & 0xFFFFFFFFFFFFFFFF;
                     if (group_seed != 0)
                     {
@@ -1133,6 +1133,11 @@ namespace SysBot.Pokemon
             if (id == 0 || id == 4 || id == 8 || id == 12 || id == 16 || id == 20)
             {
                 logs += $"Ignoring Common Spawner from GroupID: {id}.";
+                return (pk, false, logs);
+            }
+            if (id >= 9 && id <= 12 && Settings.ScanLocation == ArceupMap.CrimsonMirelands)
+            {
+                logs += $"Ignoring Spawner from GroupID: {id} as location currently unknown.";
                 return (pk, false, logs);
             }
 
