@@ -6,8 +6,8 @@ using static SysBot.Base.SwitchButton;
 using static SysBot.Base.SwitchStick;
 using System.Linq;
 using System.Collections.Generic;
-using SysBot.Base;
-using PKHeX.Core.AutoMod;
+using static SysBot.Pokemon.PokeDataOffsetsLA;
+using System.Text;
 
 namespace SysBot.Pokemon
 {
@@ -19,6 +19,7 @@ namespace SysBot.Pokemon
         public static CancellationTokenSource EmbedSource = new();
         public static bool EmbedsInitialized;
         public static (PA8?, bool) EmbedMon;
+        public static byte[]? MapIcon;
         public ICountSettings Counts => (ICountSettings)Settings;
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         public ArceusBot(PokeBotState cfg, PokeTradeHub<PA8> hub) : base(cfg)
@@ -39,6 +40,7 @@ namespace SysBot.Pokemon
         string x = string.Empty;
         string y = string.Empty;
         string z = string.Empty;
+        public byte[] icon = { 0 };
 
         public static readonly string[] ObsidianTitle =
         {
@@ -87,6 +89,7 @@ namespace SysBot.Pokemon
                     ArceusMode.OutbreakHunter => OutbreakHunter(token),
                     ArceusMode.DistortionSpammer => DistortionSpammer(token),
                     ArceusMode.DistortionReader => DistortionReader(token),
+                    ArceusMode.MMOHunter => MMOHunter(token),
                     _ => PlayerCoordScan(token),
                 };
                 await task.ConfigureAwait(false);
@@ -113,7 +116,7 @@ namespace SysBot.Pokemon
 
         public async Task TimeTest(CancellationToken token)
         {
-            var timeofs = await NewParsePointer("[[[[main+42963A0]+18]+100]+18]+28", token).ConfigureAwait(false);
+            var timeofs = await NewParsePointer(TimePtrLA, token).ConfigureAwait(false);
             var timeVal = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(timeofs, 2, token).ConfigureAwait(false), 0);
             if (timeVal <= 7)
                 timeVal = 15;
@@ -124,7 +127,7 @@ namespace SysBot.Pokemon
 
         private async Task PlayerCoordScan(CancellationToken token)
         {
-            var ofs = await NewParsePointer("[[[[[[main+42B3558]+88]+90]+1F0]+18]+80]+90", token).ConfigureAwait(false);
+            var ofs = await NewParsePointer(PlayerCoordPtrLA, token).ConfigureAwait(false);
             var coord = BitConverter.ToUInt32(await SwitchConnection.ReadBytesAbsoluteAsync(ofs, 4, token).ConfigureAwait(false), 0);
             var coord2 = BitConverter.ToUInt32(await SwitchConnection.ReadBytesAbsoluteAsync(ofs + 0x4, 4, token).ConfigureAwait(false), 0);
             var coord3 = BitConverter.ToUInt32(await SwitchConnection.ReadBytesAbsoluteAsync(ofs + 0x8, 4, token).ConfigureAwait(false), 0);
@@ -150,8 +153,7 @@ namespace SysBot.Pokemon
 
         private async Task Reposition(CancellationToken token)
         {
-            uint offset = 0x04296764;
-            var menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(offset, 2, token).ConfigureAwait(false), 0);
+            var menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(MenuOffset, 2, token).ConfigureAwait(false), 0);
             while (!token.IsCancellationRequested)
             {
                 Log("Not in camp, repositioning and trying again.");
@@ -161,7 +163,7 @@ namespace SysBot.Pokemon
 
                 await Click(A, 1_000, token).ConfigureAwait(false);
 
-                menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(offset, 2, token).ConfigureAwait(false), 0);
+                menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(MenuOffset, 2, token).ConfigureAwait(false), 0);
                 if (menucheck == 66)
                     return;
 
@@ -176,7 +178,7 @@ namespace SysBot.Pokemon
 
                 await Click(A, 1_000, token).ConfigureAwait(false);
 
-                menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(offset, 2, token).ConfigureAwait(false), 0);
+                menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(MenuOffset, 2, token).ConfigureAwait(false), 0);
                 if (menucheck == 66)
                     return;
 
@@ -191,7 +193,7 @@ namespace SysBot.Pokemon
 
                 await Click(A, 1_000, token).ConfigureAwait(false);
 
-                menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(offset, 2, token).ConfigureAwait(false), 0);
+                menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(MenuOffset, 2, token).ConfigureAwait(false), 0);
                 if (menucheck == 66)
                     return;
                 Log("Attempting face right");
@@ -205,7 +207,7 @@ namespace SysBot.Pokemon
 
                 await Click(A, 1_000, token).ConfigureAwait(false);
 
-                menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(offset, 2, token).ConfigureAwait(false), 0);
+                menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(MenuOffset, 2, token).ConfigureAwait(false), 0);
                 if (menucheck == 66)
                     return;
                 Log("Attempting face left");
@@ -219,7 +221,7 @@ namespace SysBot.Pokemon
 
                 await Click(A, 1_000, token).ConfigureAwait(false);
 
-                menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(offset, 2, token).ConfigureAwait(false), 0);
+                menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(MenuOffset, 2, token).ConfigureAwait(false), 0);
                 if (menucheck == 66)
                     return;
             }
@@ -227,18 +229,18 @@ namespace SysBot.Pokemon
 
         public async Task DistortionReader(CancellationToken token)
         {
-            List<PA8> matchlist = new List<PA8>();
-            List<string> loglist = new List<string>();
+            List<PA8> matchlist = new();
+            List<string> loglist = new();
+            string result = string.Empty;
             Log($"Starting Distortion Scanner for {Settings.ScanLocation}...");
             var mode = Settings.ScanLocation;
             int count = 0;
             int tries = 1;
-            var encounter_slot_range = Enumerable.Range(0, 300);
             int encounter_slot_sum = 0;
             switch (mode)
             {
                 case ArceupMap.ObsidianFieldlands: count = 16; break;
-                case ArceupMap.CrimsonMirelands: count = 24; break;
+                case ArceupMap.CrimsonMirelands: count = 25; break;
                 case ArceupMap.CobaltCoastlands: count = 20; break;
                 case ArceupMap.CoronetHighlands: count = 20; break;
                 case ArceupMap.AlabasterIcelands: count = 24; break;
@@ -250,15 +252,15 @@ namespace SysBot.Pokemon
                 {
                     switch (mode)
                     {
-                        case ArceupMap.ObsidianFieldlands: disofs = new long[] { 0x428E268, 0xC0, 0x1C0, 0x980 + i * 0x8, 0x18, 0x428, 0xC8 }; encounter_slot_range = Enumerable.Range(0, 112); encounter_slot_sum = 112; break;
-                        case ArceupMap.CrimsonMirelands: disofs = new long[] { 0x428E268, 0xC0, 0x1C0, 0xC78 + i * 0x8, 0x18, 0x428, 0xC8 }; encounter_slot_range = Enumerable.Range(0, 276); encounter_slot_sum = 276; break;
-                        case ArceupMap.CobaltCoastlands: disofs = new long[] { 0x428E268, 0xC0, 0x1C0, 0xCC0 + i * 0x8, 0x18, 0x428, 0xC8 }; encounter_slot_range = Enumerable.Range(0, 163); encounter_slot_sum = 163; break;
-                        case ArceupMap.CoronetHighlands: disofs = new long[] { 0x428E268, 0xC0, 0x1C0, 0x828 + i * 0x8, 0x18, 0x428, 0xC8 }; encounter_slot_range = Enumerable.Range(0, 382); encounter_slot_sum = 382; break;
-                        case ArceupMap.AlabasterIcelands: disofs = new long[] { 0x428E268, 0xC0, 0x1C0, 0x948 + i * 0x8, 0x18, 0x428, 0xC8 }; encounter_slot_range = Enumerable.Range(0, 259); encounter_slot_sum = 259; break;
+                        case ArceupMap.ObsidianFieldlands: disofs = new long[] { 0x42CC4D8, 0xC0, 0x1C0, 0x990 + i * 0x8, 0x18, 0x430, 0xC0 }; encounter_slot_sum = 112; break;
+                        case ArceupMap.CrimsonMirelands: disofs = new long[] { 0x42CC4D8, 0xC0, 0x1C0, 0xC70 + i * 0x8, 0x18, 0x430, 0xC0 }; encounter_slot_sum = 276; break;
+                        case ArceupMap.CobaltCoastlands: disofs = new long[] { 0x42CC4D8, 0xC0, 0x1C0, 0xCC0 + i * 0x8, 0x18, 0x430, 0xC0 }; encounter_slot_sum = 163; break;
+                        case ArceupMap.CoronetHighlands: disofs = new long[] { 0x42CC4D8, 0xC0, 0x1C0, 0x818 + i * 0x8, 0x18, 0x430, 0xC0 }; encounter_slot_sum = 382; break;
+                        case ArceupMap.AlabasterIcelands: disofs = new long[] { 0x42CC4D8, 0xC0, 0x1C0, 0x948 + i * 0x8, 0x18, 0x430, 0xC0 }; encounter_slot_sum = 259; break;
                     }
                     var SpawnerOff = SwitchConnection.PointerAll(disofs, token).Result;
                     var GeneratorSeed = SwitchConnection.ReadBytesAbsoluteAsync(SpawnerOff, 8, token).Result;
-                    Log($"GroupID: {i} | Generator Seed: {BitConverter.ToString(GeneratorSeed).Replace("-", "")}");
+                    //Log($"GroupID: {i} | Generator Seed: {BitConverter.ToString(GeneratorSeed).Replace("-", "")}");
                     var group_seed = (BitConverter.ToUInt64(GeneratorSeed, 0) - 0x82A2B175229D6A5B) & 0xFFFFFFFFFFFFFFFF;
                     if (group_seed != 0)
                     {
@@ -266,9 +268,8 @@ namespace SysBot.Pokemon
                         if (i >= 13 && i <= 15 && Settings.ScanLocation == ArceupMap.CrimsonMirelands)
                         {
                             encounter_slot_sum = 118;
-                            encounter_slot_range = Enumerable.Range(0, 118);
                         }
-                        var (match, shiny, logs) = ReadDistortionSeed(i, group_seed, Settings.ShinyRolls, 0, encounter_slot_sum, encounter_slot_range);
+                        var (match, shiny, logs) = ReadDistortionSeed(i, group_seed, encounter_slot_sum);
                         loglist.Add(logs);
                         if (shiny)
                         {
@@ -290,7 +291,7 @@ namespace SysBot.Pokemon
                     {
                         if (match.IsShiny)
                         {
-                            if (Settings.SpecialConditions.DistortionAlphaOnly)
+                            if (Settings.DistortionConditions.DistortionAlphaOnly)
                             {
                                 if (!match.IsAlpha)
                                 {
@@ -298,8 +299,8 @@ namespace SysBot.Pokemon
                                     break;
                                 }
                             }
-                            EmbedMon = (match, true);
                             Log(loglist.Last());
+                            EmbedMon = (match, true);
                             await Click(HOME, 1_000, token).ConfigureAwait(false);
                             IsWaiting = true;
                             while (IsWaiting)
@@ -312,7 +313,7 @@ namespace SysBot.Pokemon
                     matchlist.Clear();
                     new List<PA8>(matchlist);
                 }
-                string report = string.Join(Environment.NewLine, loglist);
+                string report = string.Join("\n", loglist);
                 Log(report);
                 loglist.Clear();
                 new List<string>(loglist);
@@ -320,7 +321,6 @@ namespace SysBot.Pokemon
                 await CloseGame(Hub.Config, token).ConfigureAwait(false);
                 await StartGame(Hub.Config, token).ConfigureAwait(false);
             }
-
         }
 
         public string GetDistortionSpeciesLocation(int id)
@@ -342,7 +342,7 @@ namespace SysBot.Pokemon
                         if (id <= 4) location = "Droning Meadow";
                         if (id > 4 && id <= 8) location = "Holm of Trials";
                         if (id > 8 && id <= 12) location = "Unknown";
-                        if (id > 12 && id <= 16) location = "Ursa's Landing";
+                        if (id > 12 && id <= 16) location = "Ursa's Ring";
                         if (id > 16 && id <= 20) location = "Prairie";
                         if (id > 20 && id <= 24) location = "Gapejaw Bog";
                     }
@@ -545,19 +545,19 @@ namespace SysBot.Pokemon
             {
                 Log("Whipping up a distortion...");
                 // Activates distortions
-                await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0x5280010A), MainNsoBase + 0x024672A4, token).ConfigureAwait(false);
-                await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0x7100052A), MainNsoBase + 0x024672A4, token).ConfigureAwait(false);
+                await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0x5280010A), MainNsoBase + ActivateDistortion, token).ConfigureAwait(false);
+                await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0x7100052A), MainNsoBase + ActivateDistortion, token).ConfigureAwait(false);
                 var delta = DateTime.Now;
-                var cd = TimeSpan.FromMinutes(Settings.SpecialConditions.WaitTimeDistortion);
-                Log($"Waiting {Settings.SpecialConditions.WaitTimeDistortion} minutes then starting the next one...");
+                var cd = TimeSpan.FromMinutes(Settings.DistortionConditions.WaitTimeDistortion);
+                Log($"Waiting {Settings.DistortionConditions.WaitTimeDistortion} minutes then starting the next one...");
                 while (DateTime.Now - delta < cd && !token.IsCancellationRequested)
                 {
                     await Task.Delay(5_000).ConfigureAwait(false);
                     Log($"Time Remaining: {cd - (DateTime.Now - delta)}");
                 }
 
-                await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0x5280010A), MainNsoBase + 0x024672A4, token).ConfigureAwait(false);
-                await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0x7100052A), MainNsoBase + 0x024672A4, token).ConfigureAwait(false);
+                await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0x5280010A), MainNsoBase + ActivateDistortion, token).ConfigureAwait(false);
+                await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0x7100052A), MainNsoBase + ActivateDistortion, token).ConfigureAwait(false);
                 await Task.Delay(5_000).ConfigureAwait(false);
             }
         }
@@ -576,13 +576,13 @@ namespace SysBot.Pokemon
                     return;
                 }
             }
-            OverworldOffset = await NewParsePointer($"main+4284E78]+1A9", token).ConfigureAwait(false);
+            OverworldOffset = await SwitchConnection.PointerAll(Offsets.OverworldPointer, token).ConfigureAwait(false);
             // Activates invcincible trainer cheat so we don't faint from teleporting or a Pokemon attacking and infinite PP
-            await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + 0x024B02E4, token).ConfigureAwait(false);
-            await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + 0x024B04EC, token).ConfigureAwait(false);
+            await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + InvincibleTrainer1, token).ConfigureAwait(false);
+            await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + InvincibleTrainer2, token).ConfigureAwait(false);
 
-            await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD28008AA), MainNsoBase + 0x007AB30C, token).ConfigureAwait(false);
-            await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD28008A9), MainNsoBase + 0x007AB31C, token).ConfigureAwait(false);
+            await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD28008AA), MainNsoBase + InfPP1, token).ConfigureAwait(false);
+            await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD28008A9), MainNsoBase + InfPP2, token).ConfigureAwait(false);
 
             await GetDefaultCampCoords(token).ConfigureAwait(false);
             while (!token.IsCancellationRequested)
@@ -649,7 +649,7 @@ namespace SysBot.Pokemon
                     }
                     if (overworldcheck == 0)
                     {
-                        ulong ofs = await NewParsePointer($"[[[[[main+4268F00]+D0]+B8]+300]+70]+60]+98]+10]", token).ConfigureAwait(false);
+                        ulong ofs = await NewParsePointer(WildPokemonPtrLA, token).ConfigureAwait(false);
                         var pk = await ReadPokemon(ofs, 0x168, token).ConfigureAwait(false);
                         if (pk != null)
                         {
@@ -731,11 +731,11 @@ namespace SysBot.Pokemon
                     return;
                 }
             }
-            uint offset = 0x04296764;
-            OverworldOffset = await NewParsePointer($"main+4284E78]+1A9", token).ConfigureAwait(false);
+            //OverworldOffset = await NewParsePointer($"main+42C30E8]+1A9", token).ConfigureAwait(false);
+            OverworldOffset = await SwitchConnection.PointerAll(Offsets.OverworldPointer, token).ConfigureAwait(false);
             // Activates invcincible trainer cheat so we don't faint from teleporting or a Pokemon attacking
-            await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + 0x024B02E4, token).ConfigureAwait(false);
-            await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + 0x024B04EC, token).ConfigureAwait(false);
+            await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + InvincibleTrainer1, token).ConfigureAwait(false);//invi
+            await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + InvincibleTrainer2, token).ConfigureAwait(false);//invi
 
             while (!token.IsCancellationRequested)
             {
@@ -746,7 +746,7 @@ namespace SysBot.Pokemon
                     Log($"Advancing {Settings.Advances - adv} times...");
                     await Click(B, 1_000, token).ConfigureAwait(false);// Random B incase of button miss
                     await Click(A, 1_000, token).ConfigureAwait(false);
-                    var menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(offset, 2, token).ConfigureAwait(false), 0);
+                    var menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(MenuOffset, 2, token).ConfigureAwait(false), 0);
                     //Log($"Menu check: {menucheck}");
                     if (menucheck == 66)
                         await Click(A, 0_800, token).ConfigureAwait(false);
@@ -756,7 +756,7 @@ namespace SysBot.Pokemon
                         await Click(B, 1_500, token).ConfigureAwait(false);
                         await Reposition(token).ConfigureAwait(false);
                         await Click(B, 1_500, token).ConfigureAwait(false);
-                        menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(offset, 2, token).ConfigureAwait(false), 0);
+                        menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(MenuOffset, 2, token).ConfigureAwait(false), 0);
                         if (menucheck == 66)
                             break;
                     }
@@ -878,7 +878,7 @@ namespace SysBot.Pokemon
                     }
                     if (overworldcheck == 0)
                     {
-                        ulong ofs = await NewParsePointer($"[[[[[main+4268F00]+D0]+B8]+300]+70]+60]+98]+10]", token).ConfigureAwait(false);
+                        ulong ofs = await NewParsePointer(WildPokemonPtrLA, token).ConfigureAwait(false);
                         var pk = await ReadPokemon(ofs, 0x168, token).ConfigureAwait(false);
                         if (pk != null)
                         {
@@ -961,7 +961,7 @@ namespace SysBot.Pokemon
 
         private async Task ScanForAlphas(CancellationToken token)
         {
-            Settings.StopOnMatch = false;
+            Settings.AlphaScanConditions.StopOnMatch = false;
             int attempts = 1;
             for (int i = 0; i < 2; i++)
                 await Click(B, 0_500, token).ConfigureAwait(false);
@@ -972,7 +972,7 @@ namespace SysBot.Pokemon
             {
                 Log($"Search #{attempts}");
                 await SpawnerScan(token);
-                if (Settings.StopOnMatch)
+                if (Settings.AlphaScanConditions.StopOnMatch)
                 {
                     Log($"{Hub.Config.StopConditions.MatchFoundEchoMention} a match has been found!");
                     return;
@@ -995,7 +995,7 @@ namespace SysBot.Pokemon
 
         public async Task TeleportToCampZone(CancellationToken token)
         {
-            ofs = await NewParsePointer($"[[[[[[main+42B3558]+88]+90]+1F0]+18]+80]+90", token).ConfigureAwait(false);
+            ofs = await NewParsePointer(PlayerCoordPtrLA, token).ConfigureAwait(false);
             uint coordX1 = uint.Parse(Settings.SpecialConditions.CampZoneX, System.Globalization.NumberStyles.AllowHexSpecifier);
             byte[] X1 = BitConverter.GetBytes(coordX1);
             uint coordY1 = uint.Parse(Settings.SpecialConditions.CampZoneY, System.Globalization.NumberStyles.AllowHexSpecifier);
@@ -1012,7 +1012,7 @@ namespace SysBot.Pokemon
 
         public async Task TeleportToSpawnZone(CancellationToken token)
         {
-            ofs = await NewParsePointer($"[[[[[[main+42B3558]+88]+90]+1F0]+18]+80]+90", token).ConfigureAwait(false);
+            ofs = await NewParsePointer(PlayerCoordPtrLA, token).ConfigureAwait(false);
             uint coordX1 = uint.Parse(Settings.SpecialConditions.SpawnZoneX, System.Globalization.NumberStyles.AllowHexSpecifier);
             byte[] X1 = BitConverter.GetBytes(coordX1);
             uint coordY1 = uint.Parse(Settings.SpecialConditions.SpawnZoneY, System.Globalization.NumberStyles.AllowHexSpecifier);
@@ -1042,7 +1042,7 @@ namespace SysBot.Pokemon
             }
             for (int i = 0; i < alphacount; i++)
             {
-                var SpawnerOffpoint = new long[] { 0x4268ee0, 0x330, 0x70 + i * 0x440 + 0x20 };
+                var SpawnerOffpoint = new long[] { 0x42a6ee0, 0x330, 0x70 + i * 0x440 + 0x20 };
                 var SpawnerOff = SwitchConnection.PointerAll(SpawnerOffpoint, token).Result;
                 var GeneratorSeed = SwitchConnection.ReadBytesAbsoluteAsync(SpawnerOff, 8, token).Result;
                 Log($"Generator Seed: {BitConverter.ToString(GeneratorSeed).Replace("-", "")}");
@@ -1077,7 +1077,7 @@ namespace SysBot.Pokemon
                     await Click(A, 1_000, token).ConfigureAwait(false);
                 for (int i = 0; i < 4; i++)
                 {
-                    var ofs = new long[] { 0x427C470, 0x2B0, 0x58, 0x18, 0x20 + i * 0x50 };
+                    var ofs = new long[] { 0x42BA6B0, 0x2B0, 0x58, 0x18, 0x20 + i * 0x50 };
                     var outbreakptr = SwitchConnection.PointerAll(ofs, token).Result;
                     Species species = (Species)BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr, 2, token).ConfigureAwait(false), 0);
                     if (species != Species.None)
@@ -1118,7 +1118,7 @@ namespace SysBot.Pokemon
             }
         }
 
-        public (PA8 match, bool shiny, string log) ReadDistortionSeed(int id, ulong group_seed, int rolls, int guaranteedivs, int encslotsum, object encslotrange)
+        public (PA8 match, bool shiny, string log) ReadDistortionSeed(int id, ulong group_seed, int encslotsum)
         {
             string logs = string.Empty;
             var groupseed = group_seed;
@@ -1147,7 +1147,7 @@ namespace SysBot.Pokemon
             if (shinytype.Contains("Square"))
                 CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
             var print = Hub.Config.StopConditions.GetAlphaPrintName(pk);
-            logs += $"Group: {id}\n{shinytype}\n{print}\nEncounter Slot: {encounter_slot}\nLocation: {location}";
+            logs += $"Generator Seed: {(group_seed + 0x82A2B175229D6A5B & 0xFFFFFFFFFFFFFFFF):X16}\nGroup: {id}\n{shinytype}\n{print}\nEncounter Slot: {encounter_slot}\nLocation: {location}";
             mainrng.Next();
             mainrng.Next();
             _ = new Xoroshiro128Plus(mainrng.Next());
@@ -1195,7 +1195,7 @@ namespace SysBot.Pokemon
                         {
                             Log($"\nAdvances: {i}\nAlpha: {SpawnerSpecies} - {shinytype} | SpawnerID: {spawnerid}\nEC: {encryption_constant:X8}\nPID: {pid:X8}\nIVs: {ivs[0]}/{ivs[1]}/{ivs[2]}/{ivs[3]}/{ivs[4]}/{ivs[5]}\nNature: {nature}\nSeed: {shinyseed:X16}");
                             newseed = generator_seed;
-                            Settings.StopOnMatch = true;
+                            Settings.AlphaScanConditions.StopOnMatch = true;
                             hits++;
 
                             if (hits == 3)
@@ -1209,7 +1209,7 @@ namespace SysBot.Pokemon
                     {
                         Log($"\nAdvances: {i}\nAlpha: {SpawnerSpecies} - {shinytype} | SpawnerID: {spawnerid}\nEC: {encryption_constant:X8}\nPID: {pid:X8}\nIVs: {ivs[0]}/{ivs[1]}/{ivs[2]}/{ivs[3]}/{ivs[4]}/{ivs[5]}\nNature: {nature}\nSeed: {shinyseed:X16}");
                         newseed = generator_seed;
-                        Settings.StopOnMatch = true;
+                        Settings.AlphaScanConditions.StopOnMatch = true;
                         hits++;
 
                         if (hits == 3)
@@ -1225,6 +1225,90 @@ namespace SysBot.Pokemon
             }
 
             return newseed;
+        }
+
+        public async Task MMOHunter(CancellationToken token)
+        {
+            int attempts = 1;
+            var mapcount = 0;
+            string bonusround = string.Empty;
+            Species species;
+            await GetDefaultCoords(token);
+            Log("Reading map for active outbreaks...");
+            while (!token.IsCancellationRequested)
+            {
+                Log($"Search #{attempts}");
+                if (Settings.SpecialConditions.TeleportToHunt)
+                {
+                    await TeleportToSpawnZone(token);
+                    await SetStick(LEFT, 0, -30_000, 1_000, token).ConfigureAwait(false);
+                    await ResetStick(token).ConfigureAwait(false); // reset
+                }
+                if (!Settings.SpecialConditions.TeleportToHunt)
+                {
+                    await SetStick(LEFT, 0, -30_000, 1_000, token).ConfigureAwait(false);
+                    await Click(Y, 1_000, token).ConfigureAwait(false);
+                    await ResetStick(token).ConfigureAwait(false); // reset
+                }
+                for (int i = 0; i < 1; i++)
+                    await Click(A, 1_000, token).ConfigureAwait(false);
+                for (int i = 0; i < 4; i++)
+                {
+                    Log($"Checking map #{mapcount}...");
+                    var groupcount = 0;
+                    do
+                    {
+                        var ofs = new long[] { 0x42BA6B0, 0x2B0, 0x58, 0x18, 0x1D4 + (groupcount * 0x90) + (mapcount * 0xB80) };
+                        var outbreakptr = SwitchConnection.PointerAll(ofs, token).Result;
+                        species = (Species)BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr, 2, token).ConfigureAwait(false), 0);
+                        if (species != Species.None)
+                        {
+                            var spawncount = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr + 0x4C, 2, token).ConfigureAwait(false), 0);
+                            var bonus = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr - 0x4, 2, token).ConfigureAwait(false), 0);
+                            if (bonus == 3) bonusround = "has a bonus round!"; if (bonus == 4) bonusround = "will drop some fruit!"; if (bonus != 3 && bonus != 4) bonusround = "";
+                            Log($"Massive Mass Outbreak found for: {species} {bonusround} | Total Spawn Count: {spawncount} | Group ID: {groupcount}");
+                            if (Settings.SpeciesToHunt.Contains($"{species}"))
+                            {
+                                Log($"Massive Mass Outbreak for {species} has been found! Stopping routine execution!");
+                                Settings.SpeciesToHunt = species.ToString();
+                                Log($"Clearing out Species list and setting it to {species}");
+                                return;
+                            }
+                        };
+                        groupcount++;
+                    } while (species != Species.None);
+                    mapcount++;
+                }
+                Log($"No match found, entering map #{Settings.SpecialConditions.MapEntryClicks} to reset.");
+                if (attempts == 1)
+                {
+                    for (int d = 0; d < Settings.SpecialConditions.MapEntryClicks; d++)
+                        await Click(DRIGHT, 1_000, token).ConfigureAwait(false);
+                }
+                await Click(A, 1_000, token).ConfigureAwait(false);
+                await Click(A, 10_000, token).ConfigureAwait(false);
+                mapcount = 0;
+                // Loading screen
+                if (Settings.SpecialConditions.TeleportToHunt)
+                {
+                    await TeleportToCampZone(token).ConfigureAwait(false);
+                    await SetStick(LEFT, -30_000, 0, 1_000, token).ConfigureAwait(false); // reset face forward
+                    await ResetStick(token).ConfigureAwait(false); // reset
+                }
+                if (!Settings.SpecialConditions.TeleportToHunt)
+                {
+                    await SetStick(LEFT, -10_000, 0, 0_500, token).ConfigureAwait(false);
+                    await ResetStick(token).ConfigureAwait(false); // reset
+                    await SetStick(RIGHT, -5_000, 0, 0_500, token).ConfigureAwait(false);
+                    await SetStick(RIGHT, 0, 0, 0_500, token).ConfigureAwait(false);
+                    await Click(ZL, 1_000, token).ConfigureAwait(false);
+                    await Click(PLUS, 1_000, token).ConfigureAwait(false);
+                    await PressAndHold(B, Settings.SpecialConditions.HoldBMs, 0, token).ConfigureAwait(false);
+                }
+                await Click(A, 1_000, token).ConfigureAwait(false);
+                await Click(A, 10_000, token).ConfigureAwait(false);
+                attempts++;
+            }
         }
     }
 }

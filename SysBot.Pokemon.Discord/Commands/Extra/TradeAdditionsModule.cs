@@ -509,7 +509,7 @@ namespace SysBot.Pokemon.Discord
                     var location = Hub.Config.Arceus.ScanLocation;
                     string match = "Match found!";
                     string nomatch = "Unwanted match...";
-                    if (Hub.Config.Arceus.SpecialConditions.DistortionAlphaOnly && !ArceusBot.EmbedMon.Item1.IsAlpha)
+                    if (Hub.Config.Arceus.DistortionConditions.DistortionAlphaOnly && !ArceusBot.EmbedMon.Item1.IsAlpha)
                         nomatch = "Not an Alpha...";
                     var url = TradeExtensions<PA8>.PokeImg(ArceusBot.EmbedMon.Item1, ArceusBot.EmbedMon.Item1.CanGigantamax, SysCord<T>.Runner.Hub.Config.TradeCord.UseFullSizeImages);
                     string shinyurl = "https://img.favpng.com/6/14/25/computer-icons-icon-design-photography-royalty-free-png-favpng-mtjTHeWQe8FUAUB3RdJ3B2KJG.jpg";

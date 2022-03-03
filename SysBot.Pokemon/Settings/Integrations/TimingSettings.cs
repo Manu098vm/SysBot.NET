@@ -78,6 +78,6 @@ namespace SysBot.Pokemon
         public int KeypressTime { get; set; } = 200;
 
         [Category(Misc), Description("Enable this to decline incoming system updates.")]
-        public bool AvoidSystemUpdate { get; set; } = false;
+        public bool AvoidSystemUpdate { get; set; } = true;
     }
 }

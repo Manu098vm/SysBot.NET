@@ -9,6 +9,7 @@
         TimeSeedAdvancer,
         DistortionSpammer,
         DistortionReader,
+        MMOHunter,
     }
     public enum ArceusAutoFill
     {
