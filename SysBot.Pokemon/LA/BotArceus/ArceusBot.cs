@@ -1142,9 +1142,9 @@ namespace SysBot.Pokemon
                     pk.IsAlpha = true;
                 if (shiny == true)
                 {
-                    if (shinytype.Contains("Star"))
+                    if (shinytype.Contains("★"))
                         CommonEdits.SetShiny(pk, Shiny.AlwaysStar);
-                    if (shinytype.Contains("Square"))
+                    if (shinytype.Contains("■"))
                         CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
                 }
                 monlist.Add(pk);
@@ -1343,7 +1343,6 @@ namespace SysBot.Pokemon
                             Log($"Group Seed: {string.Format("0x{0:X}", group_seed)}");
                             var location = SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr - 0x24, 2, token).Result;
                             var loc = BitConverter.ToString(location);
-                            Log(loc);
                             switch (loc)
                             {
                                 case "B7-56": map = "Cobalt Coastlands"; break;
