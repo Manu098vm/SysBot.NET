@@ -1134,7 +1134,7 @@ namespace SysBot.Pokemon
             }
         }
 
-        public (List<PA8>, List<PA8>) ReadMMOSeed(Species species, int totalspawn, ulong group_seed, int bonus)
+        public (List<PA8>, List<PA8>) ReadMMOSeed(Species species, int totalspawn, ulong group_seed, int bonus, int bonuscount)
         {
             List<PA8> monlist = new();
             PA8 pk = new();
@@ -1236,7 +1236,7 @@ namespace SysBot.Pokemon
                 bonus_seed = mainrng.Next();
                 mainrng = new Xoroshiro128Plus(bonus_seed);
                 var bonusrng = new Xoroshiro128Plus(bonus_seed);
-                for (int r = 0; r < 4; r++)
+                for (int r = 0; r < bonuscount - 4; r++)
                 {
                     givs = 3;
                     var bonusspawner_seed = bonusrng.Next();
@@ -1430,6 +1430,7 @@ namespace SysBot.Pokemon
                             var spawncount = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr + 0x4C, 2, token).ConfigureAwait(false), 0);
                             var bonus = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr + 0x18, 2, token).ConfigureAwait(false), 0);
                             string bonusround = bonus != 0 ? " has a bonus round " : "";
+                            var bonuscount = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr + 0x60, 2, token).ConfigureAwait(false), 0);
                             var group_seed = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr + 0x44, 8, token).ConfigureAwait(false), 0);
                             var spawncoordx = BitConverter.ToUInt32(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr - 0x14, 4, token).ConfigureAwait(false), 0);
                             var spawncoordy = BitConverter.ToUInt32(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr - 0x10, 4, token).ConfigureAwait(false), 0);
@@ -1437,7 +1438,7 @@ namespace SysBot.Pokemon
                             Log($"Group Seed: {string.Format("0x{0:X}", group_seed)}");
                             Log($"Massive Mass Outbreak found for: {species}{bonusround}{map} | Total Spawn Count: {spawncount} | Group ID: {groupcount}");
                             bool huntedspecies = list.Contains($"{species}");
-                            (monlist, bonuslist) = ReadMMOSeed(species, spawncount, group_seed, bonus);
+                            (monlist, bonuslist) = ReadMMOSeed(species, spawncount, group_seed, bonus, bonuscount);
                             foreach (PA8 pk in monlist)
                             {
                                 count++;
