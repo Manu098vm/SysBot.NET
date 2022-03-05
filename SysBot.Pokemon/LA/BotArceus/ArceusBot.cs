@@ -11,7 +11,7 @@ using System.Text;
 
 namespace SysBot.Pokemon
 {
-    public sealed class ArceusBot : PokeRoutineExecutor8LA, IEncounterBot
+    public sealed class ArceusBot : PokeRoutineExecutor8LA, IEncounterBot, IArceusBot
     {
         private readonly PokeTradeHub<PA8> Hub;
         private readonly IDumper DumpSetting;
@@ -108,7 +108,9 @@ namespace SysBot.Pokemon
         }
 
         private bool IsWaiting;
+        private bool IsWaitingConfirmation;
         public void Acknowledge() => IsWaiting = false;
+        public void AcknowledgeConfirmation() => IsWaitingConfirmation = false;
 
         public async Task TimeTest(CancellationToken token)
         {
@@ -1024,6 +1026,23 @@ namespace SysBot.Pokemon
             await Task.Delay(Settings.SpecialConditions.WaitMsBetweenTeleports, token).ConfigureAwait(false);
         }
 
+        public async Task TeleportToMMOGroupZone(CancellationToken token)
+        {
+            ofs = await NewParsePointer(PlayerCoordPtrLA, token).ConfigureAwait(false);
+            uint coordX1 = uint.Parse(Settings.SpecialConditions.GroupZoneX, System.Globalization.NumberStyles.AllowHexSpecifier);
+            byte[] X1 = BitConverter.GetBytes(coordX1);
+            uint coordY1 = uint.Parse(Settings.SpecialConditions.GroupZoneY, System.Globalization.NumberStyles.AllowHexSpecifier);
+            byte[] Y1 = BitConverter.GetBytes(coordY1);
+            uint coordZ1 = uint.Parse(Settings.SpecialConditions.GroupZoneZ, System.Globalization.NumberStyles.AllowHexSpecifier);
+            byte[] Z1 = BitConverter.GetBytes(coordZ1);
+
+            await SwitchConnection.WriteBytesAbsoluteAsync(X1, ofs, token).ConfigureAwait(false);
+            await SwitchConnection.WriteBytesAbsoluteAsync(Y1, ofs + 0x4, token).ConfigureAwait(false);
+            await SwitchConnection.WriteBytesAbsoluteAsync(Z1, ofs + 0x8, token).ConfigureAwait(false);
+
+            await Task.Delay(Settings.SpecialConditions.WaitMsBetweenTeleports, token).ConfigureAwait(false);
+        }
+
         private async Task SpawnerScan(CancellationToken token)
         {
             await Task.Delay(0_500).ConfigureAwait(false);
@@ -1115,10 +1134,11 @@ namespace SysBot.Pokemon
             }
         }
 
-        public List<PA8> ReadMMOSeed(Species species, int totalspawn, ulong group_seed)
+        public (List<PA8>, List<PA8>) ReadMMOSeed(Species species, int totalspawn, ulong group_seed, int bonus)
         {
             List<PA8> monlist = new();
             PA8 pk = new();
+            List<PA8> bonuslist = new();
             var groupseed = group_seed;
             int givs = 0;
             var mainrng = new Xoroshiro128Plus(groupseed);
@@ -1183,7 +1203,67 @@ namespace SysBot.Pokemon
                 pk = new();
                 givs = 0;
             }
-            return monlist;
+            //Bonus round
+            if (bonus != 0)
+            {
+                var bonus_seed = respawnrng.Next() - 0x82A2B175229D6A5B & 0xFFFFFFFFFFFFFFFF;
+                //groupseed = groupseed - 0x82A2B175229D6A5B & 0xFFFFFFFFFFFFFFFF;
+                mainrng = new Xoroshiro128Plus(bonus_seed);
+                for (int i = 0; i < 4; i++)
+                {
+                    givs = 3;
+                    var spawner_seed = mainrng.Next();
+                    //mainrng.Next();
+                    var spawner_rng = new Xoroshiro128Plus(spawner_seed);
+                    spawner_rng.Next();
+                    var fixedseed = spawner_rng.Next();
+                    mainrng.Next();
+                    var (shiny, shinytype, encryption_constant, pid, ivs, ability, gender, nature, shinyseed) = GenerateFromSeed(fixedseed, Settings.ShinyRolls, givs);
+
+                    pk.Species = (int)species;
+                    pk.IV_HP = ivs[0]; pk.IV_ATK = ivs[1]; pk.IV_DEF = ivs[2]; pk.IV_SPA = ivs[3]; pk.IV_SPD = ivs[4]; pk.IV_SPE = ivs[5]; pk.Nature = (int)nature; pk.EncryptionConstant = (uint)encryption_constant; pk.PID = (uint)pid;
+
+                    if (shiny == true)
+                    {
+                        if (shinytype.Contains("★"))
+                            CommonEdits.SetShiny(pk, Shiny.AlwaysStar);
+                        if (shinytype.Contains("■"))
+                            CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
+                    }
+                    bonuslist.Add(pk);
+                    pk = new();
+                }
+                bonus_seed = mainrng.Next();
+                mainrng = new Xoroshiro128Plus(bonus_seed);
+                var bonusrng = new Xoroshiro128Plus(bonus_seed);
+                for (int r = 0; r < 4; r++)
+                {
+                    givs = 3;
+                    var bonusspawner_seed = bonusrng.Next();
+                    bonusrng.Next();
+                    bonusrng = new Xoroshiro128Plus(bonusrng.Next());
+                    var fixed_rng = new Xoroshiro128Plus(bonusspawner_seed);
+                    fixed_rng.Next();
+                    var fixed_seed = fixed_rng.Next();
+                    //bonusrng.Next();
+                    var (shiny, shinytype, encryption_constant, pid, ivs, ability, gender, nature, shinyseed) = GenerateFromSeed(fixed_seed, Settings.ShinyRolls, givs);
+
+                    pk.Species = (int)species;
+                    pk.IV_HP = ivs[0]; pk.IV_ATK = ivs[1]; pk.IV_DEF = ivs[2]; pk.IV_SPA = ivs[3]; pk.IV_SPD = ivs[4]; pk.IV_SPE = ivs[5]; pk.Nature = (int)nature; pk.EncryptionConstant = (uint)encryption_constant; pk.PID = (uint)pid;
+
+                    if (shiny == true)
+                    {
+                        if (shinytype.Contains("★"))
+                            CommonEdits.SetShiny(pk, Shiny.AlwaysStar);
+                        if (shinytype.Contains("■"))
+                            CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
+                    }
+                    bonuslist.Add(pk);
+                    pk = new();
+
+                }
+            }
+            return (monlist, bonuslist);
         }
 
         public (PA8 match, bool shiny, string log) ReadDistortionSeed(int id, ulong group_seed, int encslotsum)
@@ -1298,12 +1378,12 @@ namespace SysBot.Pokemon
         public async Task MMOHunter(CancellationToken token)
         {
             List<PA8> monlist = new();
+            List<PA8> bonuslist = new();
             List<PA8> shinylist = new();
             List<string> loglist = new();
             int attempts = 1;
-            var mapcount = 0;
-            string map = string.Empty;
-            string bonusround = string.Empty;
+            int mapcount = 0;
+            int count = 0;
             string[] list = Settings.SpeciesToHunt.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
             Species species;
             await GetDefaultCoords(token);
@@ -1333,38 +1413,66 @@ namespace SysBot.Pokemon
                     {
                         var ofs = new long[] { 0x42BA6B0, 0x2B0, 0x58, 0x18, 0x1D4 + (groupcount * 0x90) + (mapcount * 0xB80) };
                         var outbreakptr = SwitchConnection.PointerAll(ofs, token).Result;
+                        var location = SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr - 0x24, 2, token).Result;
+                        var map = BitConverter.ToString(location);
+                        switch (map)
+                        {
+                            case "B7-56": map = " in the Cobalt Coastlands"; break;
+                            case "04-55": map = " in the Crimson Mirelands"; break;
+                            case "51-53": map = " in the Alabaster Icelands"; break;
+                            case "9E-51": map = " in the Coronet Highlands"; break;
+                            case "1D-5A": map = " in the Obsidian Fieldlands"; break;
+                            case "00-00": map = ""; break;
+                        }
                         species = (Species)BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr, 2, token).ConfigureAwait(false), 0);
                         if (species != Species.None)
                         {
                             var spawncount = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr + 0x4C, 2, token).ConfigureAwait(false), 0);
-                            var bonus = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr - 0x4, 2, token).ConfigureAwait(false), 0);
-                            if (bonus == 3) bonusround = "has a bonus round "; if (bonus == 4) bonusround = "will drop some fruit "; if (bonus != 3 && bonus != 4) bonusround = "";
+                            var bonus = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr + 0x18, 2, token).ConfigureAwait(false), 0);
+                            string bonusround = bonus != 0 ? " has a bonus round " : "";
                             var group_seed = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr + 0x44, 8, token).ConfigureAwait(false), 0);
+                            var spawncoordx = BitConverter.ToUInt32(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr - 0x14, 4, token).ConfigureAwait(false), 0);
+                            var spawncoordy = BitConverter.ToUInt32(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr - 0x10, 4, token).ConfigureAwait(false), 0);
+                            var spawncoordz = BitConverter.ToUInt32(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr - 0x0C, 4, token).ConfigureAwait(false), 0);
                             Log($"Group Seed: {string.Format("0x{0:X}", group_seed)}");
-                            var location = SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr - 0x24, 2, token).Result;
-                            var loc = BitConverter.ToString(location);
-                            switch (loc)
-                            {
-                                case "B7-56": map = "Cobalt Coastlands"; break;
-                                case "04-55": map = "Crimson Mirelands"; break;
-                                case "51-53": map = "Alabaster Icelands"; break;
-                                case "9E-51": map = "Obsidian Fieldlands"; break;
-                                case "1D-5A": map = "Coronet Highlands"; break;
-                            }
-                            Log($"Massive Mass Outbreak found for: {species} {bonusround}in the {map} | Total Spawn Count: {spawncount} | Group ID: {groupcount}");
+                            Log($"Massive Mass Outbreak found for: {species}{bonusround}{map} | Total Spawn Count: {spawncount} | Group ID: {groupcount}");
                             bool huntedspecies = list.Contains($"{species}");
-                            monlist = ReadMMOSeed(species, spawncount, group_seed);
+                            (monlist, bonuslist) = ReadMMOSeed(species, spawncount, group_seed, bonus);
                             foreach (PA8 pk in monlist)
                             {
+                                count++;
                                 var print = Hub.Config.StopConditions.GetAlphaPrintName(pk);
-                                loglist.Add(print);
+                                loglist.Add($"\nRegular Spawn: #{count}" + $"\nSpawner Coords: X - {spawncoordx:X8} Y - {spawncoordy:X8} Z - {spawncoordz:X8}" + print);
 
                                 if (pk.IsShiny)
+                                {
                                     shinylist.Add(pk);
+                                    Log($"Autofilling SpawnZone XYZ for last shiny found.");
+                                    Settings.SpecialConditions.GroupZoneZ = $"{spawncoordx:X8}";
+                                    Settings.SpecialConditions.GroupZoneY = $"{spawncoordy:X8}";
+                                    Settings.SpecialConditions.GroupZoneZ = $"{spawncoordz:X8}";
+                                }
                             }
+                            count = 0;
+                            foreach (PA8 pk in bonuslist)
+                            {
+                                count++;
+                                var print = Hub.Config.StopConditions.GetAlphaPrintName(pk);
+                                loglist.Add($"\nBonus Spawn: #{count}" + $"\nSpawner Coords: X - {spawncoordx:X8} Y - {spawncoordy:X8} Z - {spawncoordz:X8}" + print);
+
+                                if (pk.IsShiny)
+                                {
+                                    shinylist.Add(pk);
+                                    Log($"Autofilling SpawnZone XYZ for last shiny found.");
+                                    Settings.SpecialConditions.GroupZoneX = $"{spawncoordx:X8}";
+                                    Settings.SpecialConditions.GroupZoneY = $"{spawncoordy:X8}";
+                                    Settings.SpecialConditions.GroupZoneZ = $"{spawncoordz:X8}";
+                                }
+                            }
+                            count = 0;
                             if (huntedspecies && !Settings.SpecialConditions.HuntAndScan)
                             {
-                                Log($"Massive Mass Outbreak for {species} has been found! Stopping routine execution!");
+                                Log($"Massive Mass Outbreak for {species} has been found{map}! Stopping routine execution!");
                                 Settings.SpeciesToHunt = species.ToString();
                                 Log($"Clearing out Species list and setting it to {species}");
                                 return;
@@ -1401,8 +1509,21 @@ namespace SysBot.Pokemon
                         if (EmbedMon.Item2 == true)
                         {
                             IsWaiting = true;
+                            IsWaitingConfirmation = true;
+                            Log("Enter the desired map, type $continue and I'll teleport you to the location of the last shiny found!");
                             while (IsWaiting)
+                            {
                                 await Task.Delay(1_000, token).ConfigureAwait(false);
+
+                                if (!IsWaitingConfirmation)
+                                {
+                                    await TeleportToMMOGroupZone(token).ConfigureAwait(false);
+                                    await Click(HOME, 1_000, token).ConfigureAwait(false);
+                                    Log("Teleported to the spawner group with a shiny!");
+                                    while (IsWaiting)
+                                        await Task.Delay(1_000, token).ConfigureAwait(false);
+                                }
+                            }
 
                         }
                     }

@@ -24,5 +24,22 @@ namespace SysBot.Pokemon.Discord
 
             await ReplyAsync("Done.").ConfigureAwait(false);
         }
+        [Command("continue")]
+        [Summary("Makes all bots that are currently waiting for a go-ahead continue operation.")]
+        [RequireSudo]
+        public async Task ContinueAsync(string name = "")
+        {
+            var bots = SysCord<T>.Runner.Bots.Select(z => z.Bot);
+            foreach (var b in bots)
+            {
+                if (b is not IArceusBot x)
+                    continue;
+                if (!b.Connection.Name.Contains(name) && !b.Connection.Label.Contains(name))
+                    continue;
+                x.AcknowledgeConfirmation();
+            }
+
+            await ReplyAsync("Continuing.").ConfigureAwait(false);
+        }
     }
 }

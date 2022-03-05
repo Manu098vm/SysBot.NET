@@ -17,4 +17,9 @@ namespace SysBot.Pokemon
     {
         public void Acknowledge();
     }
+
+    public interface IArceusBot : ICountBot
+    {
+        public void AcknowledgeConfirmation();
+    }
 }

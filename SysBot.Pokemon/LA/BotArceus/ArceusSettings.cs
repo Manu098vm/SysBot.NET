@@ -28,11 +28,11 @@ namespace SysBot.Pokemon
         [Category(Arceus), Description("If you have a desired IV spread enter it here, else leave empty. (EX: 31/31/31/31/31/0 for a 5IV 0SPE spread.")]
         public int[] SearchForIVs { get; set; } = { };
 
-        [Category(Arceus), Description("Distortion Conditions"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
-        public DistortionFiltersCategory DistortionConditions { get; set; } = new();
-
         [Category(Arceus), Description("Special Conditions"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
         public SpecialFiltersCategory SpecialConditions { get; set; } = new();
+
+        [Category(Arceus), Description("Distortion Conditions"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
+        public DistortionFiltersCategory DistortionConditions { get; set; } = new();
 
         [Category(Arceus), Description("AlphaScan Conditions"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
         public AlphaScanFiltersCategory AlphaScanConditions { get; set; } = new();
@@ -54,9 +54,6 @@ namespace SysBot.Pokemon
 
             [Category(Arceus), Description("When enabled, the bot will only stop on Alpha Shinies in Distortions.")]
             public bool DistortionAlphaOnly { get; set; } = false;
-
-            [Category(Arceus), Description("When enabled, the bot will wait until a distortion is forming once a shiny match has been found.")]
-            public bool WaitForDistortion { get; set; } = false;
         }
 
         [Category(Arceus), TypeConverter(typeof(CategoryConverter<AlphaScanFiltersCategory>))]
@@ -123,6 +120,15 @@ namespace SysBot.Pokemon
 
             [Category(Arceus), Description("Enter your player coordinates for Spawn Location Z Coordinate. Should be 8 characters long.")]
             public string SpawnZoneZ { get; set; } = "";
+
+            [Category(Arceus), Description("Autofills your player coordinates for a shiny MMO Spawn Location X Coordinate. Should be 8 characters long.")]
+            public string GroupZoneX { get; set; } = "";
+
+            [Category(Arceus), Description("Autofills your player coordinates for a shiny MMO Spawn Location Y Coordinate. Should be 8 characters long.")]
+            public string GroupZoneY { get; set; } = "";
+
+            [Category(Arceus), Description("Autofills your player coordinates for a shiny MMO Spawn Location Z Coordinate. Should be 8 characters long.")]
+            public string GroupZoneZ { get; set; } = "";
         }
 
         public class CategoryConverter<T> : TypeConverter
