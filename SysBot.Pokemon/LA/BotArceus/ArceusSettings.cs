@@ -55,6 +55,8 @@ namespace SysBot.Pokemon
             [Category(Arceus), Description("When enabled, the bot will only stop on Alpha Shinies in Distortions.")]
             public bool DistortionAlphaOnly { get; set; } = false;
 
+            [Category(Arceus), Description("When enabled, the bot will wait until a distortion is forming once a shiny match has been found.")]
+            public bool WaitForDistortion { get; set; } = false;
         }
 
         [Category(Arceus), TypeConverter(typeof(CategoryConverter<AlphaScanFiltersCategory>))]
