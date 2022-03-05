@@ -495,11 +495,11 @@ namespace SysBot.Pokemon.Discord
             await ReplyAsync(!ArceusBot.EmbedsInitialized ? "Arceus Embed task started!" : "Arceus Embed task stopped!").ConfigureAwait(false);
             if (ArceusBot.EmbedsInitialized)
                 ArceusBot.EmbedSource.Cancel();
-            else _ = Task.Run(async () => await ArceusEmbedLoop(channels));
+            else _ = Task.Run(async () => await ArceusEmbedLoop(channels, ArceusBot.EmbedSource.Token));
             ArceusBot.EmbedsInitialized ^= true;
         }
 
-        private async Task ArceusEmbedLoop(List<ulong> channels)
+        private async Task ArceusEmbedLoop(List<ulong> channels, CancellationToken token)
         {
             var ping = SysCord<T>.Runner.Hub.Config.StopConditions.MatchFoundEchoMention;
             while (!ArceusBot.EmbedSource.IsCancellationRequested)
@@ -509,7 +509,7 @@ namespace SysBot.Pokemon.Discord
                     var location = Hub.Config.Arceus.ScanLocation;
                     string match = "Match found!";
                     string nomatch = "Unwanted match...";
-                    if (Hub.Config.Arceus.DistortionConditions.DistortionAlphaOnly && !ArceusBot.EmbedMon.Item1.IsAlpha)
+                    if (Hub.Config.Arceus.DistortionConditions.DistortionAlphaOnly && !ArceusBot.EmbedMon.Item1.IsAlpha && Hub.Config.Arceus.BotType == ArceusMode.DistortionReader)
                         nomatch = "Not an Alpha...";
                     var url = TradeExtensions<PA8>.PokeImg(ArceusBot.EmbedMon.Item1, ArceusBot.EmbedMon.Item1.CanGigantamax, SysCord<T>.Runner.Hub.Config.TradeCord.UseFullSizeImages);
                     string shinyurl = "https://img.favpng.com/6/14/25/computer-icons-icon-design-photography-royalty-free-png-favpng-mtjTHeWQe8FUAUB3RdJ3B2KJG.jpg";
@@ -521,8 +521,11 @@ namespace SysBot.Pokemon.Discord
                     var footer = new EmbedFooterBuilder { Text = $"Found in {location}." };
                     if (Hub.Config.Arceus.BotType == ArceusMode.DistortionReader)
                         footer = new EmbedFooterBuilder { Text = $"Found in a space-time distortion." };
+                    if (Hub.Config.Arceus.BotType == ArceusMode.MMOHunter)
+                        footer = new EmbedFooterBuilder { Text = $"Found in a massive mass outbreak." };
                     var embed = new EmbedBuilder
                     { Color = Color.Gold, ThumbnailUrl = url }.WithAuthor(author).WithDescription(stats).WithFooter(footer);
+
                     foreach (var guild in Context.Client.Guilds)
                     {
                         foreach (var channel in channels)
@@ -531,6 +534,7 @@ namespace SysBot.Pokemon.Discord
                             {
                                 if (ArceusBot.EmbedMon.Item2 == true)
                                     await guild.GetTextChannel(channel).SendMessageAsync(ping, embed: embed.Build()).ConfigureAwait(false);
+
                                 if (ArceusBot.EmbedMon.Item2 == false)
                                     await guild.GetTextChannel(channel).SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
                             }
