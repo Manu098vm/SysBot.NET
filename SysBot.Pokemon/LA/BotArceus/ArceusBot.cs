@@ -94,9 +94,7 @@ namespace SysBot.Pokemon
                 };
                 await task.ConfigureAwait(false);
             }
-#pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception e)
-#pragma warning restore CA1031 // Do not catch general exception types
             {
                 Log(e.Message);
             }
@@ -231,7 +229,6 @@ namespace SysBot.Pokemon
         {
             List<PA8> matchlist = new();
             List<string> loglist = new();
-            string result = string.Empty;
             Log($"Starting Distortion Scanner for {Settings.ScanLocation}...");
             var mode = Settings.ScanLocation;
             int count = 0;
@@ -300,6 +297,7 @@ namespace SysBot.Pokemon
                                 }
                             }
                             Log(loglist.Last());
+
                             EmbedMon = (match, true);
                             await Click(HOME, 1_000, token).ConfigureAwait(false);
                             IsWaiting = true;
@@ -308,6 +306,7 @@ namespace SysBot.Pokemon
 
                             if (!IsWaiting)
                                 await Click(HOME, 1_000, token).ConfigureAwait(false);
+
                         }
                     }
                     matchlist.Clear();
@@ -321,6 +320,7 @@ namespace SysBot.Pokemon
                 await CloseGame(Hub.Config, token).ConfigureAwait(false);
                 await StartGame(Hub.Config, token).ConfigureAwait(false);
             }
+
         }
 
         public string GetDistortionSpeciesLocation(int id)
@@ -588,9 +588,9 @@ namespace SysBot.Pokemon
             while (!token.IsCancellationRequested)
             {
                 string alpha = string.Empty;
-                for (int adv = 0; adv < Settings.Advances; adv++)
+                for (int adv = 0; adv < Settings.AlphaScanConditions.Advances; adv++)
                 {
-                    Log($"Advancing {Settings.Advances - adv} times...");
+                    Log($"Advancing {Settings.AlphaScanConditions.Advances - adv} times...");
                     await Click(B, 1_000, token).ConfigureAwait(false);// Random B incase of button miss
                     await Click(A, 1_000, token).ConfigureAwait(false);
                     await TimeTest(token).ConfigureAwait(false);
@@ -682,7 +682,7 @@ namespace SysBot.Pokemon
                             alpha = string.Empty;
                         }
                     }
-                    if (adv == Settings.Advances)
+                    if (adv == Settings.AlphaScanConditions.Advances)
                         return;
                     if (heal == 3)
                     {
@@ -741,9 +741,9 @@ namespace SysBot.Pokemon
             {
                 await GetDefaultCampCoords(token).ConfigureAwait(false);
                 string alpha = string.Empty;
-                for (int adv = 0; adv < Settings.Advances; adv++)
+                for (int adv = 0; adv < Settings.AlphaScanConditions.Advances; adv++)
                 {
-                    Log($"Advancing {Settings.Advances - adv} times...");
+                    Log($"Advancing {Settings.AlphaScanConditions.Advances - adv} times...");
                     await Click(B, 1_000, token).ConfigureAwait(false);// Random B incase of button miss
                     await Click(A, 1_000, token).ConfigureAwait(false);
                     var menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(MenuOffset, 2, token).ConfigureAwait(false), 0);
@@ -1118,6 +1118,78 @@ namespace SysBot.Pokemon
             }
         }
 
+        public List<PA8> ReadMMOSeed(Species species, int totalspawn, ulong group_seed)
+        {
+            List<PA8> monlist = new();
+            PA8 pk = new();
+            var groupseed = group_seed;
+            int givs = 0;
+            var mainrng = new Xoroshiro128Plus(groupseed);
+            for (int i = 0; i < 4; i++)
+            {
+                var spawner_seed = mainrng.Next();
+                //mainrng.Next();
+                var spawner_rng = new Xoroshiro128Plus(spawner_seed);
+                var slot = spawner_rng.Next() / Math.Pow(2, 64) * 101;
+                var alpha = slot >= 100;
+                if (alpha)
+                    givs = 3;
+                spawner_rng.Next();
+                var fixedseed = spawner_rng.Next();
+                mainrng.Next();
+                var (shiny, shinytype, encryption_constant, pid, ivs, ability, gender, nature, shinyseed) = GenerateFromSeed(fixedseed, Settings.ShinyRolls, givs);
+
+                pk.Species = (int)species;
+                pk.IV_HP = ivs[0]; pk.IV_ATK = ivs[1]; pk.IV_DEF = ivs[2]; pk.IV_SPA = ivs[3]; pk.IV_SPD = ivs[4]; pk.IV_SPE = ivs[5]; pk.Nature = (int)nature; pk.EncryptionConstant = (uint)encryption_constant; pk.PID = (uint)pid;
+                if (alpha)
+                    pk.IsAlpha = true;
+                if (shinytype.Contains("Star"))
+                    CommonEdits.SetShiny(pk, Shiny.AlwaysStar);
+                if (shinytype.Contains("Square"))
+                    CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
+                monlist.Add(pk);
+                pk = new();
+                givs = 0;
+                // logs += $"\nInit Spawn: {i}\n{shinytype}\nEC: {encryption_constant:X8} | PID: {pid:X8}\nIVs: {ivs[0]}/{ivs[1]}/{ivs[2]}/{ivs[3]}/{ivs[4]}/{ivs[5]}\nNature: {nature}";
+                // if (shiny)
+                // isshiny = true;
+            }
+            groupseed = mainrng.Next();
+            mainrng = new Xoroshiro128Plus(groupseed);
+            var respawnrng = new Xoroshiro128Plus(groupseed);
+            for (int r = 0; r < totalspawn - 4; r++)
+            {
+                var spawner_seed = respawnrng.Next();
+                respawnrng.Next();
+                respawnrng = new Xoroshiro128Plus(respawnrng.Next());
+                var fixed_rng = new Xoroshiro128Plus(spawner_seed);
+                var slot = fixed_rng.Next() / Math.Pow(2, 64) * 101;
+                var alpha = slot >= 100;
+                if (alpha)
+                    givs = 3;
+                fixed_rng.Next();
+                var fixed_seed = fixed_rng.Next();
+
+                var (shiny, shinytype, encryption_constant, pid, ivs, ability, gender, nature, shinyseed) = GenerateFromSeed(fixed_seed, Settings.ShinyRolls, givs);
+
+                pk.Species = (int)species;
+                pk.IV_HP = ivs[0]; pk.IV_ATK = ivs[1]; pk.IV_DEF = ivs[2]; pk.IV_SPA = ivs[3]; pk.IV_SPD = ivs[4]; pk.IV_SPE = ivs[5]; pk.Nature = (int)nature; pk.EncryptionConstant = (uint)encryption_constant; pk.PID = (uint)pid;
+                if (alpha)
+                    pk.IsAlpha = true;
+                if (shinytype.Contains("Star"))
+                    CommonEdits.SetShiny(pk, Shiny.AlwaysStar);
+                if (shinytype.Contains("Square"))
+                    CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
+                monlist.Add(pk);
+                pk = new();
+                givs = 0;
+                //logs += $"\nRespawn: {r}\n{shinytype}\nEC: {encryption_constant:X8} | PID: {pid:X8}\nIVs: {ivs[0]}/{ivs[1]}/{ivs[2]}/{ivs[3]}/{ivs[4]}/{ivs[5]}\nNature: {nature}";
+                //  if (shiny)
+                //   isshiny = true;
+            }
+            return monlist;
+        }
+
         public (PA8 match, bool shiny, string log) ReadDistortionSeed(int id, ulong group_seed, int encslotsum)
         {
             string logs = string.Empty;
@@ -1229,9 +1301,13 @@ namespace SysBot.Pokemon
 
         public async Task MMOHunter(CancellationToken token)
         {
+            List<PA8> monlist = new();
+            List<PA8> shinylist = new();
+            List<string> loglist = new();
             int attempts = 1;
             var mapcount = 0;
             string bonusround = string.Empty;
+            string[] list = Settings.SpeciesToHunt.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
             Species species;
             await GetDefaultCoords(token);
             Log("Reading map for active outbreaks...");
@@ -1252,9 +1328,9 @@ namespace SysBot.Pokemon
                 }
                 for (int i = 0; i < 1; i++)
                     await Click(A, 1_000, token).ConfigureAwait(false);
-                for (int i = 0; i < 4; i++)
+                for (int i = 0; i < 5; i++)
                 {
-                    Log($"Checking map #{mapcount}...");
+                    Log($"Checking map #{mapcount + 1}...");
                     var groupcount = 0;
                     do
                     {
@@ -1266,8 +1342,20 @@ namespace SysBot.Pokemon
                             var spawncount = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr + 0x4C, 2, token).ConfigureAwait(false), 0);
                             var bonus = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr - 0x4, 2, token).ConfigureAwait(false), 0);
                             if (bonus == 3) bonusround = "has a bonus round!"; if (bonus == 4) bonusround = "will drop some fruit!"; if (bonus != 3 && bonus != 4) bonusround = "";
+                            var group_seed = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr + 0x44, 8, token).ConfigureAwait(false), 0);
+                            Log($"Group Seed: {string.Format("0x{0:X}", group_seed)}");
                             Log($"Massive Mass Outbreak found for: {species} {bonusround} | Total Spawn Count: {spawncount} | Group ID: {groupcount}");
-                            if (Settings.SpeciesToHunt.Contains($"{species}"))
+                            bool huntedspecies = list.Contains($"{species}");
+                            monlist = ReadMMOSeed(species, spawncount, group_seed);
+                            foreach (PA8 pk in monlist)
+                            {
+                                var print = Hub.Config.StopConditions.GetAlphaPrintName(pk);
+                                loglist.Add(print);
+
+                                if (pk.IsShiny)
+                                    shinylist.Add(pk);
+                            }
+                            if (huntedspecies && !Settings.SpecialConditions.HuntAndScan)
                             {
                                 Log($"Massive Mass Outbreak for {species} has been found! Stopping routine execution!");
                                 Settings.SpeciesToHunt = species.ToString();
@@ -1275,16 +1363,50 @@ namespace SysBot.Pokemon
                                 return;
                             }
                         };
+                        string report = string.Join("\n", loglist);
+                        Log(report);
+                        loglist.Clear();
+                        loglist = new();
                         groupcount++;
+                        monlist.Clear();
+                        monlist = new();
                     } while (species != Species.None);
+                    foreach (PA8 pk in shinylist)
+                    {
+                        bool huntedspecies = list.Contains($"{(Species)pk.Species}");
+                        if (list.Length != 0)
+                        {
+                            if (!huntedspecies)
+                                EmbedMon = (pk, false);
+                        }
+                        if (list.Length == 0 || huntedspecies)
+                        {
+                            if (Settings.SpecialConditions.MMOAlphaShinyOnly && !pk.IsAlpha)
+                                EmbedMon = (pk, false);
+                            else
+                                EmbedMon = (pk, true);
+                        }
+
+                        await Task.Delay(2_000, token).ConfigureAwait(false);
+                        var print = Hub.Config.StopConditions.GetAlphaPrintName(pk);
+                        Log(print);
+
+                        if (EmbedMon.Item2 == true)
+                        {
+                            IsWaiting = true;
+                            while (IsWaiting)
+                                await Task.Delay(1_000, token).ConfigureAwait(false);
+
+                        }
+                    }
+                    if (!IsWaiting)
+                    {
+                        shinylist.Clear();
+                        shinylist = new();
+                    }
                     mapcount++;
                 }
-                Log($"No match found, entering map #{Settings.SpecialConditions.MapEntryClicks} to reset.");
-                if (attempts == 1)
-                {
-                    for (int d = 0; d < Settings.SpecialConditions.MapEntryClicks; d++)
-                        await Click(DRIGHT, 1_000, token).ConfigureAwait(false);
-                }
+                Log($"No match found, resetting.");
                 await Click(A, 1_000, token).ConfigureAwait(false);
                 await Click(A, 10_000, token).ConfigureAwait(false);
                 mapcount = 0;

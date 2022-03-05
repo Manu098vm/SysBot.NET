@@ -13,14 +13,11 @@ namespace SysBot.Pokemon
         [Category(Arceus), Description("The method by which the bot will scan overworld Pokémon.")]
         public ArceusMode BotType { get; set; } = ArceusMode.PlayerCoordScan;
 
-        [Category(Arceus), Description("Select the Location to Autofill Coords upon running PlayerCoordScan.")]
-        public ArceusAutoFill AutoFillCoords { get; set; } = ArceusAutoFill.CampZone;
-
         [Category(Arceus), Description("Select the Location of the map you are hunting for.")]
         public ArceupMap ScanLocation { get; set; } = ArceupMap.ObsidianFieldlands;
 
-        [Category(Arceus), Description("Enter number of advances to do.")]
-        public int Advances { get; set; } = 1;
+        [Category(Arceus), Description("Select the Location to Autofill Coords upon running PlayerCoordScan.")]
+        public ArceusAutoFill AutoFillCoords { get; set; } = ArceusAutoFill.CampZone;
 
         [Category(Arceus), Description("Enter number of shiny rolls.")]
         public int ShinyRolls { get; set; } = 2;
@@ -47,8 +44,7 @@ namespace SysBot.Pokemon
         public string ArceusEmbedChannels { get; set; } = string.Empty;
 
 
-        [Category(Arceus)]
-        [TypeConverter(typeof(DistortionFiltersCategoryConverter))]
+        [Category(Arceus), TypeConverter(typeof(CategoryConverter<DistortionFiltersCategory>))]
         public class DistortionFiltersCategory
         {
             public override string ToString() => "Distortion Conditions";
@@ -58,16 +54,19 @@ namespace SysBot.Pokemon
 
             [Category(Arceus), Description("When enabled, the bot will only stop on Alpha Shinies in Distortions.")]
             public bool DistortionAlphaOnly { get; set; } = false;
+
         }
 
-        [Category(Arceus)]
-        [TypeConverter(typeof(AlphaScanFiltersCategoryConverter))]
+        [Category(Arceus), TypeConverter(typeof(CategoryConverter<AlphaScanFiltersCategory>))]
         public class AlphaScanFiltersCategory
         {
             public override string ToString() => "AlphaScan Conditions";
 
             [Category(Arceus), Description("Enter number of advances to search.")]
             public int MaxAdvancesToSearch { get; set; } = 50;
+
+            [Category(Arceus), Description("Enter number of advances to do.")]
+            public int Advances { get; set; } = 1;
 
             [Category(Arceus), Description("Toggle true if you just entered the map and didn't spawn the Pokémon")]
             public bool InItSpawn { get; set; } = true;
@@ -85,20 +84,22 @@ namespace SysBot.Pokemon
             public bool StopOnMatch { get; set; } = false;
         }
 
-        [Category(Arceus)]
-        [TypeConverter(typeof(SpecialFiltersCategoryConverter))]
+        [Category(Arceus), TypeConverter(typeof(CategoryConverter<SpecialFiltersCategory>))]
         public class SpecialFiltersCategory
         {
             public override string ToString() => "Special Conditions";
 
-            [Category(Arceus), Description("When enabled, the bot will teleport instead of walk/run for Outbreak Hunter.")]
+            [Category(Arceus), Description("When enabled, the bot will teleport instead of walk/run for Outbreak/MMO Hunter.")]
             public bool TeleportToHunt { get; set; } = false;
+
+            [Category(Arceus), Description("When enabled, the bot will search for our desired outbreak/mmo species, then read the seed for a shiny.")]
+            public bool HuntAndScan { get; set; } = false;
+
+            [Category(Arceus), Description("When enabled, the bot will search for only an alpha shiny from a MMO.")]
+            public bool MMOAlphaShinyOnly { get; set; } = false;
 
             [Category(Arceus), Description("Wait time between teleporting and scanning.")]
             public int WaitMsBetweenTeleports { get; set; } = 1000;
-
-            [Category(Arceus), Description("Enter number of times to click D-RIGHT to enter a map to reset your outbreaks/mmos. Make sure your ScanLocation matches what the clicks will land on if you are using Teleport.")]
-            public int MapEntryClicks { get; set; } = 0;
 
             [Category(Arceus), Description("Duration in Ms for how long to hold B when returning to town for Outbreak Hunter.")]
             public int HoldBMs { get; set; } = 5000;
@@ -122,31 +123,13 @@ namespace SysBot.Pokemon
             public string SpawnZoneZ { get; set; } = "";
         }
 
-        public class SpecialFiltersCategoryConverter : TypeConverter
+        public class CategoryConverter<T> : TypeConverter
         {
-            public override bool GetPropertiesSupported(ITypeDescriptorContext context) => true;
+            public override bool GetPropertiesSupported(ITypeDescriptorContext? context) => true;
 
-            public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes) => TypeDescriptor.GetProperties(typeof(SpecialFiltersCategory));
+            public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[]? attributes) => TypeDescriptor.GetProperties(typeof(T));
 
-            public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType) => destinationType != typeof(string) && base.CanConvertTo(context, destinationType);
-        }
-
-        public class AlphaScanFiltersCategoryConverter : TypeConverter
-        {
-            public override bool GetPropertiesSupported(ITypeDescriptorContext context) => true;
-
-            public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes) => TypeDescriptor.GetProperties(typeof(AlphaScanFiltersCategory));
-
-            public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType) => destinationType != typeof(string) && base.CanConvertTo(context, destinationType);
-        }
-
-        public class DistortionFiltersCategoryConverter : TypeConverter
-        {
-            public override bool GetPropertiesSupported(ITypeDescriptorContext context) => true;
-
-            public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes) => TypeDescriptor.GetProperties(typeof(DistortionFiltersCategory));
-
-            public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType) => destinationType != typeof(string) && base.CanConvertTo(context, destinationType);
+            public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType) => destinationType != typeof(string) && base.CanConvertTo(context, destinationType);
         }
     }
 }

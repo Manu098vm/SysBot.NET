@@ -3,13 +3,13 @@
     public enum ArceusMode
     {
         OutbreakHunter,
+        MMOHunter,
         SeedAdvancer,
-        StaticAlphaScan,
-        PlayerCoordScan,
         TimeSeedAdvancer,
+        StaticAlphaScan,
         DistortionSpammer,
         DistortionReader,
-        MMOHunter,
+        PlayerCoordScan,
     }
     public enum ArceusAutoFill
     {
