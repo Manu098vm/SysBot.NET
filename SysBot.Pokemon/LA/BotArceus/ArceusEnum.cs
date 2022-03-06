@@ -2,8 +2,7 @@
 {
     public enum ArceusMode
     {
-        OutbreakHunter,
-        MMOHunter,
+        MassiveOutbreakHunter,
         SeedAdvancer,
         TimeSeedAdvancer,
         StaticAlphaScan,
@@ -24,5 +23,12 @@
         CobaltCoastlands = 2,
         CoronetHighlands = 3,
         AlabasterIcelands = 4,
+    }
+
+    public enum OutbreakScanType
+    {
+        Both = 0,
+        OutbreakOnly = 1,
+        MMOOnly = 2,
     }
 }

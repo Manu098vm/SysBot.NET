@@ -31,6 +31,9 @@ namespace SysBot.Pokemon
         [Category(Arceus), Description("Special Conditions"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
         public SpecialFiltersCategory SpecialConditions { get; set; } = new();
 
+        [Category(Arceus), Description("All Outbreak Conditions"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
+        public AllOutbreakFiltersCategory AllOutbreakConditions { get; set; } = new();
+
         [Category(Arceus), Description("Distortion Conditions"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
         public DistortionFiltersCategory DistortionConditions { get; set; } = new();
 
@@ -43,6 +46,35 @@ namespace SysBot.Pokemon
         [Category(Arceus), Description("Enter Discord channel ID(s) to post Arceus embeds to. Feature has to be initialized via \"$arceusEmbed\" after every client restart.")]
         public string ArceusEmbedChannels { get; set; } = string.Empty;
 
+        [Category(Arceus), TypeConverter(typeof(CategoryConverter<AllOutbreakFiltersCategory>))]
+        public class AllOutbreakFiltersCategory
+        {
+            public override string ToString() => "All Outbreak Conditions";
+
+            [Category(Arceus), Description("Select the type of scan to perform for the Outbreak/MMO Hunter.")]
+            public OutbreakScanType TypeOfScan { get; set; } = OutbreakScanType.Both;
+
+            [Category(Arceus), Description("When enabled, the bot will teleport instead of walk/run for Outbreak/MMO Hunter.")]
+            public bool TeleportToHunt { get; set; } = false;
+
+            [Category(Arceus), Description("When enabled, the bot will search for our desired outbreak/mmo species, then read the seed for a shiny.")]
+            public bool HuntAndScan { get; set; } = false;
+
+            [Category(Arceus), Description("When enabled, the bot will search for only an alpha shiny from a MMO.")]
+            public bool MMOAlphaShinyOnly { get; set; } = false;
+
+            [Category(Arceus), Description("Duration in Ms for how long to hold B when returning to town for Outbreak Hunter.")]
+            public int HoldBMs { get; set; } = 5000;
+
+            [Category(Arceus), Description("Autofills your player coordinates for a shiny MMO Spawn Location X Coordinate. Should be 8 characters long.")]
+            public string GroupZoneX { get; set; } = "";
+
+            [Category(Arceus), Description("Autofills your player coordinates for a shiny MMO Spawn Location Y Coordinate. Should be 8 characters long.")]
+            public string GroupZoneY { get; set; } = "";
+
+            [Category(Arceus), Description("Autofills your player coordinates for a shiny MMO Spawn Location Z Coordinate. Should be 8 characters long.")]
+            public string GroupZoneZ { get; set; } = "";
+        }
 
         [Category(Arceus), TypeConverter(typeof(CategoryConverter<DistortionFiltersCategory>))]
         public class DistortionFiltersCategory
@@ -88,20 +120,8 @@ namespace SysBot.Pokemon
         {
             public override string ToString() => "Special Conditions";
 
-            [Category(Arceus), Description("When enabled, the bot will teleport instead of walk/run for Outbreak/MMO Hunter.")]
-            public bool TeleportToHunt { get; set; } = false;
-
-            [Category(Arceus), Description("When enabled, the bot will search for our desired outbreak/mmo species, then read the seed for a shiny.")]
-            public bool HuntAndScan { get; set; } = false;
-
-            [Category(Arceus), Description("When enabled, the bot will search for only an alpha shiny from a MMO.")]
-            public bool MMOAlphaShinyOnly { get; set; } = false;
-
             [Category(Arceus), Description("Wait time between teleporting and scanning.")]
             public int WaitMsBetweenTeleports { get; set; } = 1000;
-
-            [Category(Arceus), Description("Duration in Ms for how long to hold B when returning to town for Outbreak Hunter.")]
-            public int HoldBMs { get; set; } = 5000;
 
             [Category(Arceus), Description("Enter your player coordinates for Camp Location X Coordinate. Should be 8 characters long.")]
             public string CampZoneX { get; set; } = "";
@@ -120,15 +140,6 @@ namespace SysBot.Pokemon
 
             [Category(Arceus), Description("Enter your player coordinates for Spawn Location Z Coordinate. Should be 8 characters long.")]
             public string SpawnZoneZ { get; set; } = "";
-
-            [Category(Arceus), Description("Autofills your player coordinates for a shiny MMO Spawn Location X Coordinate. Should be 8 characters long.")]
-            public string GroupZoneX { get; set; } = "";
-
-            [Category(Arceus), Description("Autofills your player coordinates for a shiny MMO Spawn Location Y Coordinate. Should be 8 characters long.")]
-            public string GroupZoneY { get; set; } = "";
-
-            [Category(Arceus), Description("Autofills your player coordinates for a shiny MMO Spawn Location Z Coordinate. Should be 8 characters long.")]
-            public string GroupZoneZ { get; set; } = "";
         }
 
         public class CategoryConverter<T> : TypeConverter
