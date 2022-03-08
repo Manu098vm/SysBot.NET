@@ -1383,7 +1383,7 @@ namespace SysBot.Pokemon
                             var print = Hub.Config.StopConditions.GetAlphaPrintName(pk);
                             loglist.Add($"\nRegular Spawn: #{count}" + $"\nSpawner Coords: X - {spawncoordx:X8} Y - {spawncoordy:X8} Z - {spawncoordz:X8}" + print);
 
-                            if (pk.IsShiny)
+                            if (pk.IsShiny && pk.Species != (int)Species.None && pk.Species != 4526)
                             {
                                 shinylist.Add(pk);
                                 Log($"Autofilling SpawnZone XYZ for last shiny found.");
@@ -1399,7 +1399,7 @@ namespace SysBot.Pokemon
                             var print = Hub.Config.StopConditions.GetAlphaPrintName(pk);
                             loglist.Add($"\nBonus Spawn: #{count}" + $"\nSpawner Coords: X - {spawncoordx:X8} Y - {spawncoordy:X8} Z - {spawncoordz:X8}" + print);
 
-                            if (pk.IsShiny)
+                            if (pk.IsShiny && pk.Species != (int)Species.None && pk.Species != 4526)
                             {
                                 shinylist.Add(pk);
                                 Log($"Autofilling SpawnZone XYZ for last shiny found.");
@@ -1426,6 +1426,8 @@ namespace SysBot.Pokemon
                     groupcount++;
                     monlist.Clear();
                     monlist = new();
+                    bonuslist.Clear();
+                    bonuslist = new();
                 } while (species != Species.None);
                 foreach (PA8 pk in shinylist)
                 {
@@ -1451,7 +1453,7 @@ namespace SysBot.Pokemon
                     {
                         IsWaiting = true;
                         IsWaitingConfirmation = true;
-                        Log("Enter the desired map, type $continue and I'll teleport you to the location of the last shiny found!");
+                        Log($"Enter the desired map, type $continue and I'll teleport you to the location of {(Species)pk.Species}!");
                         while (IsWaiting)
                         {
                             await Task.Delay(1_000, token).ConfigureAwait(false);
@@ -1460,7 +1462,7 @@ namespace SysBot.Pokemon
                             {
                                 await TeleportToMMOGroupZone(token).ConfigureAwait(false);
                                 await Click(HOME, 1_000, token).ConfigureAwait(false);
-                                Log("Teleported to the spawner group with a shiny!");
+                                Log($"Teleported to the location of {(Species)pk.Species}! Pressing HOME incase you weren't ready in game.");
                                 while (IsWaiting)
                                     await Task.Delay(1_000, token).ConfigureAwait(false);
                             }
@@ -1472,6 +1474,7 @@ namespace SysBot.Pokemon
                 {
                     shinylist.Clear();
                     shinylist = new();
+                    EmbedMon = (null, false);
                 }
                 mapcount++;
             }
