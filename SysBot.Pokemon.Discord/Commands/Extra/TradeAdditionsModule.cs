@@ -520,7 +520,9 @@ namespace SysBot.Pokemon.Discord
                         stats = $"{(ArceusBot.EmbedMon.Item1.ShinyXor == 0 ? "■ - " : ArceusBot.EmbedMon.Item1.ShinyXor <= 16 ? "★ - " : "")}{SpeciesName.GetSpeciesNameGeneration(ArceusBot.EmbedMon.Item1.Species, 2, 8)}{TradeExtensions<T>.FormOutput(ArceusBot.EmbedMon.Item1.Species, ArceusBot.EmbedMon.Item1.Form, out _)}\nIVs: {ArceusBot.EmbedMon.Item1.IV_HP}/{ArceusBot.EmbedMon.Item1.IV_ATK}/{ArceusBot.EmbedMon.Item1.IV_DEF}/{ArceusBot.EmbedMon.Item1.IV_SPA}/{ArceusBot.EmbedMon.Item1.IV_SPD}/{ArceusBot.EmbedMon.Item1.IV_SPE}";
                     if (!Hub.Config.Arceus.OutbreakConditions.HuntAndScan)
                     {
-                        stats = $"Hunting for: {SpeciesName.GetSpeciesNameGeneration(ArceusBot.EmbedMon.Item1.Species, 2, 8)}{TradeExtensions<T>.FormOutput(ArceusBot.EmbedMon.Item1.Species, ArceusBot.EmbedMon.Item1.Form, out _)}";
+                        stats = $"Hunting for: {Hub.Config.Arceus.SpeciesToHunt}";
+                        if (ArceusBot.EmbedMon.Item1.IsAlpha)
+                            stats = $"Hunting for: {Hub.Config.Arceus.SpeciesToHunt} but this is nice too!";
                         shinyurl = "https://previews.123rf.com/images/fokaspokas/fokaspokas1809/fokaspokas180901587/109973633-loupe-search-or-magnifying-linear-icon-thin-outline-black-glass-icon-with-soft-shadow-on-transparent.jpg";
                     }
                     var author = new EmbedAuthorBuilder { IconUrl = shinyurl, Name = ArceusBot.EmbedMon.Item2 ? match : nomatch };
