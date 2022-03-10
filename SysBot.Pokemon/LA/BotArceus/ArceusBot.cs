@@ -1510,6 +1510,8 @@ namespace SysBot.Pokemon
                     {
                         if (!huntedspecies)
                             EmbedMon = (pk, false);
+                        if (!huntedspecies && Settings.OutbreakConditions.MMOAlphaShinyOnly && pk.IsAlpha)
+                            EmbedMon = (pk, true);
                     }
                     if (list.Length == 0 || huntedspecies)
                     {
@@ -1518,11 +1520,9 @@ namespace SysBot.Pokemon
                         else
                             EmbedMon = (pk, true);
                     }
-
                     await Task.Delay(2_000, token).ConfigureAwait(false);
                     var print = Hub.Config.StopConditions.GetAlphaPrintName(pk);
                     Log(print);
-
                     if (EmbedMon.Item2 == true)
                     {
                         IsWaiting = true;
@@ -1531,7 +1531,6 @@ namespace SysBot.Pokemon
                         while (IsWaiting)
                         {
                             await Task.Delay(1_000, token).ConfigureAwait(false);
-
                             if (!IsWaitingConfirmation)
                             {
                                 await TeleportToMMOGroupZone(token).ConfigureAwait(false);
@@ -1541,7 +1540,6 @@ namespace SysBot.Pokemon
                                     await Task.Delay(1_000, token).ConfigureAwait(false);
                             }
                         }
-
                     }
                 }
                 if (!IsWaiting)
