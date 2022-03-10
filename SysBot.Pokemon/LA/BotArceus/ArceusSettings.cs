@@ -31,8 +31,8 @@ namespace SysBot.Pokemon
         [Category(Arceus), Description("Special Conditions"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
         public SpecialFiltersCategory SpecialConditions { get; set; } = new();
 
-        [Category(Arceus), Description("All Outbreak Conditions"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
-        public AllOutbreakFiltersCategory AllOutbreakConditions { get; set; } = new();
+        [Category(Arceus), Description("Outbreak Conditions"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
+        public OutbreakFiltersCategory OutbreakConditions { get; set; } = new();
 
         [Category(Arceus), Description("Distortion Conditions"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
         public DistortionFiltersCategory DistortionConditions { get; set; } = new();
@@ -46,10 +46,10 @@ namespace SysBot.Pokemon
         [Category(Arceus), Description("Enter Discord channel ID(s) to post Arceus embeds to. Feature has to be initialized via \"$arceusEmbed\" after every client restart.")]
         public string ArceusEmbedChannels { get; set; } = string.Empty;
 
-        [Category(Arceus), TypeConverter(typeof(CategoryConverter<AllOutbreakFiltersCategory>))]
-        public class AllOutbreakFiltersCategory
+        [Category(Arceus), TypeConverter(typeof(CategoryConverter<OutbreakFiltersCategory>))]
+        public class OutbreakFiltersCategory
         {
-            public override string ToString() => "All Outbreak Conditions";
+            public override string ToString() => "Outbreak Conditions";
 
             [Category(Arceus), Description("Select the type of scan to perform for the Outbreak/MMO Hunter.")]
             public OutbreakScanType TypeOfScan { get; set; } = OutbreakScanType.Both;
