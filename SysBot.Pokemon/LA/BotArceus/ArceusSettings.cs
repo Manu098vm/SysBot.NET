@@ -63,6 +63,9 @@ namespace SysBot.Pokemon
             [Category(Arceus), Description("When enabled, the bot will search for only an alpha shiny from a MMO.")]
             public bool MMOAlphaShinyOnly { get; set; } = false;
 
+            [Category(Arceus), Description("Enter number of shiny rolls for regular outbreaks if you are scanning Both types.")]
+            public int ShinyRollsForRegularOutbreaks { get; set; } = 26;
+
             [Category(Arceus), Description("Duration in Ms for how long to hold B when returning to town for Outbreak Hunter.")]
             public int HoldBMs { get; set; } = 5000;
 

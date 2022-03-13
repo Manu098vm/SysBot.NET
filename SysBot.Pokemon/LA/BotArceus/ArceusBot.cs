@@ -1199,6 +1199,75 @@ namespace SysBot.Pokemon
             return (monlist, bonuslist);
         }
 
+        public List<PA8> ReadOutbreakSeed(Species species, int totalspawn, ulong groupseed)
+        {
+            List<PA8> monlist = new();
+            PA8 pk = new();
+            int givs = 0;
+            var mainrng = new Xoroshiro128Plus(groupseed);
+            for (int i = 0; i < 4; i++)
+            {
+                var spawner_seed = mainrng.Next();
+                mainrng.Next();
+                var spawner_rng = new Xoroshiro128Plus(spawner_seed);
+                var slot = spawner_rng.Next() / Math.Pow(2, 64) * 101;
+                var alpha = slot >= 100;
+                var fixedseed = spawner_rng.Next();
+                //mainrng.Next();
+                if (alpha)
+                    givs = 3;
+                var (shiny, shinytype, encryption_constant, pid, ivs, ability, gender, nature, shinyseed) = GenerateFromSeed(fixedseed, Settings.OutbreakConditions.ShinyRollsForRegularOutbreaks, givs);
+                pk.Species = (int)species;
+                pk.IV_HP = ivs[0]; pk.IV_ATK = ivs[1]; pk.IV_DEF = ivs[2]; pk.IV_SPA = ivs[3]; pk.IV_SPD = ivs[4]; pk.IV_SPE = ivs[5]; pk.Nature = (int)nature; pk.EncryptionConstant = (uint)encryption_constant; pk.PID = (uint)pid;
+                if (alpha)
+                    pk.IsAlpha = true;
+                if (shiny == true)
+                {
+                    if (shinytype.Contains("★"))
+                        CommonEdits.SetShiny(pk, Shiny.AlwaysStar);
+                    if (shinytype.Contains("■"))
+                        CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
+                }
+                monlist.Add(pk);
+                pk = new();
+                givs = 0;
+            }
+            groupseed = mainrng.Next();
+            mainrng = new Xoroshiro128Plus(groupseed);
+            var respawnrng = new Xoroshiro128Plus(groupseed);
+            for (int r = 0; r < totalspawn - 4; r++)
+            {
+                var spawner_seed = respawnrng.Next();
+                respawnrng.Next();
+                respawnrng = new Xoroshiro128Plus(respawnrng.Next());
+                var fixed_rng = new Xoroshiro128Plus(spawner_seed);
+                var slot = fixed_rng.Next() / Math.Pow(2, 64) * 101;
+                var alpha = slot >= 100;
+                //fixed_rng.Next();
+                var fixed_seed = fixed_rng.Next();
+                if (alpha)
+                    givs = 3;
+                var (shiny, shinytype, encryption_constant, pid, ivs, ability, gender, nature, shinyseed) = GenerateFromSeed(fixed_seed, Settings.OutbreakConditions.ShinyRollsForRegularOutbreaks, givs);
+
+                pk.Species = (int)species;
+                pk.IV_HP = ivs[0]; pk.IV_ATK = ivs[1]; pk.IV_DEF = ivs[2]; pk.IV_SPA = ivs[3]; pk.IV_SPD = ivs[4]; pk.IV_SPE = ivs[5]; pk.Nature = (int)nature; pk.EncryptionConstant = (uint)encryption_constant; pk.PID = (uint)pid;
+                if (alpha)
+                    pk.IsAlpha = true;
+                if (shiny == true)
+                {
+                    if (shinytype.Contains("★"))
+                        CommonEdits.SetShiny(pk, Shiny.AlwaysStar);
+                    if (shinytype.Contains("■"))
+                        CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
+                }
+                monlist.Add(pk);
+                pk = new();
+                givs = 0;
+            }
+
+            return monlist;
+        }
+
         public (PA8 match, bool shiny, string log) ReadDistortionSeed(int id, ulong group_seed, int encslotsum)
         {
             string logs = string.Empty;
@@ -1317,8 +1386,19 @@ namespace SysBot.Pokemon
                 Species outbreakspecies = (Species)BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr, 2, token).ConfigureAwait(false), 0);
                 if (outbreakspecies != Species.None)
                 {
+                    var outbreakseed = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr + 0x38, 8, token).ConfigureAwait(false), 0);
                     var spawncount = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr + 0x40, 2, token).ConfigureAwait(false), 0);
                     Log($"Outbreak found for: {outbreakspecies} | Total Spawn Count: {spawncount}.");
+                    monlist = ReadOutbreakSeed(outbreakspecies, spawncount, outbreakseed);
+                    foreach (PA8 pk in monlist)
+                    {
+                        count++;
+                        var print = Hub.Config.StopConditions.GetAlphaPrintName(pk);
+                        loglist.Add($"\nOutbreak Spawn: #{count}" + print);
+
+                        if (pk.IsShiny)
+                            shinylist.Add(pk);
+                    }
                     if (Settings.SpeciesToHunt.Contains($"{outbreakspecies}"))
                     {
                         Log($"Outbreak for {outbreakspecies} has been found! Stopping routine execution!");
@@ -1329,6 +1409,10 @@ namespace SysBot.Pokemon
                             break;
                     }
                 };
+                string report = string.Join("\n", loglist);
+                Log(report);
+                loglist.Clear();
+                loglist = new();
             }
         }
 
@@ -1428,6 +1512,7 @@ namespace SysBot.Pokemon
                             case "51-53": map = " in the Alabaster Icelands"; break;
                             case "9E-51": map = " in the Coronet Highlands"; break;
                             case "1D-5A": map = " in the Obsidian Fieldlands"; break;
+                            case "45-26": map = " in an outbreak"; break;
                             case "00-00": map = ""; break;
                         }
                     }
@@ -1533,6 +1618,9 @@ namespace SysBot.Pokemon
                             await Task.Delay(1_000, token).ConfigureAwait(false);
                             if (!IsWaitingConfirmation)
                             {
+                                await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + InvincibleTrainer1, token).ConfigureAwait(false);
+                                await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + InvincibleTrainer2, token).ConfigureAwait(false);
+
                                 await TeleportToMMOGroupZone(token).ConfigureAwait(false);
                                 await Click(HOME, 1_000, token).ConfigureAwait(false);
                                 Log($"Teleported to the location of {(Species)pk.Species}! Pressing HOME incase you weren't ready in game.");
