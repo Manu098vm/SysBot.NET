@@ -1523,7 +1523,7 @@ namespace SysBot.Pokemon
                         var encslot = BitConverter.ToUInt64(info.Slice(36, 8), 0);
                         var bonusencslot = BitConverter.ToUInt64(info.Slice(44, 8), 0);
                         var bonus = BitConverter.ToUInt16(info.Slice(24, 2), 0);
-                        string bonusround = bonus != 0 ? " has a bonus round" : "";
+                        string bonusround = bonus != 0 ? " with a bonus round" : "";
                         var bonuscount = BitConverter.ToUInt16(info.Slice(96, 2), 0);
                         var group_seed = BitConverter.ToUInt64(info.Slice(68, 8), 0);
                         var spawncoordx = BitConverter.ToUInt32(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr - 0x14, 4, token).ConfigureAwait(false), 0);
