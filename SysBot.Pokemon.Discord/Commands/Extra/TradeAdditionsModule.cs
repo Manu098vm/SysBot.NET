@@ -529,9 +529,9 @@ namespace SysBot.Pokemon.Discord
                     var footer = new EmbedFooterBuilder { Text = $"Found in {location}." };
                     if (Hub.Config.Arceus.BotType == ArceusMode.DistortionReader)
                         footer = new EmbedFooterBuilder { Text = $"Found in a space-time distortion." };
-                    if (Hub.Config.Arceus.OutbreakConditions.TypeOfScan == OutbreakScanType.Both || Hub.Config.Arceus.OutbreakConditions.TypeOfScan == OutbreakScanType.MMOOnly)
+                    if (Hub.Config.Arceus.BotType == ArceusMode.MassiveOutbreakHunter && Hub.Config.Arceus.OutbreakConditions.TypeOfScan == OutbreakScanType.Both || Hub.Config.Arceus.BotType == ArceusMode.MassiveOutbreakHunter && Hub.Config.Arceus.OutbreakConditions.TypeOfScan == OutbreakScanType.MMOOnly)
                         footer = new EmbedFooterBuilder { Text = $"Found in a massive mass outbreak." };
-                    if (Hub.Config.Arceus.OutbreakConditions.TypeOfScan == OutbreakScanType.OutbreakOnly)
+                    if (Hub.Config.Arceus.BotType == ArceusMode.MassiveOutbreakHunter && Hub.Config.Arceus.OutbreakConditions.TypeOfScan == OutbreakScanType.OutbreakOnly)
                         footer = new EmbedFooterBuilder { Text = $"Found in a mass outbreak." };
 
                     var embed = new EmbedBuilder

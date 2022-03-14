@@ -1093,7 +1093,7 @@ namespace SysBot.Pokemon
             }
         }
 
-        public (List<PA8>, List<PA8>) ReadMMOSeed(int totalspawn, ulong group_seed, int bonus, int bonuscount, ulong encslot, ulong bonusencslot)
+        public (List<PA8>, List<PA8>) ReadMMOSeed(int totalspawn, ulong group_seed, int bonuscount, ulong encslot, ulong bonusencslot)
         {
             List<PA8> monlist = new();
             PA8 pk = new();
@@ -1147,7 +1147,7 @@ namespace SysBot.Pokemon
                 monlist.Add(pk);
             }
             //Bonus round
-            if (bonus != 0)
+            if (bonusum != 0)
             {
                 var bonus_seed = respawnrng.Next() - 0x82A2B175229D6A5B & 0xFFFFFFFFFFFFFFFF;
                 mainrng = new Xoroshiro128Plus(bonus_seed);
@@ -1452,7 +1452,6 @@ namespace SysBot.Pokemon
         public (PA8, int) GrabMMOSpecies(double encounter_slot, ulong encslot)
         {
             PA8 pk = new();
-            var encmin = 0;
             var encmax = 0;
             int form = 0;
             Species name = Species.None;
@@ -1462,11 +1461,10 @@ namespace SysBot.Pokemon
             {
                 if (keyValuePair.Key == "0x" + $"{encslot:X16}")
                 {
-                    int i = 0;
                     foreach (var keyValue in keyValuePair.Value)
                     {
                         encmax += keyValue.Slot;
-                        if (encmin <= encounter_slot && encounter_slot < encmax)
+                        if (encounter_slot < encmax)
                         {
                             name = keyValue.Name;
                             form = keyValue.Form;
@@ -1474,9 +1472,6 @@ namespace SysBot.Pokemon
                             isalpha = keyValue.Alpha;
                             break;
                         }
-                        if (i == 0)
-                            encmin = keyValue.Slot;
-                        i++;
                     }
                     pk.Species = (int)name;
                     pk.Form = form;
@@ -1522,17 +1517,15 @@ namespace SysBot.Pokemon
                         var spawncount = BitConverter.ToUInt16(info.Slice(76, 2), 0);
                         var encslot = BitConverter.ToUInt64(info.Slice(36, 8), 0);
                         var bonusencslot = BitConverter.ToUInt64(info.Slice(44, 8), 0);
-                        var bonus = BitConverter.ToUInt16(info.Slice(24, 2), 0);
-                        string bonusround = bonus != 0 ? " with a bonus round" : "";
                         var bonuscount = BitConverter.ToUInt16(info.Slice(96, 2), 0);
                         var group_seed = BitConverter.ToUInt64(info.Slice(68, 8), 0);
                         var spawncoordx = BitConverter.ToUInt32(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr - 0x14, 4, token).ConfigureAwait(false), 0);
                         var spawncoordy = BitConverter.ToUInt32(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr - 0x10, 4, token).ConfigureAwait(false), 0);
                         var spawncoordz = BitConverter.ToUInt32(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr - 0x0C, 4, token).ConfigureAwait(false), 0);
                         Log($"Group Seed: {string.Format("0x{0:X}", group_seed)}");
-                        Log($"Massive Mass Outbreak found for: {species}{bonusround}{map} | Total Spawn Count: {spawncount} | Group ID: {groupcount}");
+                        Log($"Massive Mass Outbreak found for: {species}{map} | Total Spawn Count: {spawncount} | Group ID: {groupcount}");
                         bool huntedspecies = list.Contains($"{species}");
-                        (monlist, bonuslist) = ReadMMOSeed(spawncount, group_seed, bonus, bonuscount, encslot, bonusencslot);
+                        (monlist, bonuslist) = ReadMMOSeed(spawncount, group_seed, bonuscount, encslot, bonusencslot);
                         foreach (PA8 pk in monlist)
                         {
                             count++;
