@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using static SysBot.Pokemon.PokeDataOffsetsLA;
 using System.Net;
 using Newtonsoft.Json;
+using SysBot.Base;
 
 namespace SysBot.Pokemon
 {
@@ -45,7 +46,6 @@ namespace SysBot.Pokemon
         string z = string.Empty;
         List<PA8> monlist = new();
         List<PA8> bonuslist = new();
-        List<PA8> shinylist = new();
         List<string> loglist = new();
 
         public static readonly string[] ObsidianTitle =
@@ -1026,9 +1026,8 @@ namespace SysBot.Pokemon
             uint coordZ1 = uint.Parse(Settings.SpecialConditions.CampZoneZ, System.Globalization.NumberStyles.AllowHexSpecifier);
             byte[] Z1 = BitConverter.GetBytes(coordZ1);
 
+            X1 = X1.Concat(Y1).Concat(Z1).ToArray();
             await SwitchConnection.WriteBytesAbsoluteAsync(X1, ofs, token).ConfigureAwait(false);
-            await SwitchConnection.WriteBytesAbsoluteAsync(Y1, ofs + 0x4, token).ConfigureAwait(false);
-            await SwitchConnection.WriteBytesAbsoluteAsync(Z1, ofs + 0x8, token).ConfigureAwait(false);
 
             await Task.Delay(Settings.SpecialConditions.WaitMsBetweenTeleports, token).ConfigureAwait(false);
         }
@@ -1043,9 +1042,8 @@ namespace SysBot.Pokemon
             uint coordZ1 = uint.Parse(Settings.SpecialConditions.SpawnZoneZ, System.Globalization.NumberStyles.AllowHexSpecifier);
             byte[] Z1 = BitConverter.GetBytes(coordZ1);
 
+            X1 = X1.Concat(Y1).Concat(Z1).ToArray();
             await SwitchConnection.WriteBytesAbsoluteAsync(X1, ofs, token).ConfigureAwait(false);
-            await SwitchConnection.WriteBytesAbsoluteAsync(Y1, ofs + 0x4, token).ConfigureAwait(false);
-            await SwitchConnection.WriteBytesAbsoluteAsync(Z1, ofs + 0x8, token).ConfigureAwait(false);
 
             await Task.Delay(Settings.SpecialConditions.WaitMsBetweenTeleports, token).ConfigureAwait(false);
         }
@@ -1060,9 +1058,8 @@ namespace SysBot.Pokemon
             uint coordZ1 = uint.Parse(Settings.OutbreakConditions.GroupZoneZ, System.Globalization.NumberStyles.AllowHexSpecifier);
             byte[] Z1 = BitConverter.GetBytes(coordZ1);
 
+            X1 = X1.Concat(Y1).Concat(Z1).ToArray();
             await SwitchConnection.WriteBytesAbsoluteAsync(X1, ofs, token).ConfigureAwait(false);
-            await SwitchConnection.WriteBytesAbsoluteAsync(Y1, ofs + 0x4, token).ConfigureAwait(false);
-            await SwitchConnection.WriteBytesAbsoluteAsync(Z1, ofs + 0x8, token).ConfigureAwait(false);
 
             await Task.Delay(Settings.SpecialConditions.WaitMsBetweenTeleports, token).ConfigureAwait(false);
         }
@@ -1397,30 +1394,22 @@ namespace SysBot.Pokemon
                         loglist.Add($"\nOutbreak Spawn: #{count}" + print);
 
                         if (pk.IsShiny)
-                            shinylist.Add(pk);
+                            await CheckEmbed(token, pk, "").ConfigureAwait(false);
                     }
-                    if (Settings.SpeciesToHunt.Contains($"{outbreakspecies}"))
-                    {
-                        Log($"Outbreak for {outbreakspecies} has been found! Stopping routine execution!");
-                        IsWaiting = true;
-                        while (IsWaiting)
-                            await Task.Delay(1_000, token).ConfigureAwait(false);
-                        if (!IsWaiting)
-                            break;
-                    }
+                    count = 0;
                 };
-                string report = string.Join("\n", loglist);
-                Log(report);
-                loglist.Clear();
-                loglist = new();
             }
+            string report = string.Join("\n", loglist);
+            Log(report);
+            loglist.Clear();
+            loglist = new();
+            monlist.Clear();
+            monlist = new();
         }
 
         public (int, int) GrabEncounterSum(ulong encslot, ulong bonusslot)
         {
-            int encmin;
             int encmax = 0;
-            int bonusmin;
             int bonusmax = 0;
             foreach (var keyValuePair in mmoslots)
             {
@@ -1430,9 +1419,6 @@ namespace SysBot.Pokemon
                     foreach (var keyValue in keyValuePair.Value)
                     {
                         encmax += keyValue.Slot;
-                        if (i == 0)
-                            encmin = keyValue.Slot;
-                        i++;
                     }
                 }
                 if (keyValuePair.Key == "0x" + $"{bonusslot:X16}")
@@ -1441,9 +1427,6 @@ namespace SysBot.Pokemon
                     foreach (var keyValue in keyValuePair.Value)
                     {
                         bonusmax += keyValue.Slot;
-                        if (i == 0)
-                            bonusmin = keyValue.Slot;
-                        i++;
                     }
                 }
             }
@@ -1481,11 +1464,72 @@ namespace SysBot.Pokemon
             }
             return (pk, ivs);
         }
+
+        public async Task CheckEmbed(CancellationToken token, PA8 pk, string map)
+        {
+            string[] list = Settings.SpeciesToHunt.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            bool huntedspecies = list.Contains($"{(Species)pk.Species}");
+            if (string.IsNullOrEmpty(map) && Hub.Config.Arceus.OutbreakConditions.TypeOfScan == OutbreakScanType.OutbreakOnly)
+            {
+                ResultsUtil.Log($"Outbreak for {(Species)pk.Species} has been found! Stopping routine execution!", "");
+                IsWaiting = true;
+                while (IsWaiting)
+                    await Task.Delay(1_000, token).ConfigureAwait(false);
+            }
+            if (huntedspecies && !Settings.OutbreakConditions.HuntAndScan)
+            {
+                EmbedMon = (pk, true);
+                ResultsUtil.Log($"{Hub.Config.StopConditions.MatchFoundEchoMention} Massive Mass Outbreak for {(Species)pk.Species} has been found{map}! Waiting for next command...", "");
+                IsWaiting = true;
+                while (IsWaiting)
+                    await Task.Delay(1_000, token).ConfigureAwait(false);
+                if (!IsWaiting)
+                    return;
+            }
+            if (list.Length != 0)
+            {
+                if (!huntedspecies)
+                    EmbedMon = (pk, false);
+                if (!huntedspecies && Settings.OutbreakConditions.MMOAlphaShinyOnly && pk.IsAlpha)
+                    EmbedMon = (pk, true);
+            }
+            if (list.Length == 0 || huntedspecies)
+            {
+                if (Settings.OutbreakConditions.MMOAlphaShinyOnly && !pk.IsAlpha)
+                    EmbedMon = (pk, false);
+                else
+                    EmbedMon = (pk, true);
+            }
+            await Task.Delay(2_000, token).ConfigureAwait(false);
+            var print = Hub.Config.StopConditions.GetAlphaPrintName(pk);
+            ResultsUtil.Log(print, "");
+            if (EmbedMon.Item2 == true)
+            {
+                IsWaiting = true;
+                IsWaitingConfirmation = true;
+                ResultsUtil.Log($"Enter the desired map, type $continue and I'll teleport you to the location of {(Species)pk.Species}{map}!", "");
+                while (IsWaiting)
+                {
+                    await Task.Delay(1_000, token).ConfigureAwait(false);
+                    if (!IsWaitingConfirmation)
+                    {
+                        await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + InvincibleTrainer1, token).ConfigureAwait(false);
+                        await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + InvincibleTrainer2, token).ConfigureAwait(false);
+
+                        await TeleportToMMOGroupZone(token).ConfigureAwait(false);
+                        await Click(HOME, 1_000, token).ConfigureAwait(false);
+                        ResultsUtil.Log($"Teleported to the location of {(Species)pk.Species}! Pressing HOME incase you weren't ready in game.", "");
+                        while (IsWaiting)
+                            await Task.Delay(1_000, token).ConfigureAwait(false);
+                    }
+                }
+            }
+        }
+
         public async Task PerformMMOScan(CancellationToken token)
         {
             byte[] info;
             string map = string.Empty;
-            string[] list = Settings.SpeciesToHunt.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
             Species species;
             for (int i = 0; i < 5; i++)
             {
@@ -1524,7 +1568,6 @@ namespace SysBot.Pokemon
                         var spawncoordz = BitConverter.ToUInt32(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr - 0x0C, 4, token).ConfigureAwait(false), 0);
                         Log($"Group Seed: {string.Format("0x{0:X}", group_seed)}");
                         Log($"Massive Mass Outbreak found for: {species}{map} | Total Spawn Count: {spawncount} | Group ID: {groupcount}");
-                        bool huntedspecies = list.Contains($"{species}");
                         (monlist, bonuslist) = ReadMMOSeed(spawncount, group_seed, bonuscount, encslot, bonusencslot);
                         foreach (PA8 pk in monlist)
                         {
@@ -1534,11 +1577,11 @@ namespace SysBot.Pokemon
 
                             if (pk.IsShiny && pk.Species != (int)Species.None)
                             {
-                                shinylist.Add(pk);
                                 Log($"Autofilling SpawnZone XYZ for last shiny found.");
                                 Settings.OutbreakConditions.GroupZoneX = $"{spawncoordx:X8}";
                                 Settings.OutbreakConditions.GroupZoneY = $"{spawncoordy:X8}";
                                 Settings.OutbreakConditions.GroupZoneZ = $"{spawncoordz:X8}";
+                                await CheckEmbed(token, pk, map).ConfigureAwait(false);
                             }
                         }
                         count = 0;
@@ -1550,26 +1593,14 @@ namespace SysBot.Pokemon
 
                             if (pk.IsShiny && pk.Species != (int)Species.None)
                             {
-                                shinylist.Add(pk);
                                 Log($"Autofilling SpawnZone XYZ for last shiny found.");
                                 Settings.OutbreakConditions.GroupZoneX = $"{spawncoordx:X8}";
                                 Settings.OutbreakConditions.GroupZoneY = $"{spawncoordy:X8}";
                                 Settings.OutbreakConditions.GroupZoneZ = $"{spawncoordz:X8}";
+                                await CheckEmbed(token, pk, map).ConfigureAwait(false);
                             }
                         }
                         count = 0;
-                        if (huntedspecies && !Settings.OutbreakConditions.HuntAndScan)
-                        {
-                            PA8 pk = new();
-                            pk.Species = (int)species;
-                            EmbedMon = (pk, true);
-                            Log($"{Hub.Config.StopConditions.MatchFoundEchoMention} Massive Mass Outbreak for {species} has been found{map}! Waiting for next command...");
-                            IsWaiting = true;
-                            while (IsWaiting)
-                                await Task.Delay(1_000, token).ConfigureAwait(false);
-                            if (!IsWaiting)
-                                break;
-                        }
                     };
                     string report = string.Join("\n", loglist);
                     Log(report);
@@ -1581,54 +1612,8 @@ namespace SysBot.Pokemon
                     bonuslist.Clear();
                     bonuslist = new();
                 } while (species != Species.None);
-                foreach (PA8 pk in shinylist)
-                {
-                    bool huntedspecies = list.Contains($"{(Species)pk.Species}");
-                    if (list.Length != 0)
-                    {
-                        if (!huntedspecies)
-                            EmbedMon = (pk, false);
-                        if (!huntedspecies && Settings.OutbreakConditions.MMOAlphaShinyOnly && pk.IsAlpha)
-                            EmbedMon = (pk, true);
-                    }
-                    if (list.Length == 0 || huntedspecies)
-                    {
-                        if (Settings.OutbreakConditions.MMOAlphaShinyOnly && !pk.IsAlpha)
-                            EmbedMon = (pk, false);
-                        else
-                            EmbedMon = (pk, true);
-                    }
-                    await Task.Delay(2_000, token).ConfigureAwait(false);
-                    var print = Hub.Config.StopConditions.GetAlphaPrintName(pk);
-                    Log(print);
-                    if (EmbedMon.Item2 == true)
-                    {
-                        IsWaiting = true;
-                        IsWaitingConfirmation = true;
-                        Log($"Enter the desired map, type $continue and I'll teleport you to the location of {(Species)pk.Species}{map}!");
-                        while (IsWaiting)
-                        {
-                            await Task.Delay(1_000, token).ConfigureAwait(false);
-                            if (!IsWaitingConfirmation)
-                            {
-                                await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + InvincibleTrainer1, token).ConfigureAwait(false);
-                                await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + InvincibleTrainer2, token).ConfigureAwait(false);
-
-                                await TeleportToMMOGroupZone(token).ConfigureAwait(false);
-                                await Click(HOME, 1_000, token).ConfigureAwait(false);
-                                Log($"Teleported to the location of {(Species)pk.Species}! Pressing HOME incase you weren't ready in game.");
-                                while (IsWaiting)
-                                    await Task.Delay(1_000, token).ConfigureAwait(false);
-                            }
-                        }
-                    }
-                }
                 if (!IsWaiting)
-                {
-                    shinylist.Clear();
-                    shinylist = new();
                     EmbedMon = (null, false);
-                }
                 mapcount++;
             }
         }

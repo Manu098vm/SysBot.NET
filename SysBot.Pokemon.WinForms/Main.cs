@@ -99,6 +99,7 @@ namespace SysBot.Pokemon.WinForms
             CB_Protocol.SelectedIndex = (int)SwitchProtocol.WiFi; // default option
 
             LogUtil.Forwarders.Add(AppendLog);
+            ResultsUtil.Forwarders.Add(AppendResults);
         }
 
         private void AppendLog(string message, string identity)
@@ -312,6 +313,26 @@ namespace SysBot.Pokemon.WinForms
         private void CB_Protocol_SelectedIndexChanged(object sender, EventArgs e)
         {
             TB_IP.Visible = CB_Protocol.SelectedIndex == 0;
+        }
+
+        //Zyro additions
+        private void AppendResults(string message, string identity)
+        {
+            var line = $"[{DateTime.Now:HH:mm:ss}] - {identity}: {message}{Environment.NewLine}";
+            if (InvokeRequired)
+                Invoke((MethodInvoker)(() => UpdateResults(line)));
+            else
+                UpdateResults(line);
+        }
+
+        private void UpdateResults(string line)
+        {
+            // ghetto truncate
+            if (RTB_Results.Lines.Length > 99_999)
+                RTB_Results.Lines = RTB_Results.Lines.Skip(25_0000).ToArray();
+
+            RTB_Results.AppendText(line);
+            RTB_Results.ScrollToCaret();
         }
     }
 }

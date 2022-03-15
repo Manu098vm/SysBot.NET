@@ -41,6 +41,8 @@ namespace SysBot.Pokemon.WinForms
             this.Tab_Hub = new System.Windows.Forms.TabPage();
             this.PG_Hub = new System.Windows.Forms.PropertyGrid();
             this.Tab_Logs = new System.Windows.Forms.TabPage();
+            this.Tab_Results = new System.Windows.Forms.TabPage();
+            this.RTB_Results = new System.Windows.Forms.RichTextBox();
             this.RTB_Logs = new System.Windows.Forms.RichTextBox();
             this.B_Stop = new System.Windows.Forms.Button();
             this.B_Start = new System.Windows.Forms.Button();
@@ -49,6 +51,7 @@ namespace SysBot.Pokemon.WinForms
             ((System.ComponentModel.ISupportInitialize)(this.NUD_Port)).BeginInit();
             this.Tab_Hub.SuspendLayout();
             this.Tab_Logs.SuspendLayout();
+            this.Tab_Results.SuspendLayout();
             this.SuspendLayout();
             // 
             // TC_Main
@@ -56,6 +59,7 @@ namespace SysBot.Pokemon.WinForms
             this.TC_Main.Controls.Add(this.Tab_Bots);
             this.TC_Main.Controls.Add(this.Tab_Hub);
             this.TC_Main.Controls.Add(this.Tab_Logs);
+            this.TC_Main.Controls.Add(this.Tab_Results);
             this.TC_Main.Dock = System.Windows.Forms.DockStyle.Fill;
             this.TC_Main.Location = new System.Drawing.Point(0, 0);
             this.TC_Main.Name = "TC_Main";
@@ -90,8 +94,8 @@ namespace SysBot.Pokemon.WinForms
             // 
             // FLP_Bots
             // 
-            this.FLP_Bots.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-            | System.Windows.Forms.AnchorStyles.Left)
+            this.FLP_Bots.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.FLP_Bots.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.FLP_Bots.Location = new System.Drawing.Point(0, 32);
@@ -177,6 +181,27 @@ namespace SysBot.Pokemon.WinForms
             this.Tab_Logs.Text = "Logs";
             this.Tab_Logs.UseVisualStyleBackColor = true;
             // 
+            // Tab_Results
+            // 
+            this.Tab_Results.Controls.Add(this.RTB_Results);
+            this.Tab_Results.Location = new System.Drawing.Point(4, 22);
+            this.Tab_Results.Name = "Tab_Results";
+            this.Tab_Results.Padding = new System.Windows.Forms.Padding(3);
+            this.Tab_Results.Size = new System.Drawing.Size(449, 283);
+            this.Tab_Results.TabIndex = 3;
+            this.Tab_Results.Text = "Results";
+            this.Tab_Results.UseVisualStyleBackColor = true;
+            // 
+            // RTB_Results
+            // 
+            this.RTB_Results.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.RTB_Results.Location = new System.Drawing.Point(3, 3);
+            this.RTB_Results.Name = "RTB_Results";
+            this.RTB_Results.ReadOnly = true;
+            this.RTB_Results.Size = new System.Drawing.Size(443, 277);
+            this.RTB_Results.TabIndex = 0;
+            this.RTB_Results.Text = "";
+            // 
             // RTB_Logs
             // 
             this.RTB_Logs.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -229,6 +254,7 @@ namespace SysBot.Pokemon.WinForms
             ((System.ComponentModel.ISupportInitialize)(this.NUD_Port)).EndInit();
             this.Tab_Hub.ResumeLayout(false);
             this.Tab_Logs.ResumeLayout(false);
+            this.Tab_Results.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -248,6 +274,10 @@ namespace SysBot.Pokemon.WinForms
         private System.Windows.Forms.Button B_New;
         private System.Windows.Forms.FlowLayoutPanel FLP_Bots;
         private System.Windows.Forms.ComboBox CB_Protocol;
+
+        //Zyro additions
+        private System.Windows.Forms.TabPage Tab_Results;
+        private System.Windows.Forms.RichTextBox RTB_Results;
     }
 }
 
