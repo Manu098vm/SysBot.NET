@@ -1394,7 +1394,7 @@ namespace SysBot.Pokemon
                         loglist.Add($"\nOutbreak Spawn: #{count}" + print);
 
                         if (pk.IsShiny)
-                            await CheckEmbed(token, pk, "").ConfigureAwait(false);
+                            await CheckEmbed(token, pk, "", loglist.Last()).ConfigureAwait(false);
                     }
                     count = 0;
                 };
@@ -1465,7 +1465,7 @@ namespace SysBot.Pokemon
             return (pk, ivs);
         }
 
-        public async Task CheckEmbed(CancellationToken token, PA8 pk, string map)
+        public async Task CheckEmbed(CancellationToken token, PA8 pk, string map, string spawn)
         {
             string[] list = Settings.SpeciesToHunt.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
             bool huntedspecies = list.Contains($"{(Species)pk.Species}");
@@ -1479,7 +1479,7 @@ namespace SysBot.Pokemon
             if (huntedspecies && !Settings.OutbreakConditions.HuntAndScan)
             {
                 EmbedMon = (pk, true);
-                ResultsUtil.Log($"{Hub.Config.StopConditions.MatchFoundEchoMention} Massive Mass Outbreak for {(Species)pk.Species} has been found{map}! Waiting for next command...", "");
+                ResultsUtil.Log($"{Hub.Config.StopConditions.MatchFoundEchoMention} Massive Mass Outbreak for {(Species)pk.Species} has been found{map}! Waiting for next command...", spawn);
                 IsWaiting = true;
                 while (IsWaiting)
                     await Task.Delay(1_000, token).ConfigureAwait(false);
@@ -1501,8 +1501,7 @@ namespace SysBot.Pokemon
                     EmbedMon = (pk, true);
             }
             await Task.Delay(2_000, token).ConfigureAwait(false);
-            var print = Hub.Config.StopConditions.GetAlphaPrintName(pk);
-            ResultsUtil.Log(print, "");
+            ResultsUtil.Log(spawn, "");
             if (EmbedMon.Item2 == true)
             {
                 IsWaiting = true;
@@ -1581,7 +1580,7 @@ namespace SysBot.Pokemon
                                 Settings.OutbreakConditions.GroupZoneX = $"{spawncoordx:X8}";
                                 Settings.OutbreakConditions.GroupZoneY = $"{spawncoordy:X8}";
                                 Settings.OutbreakConditions.GroupZoneZ = $"{spawncoordz:X8}";
-                                await CheckEmbed(token, pk, map).ConfigureAwait(false);
+                                await CheckEmbed(token, pk, map, loglist.Last()).ConfigureAwait(false);
                             }
                         }
                         count = 0;
@@ -1597,7 +1596,7 @@ namespace SysBot.Pokemon
                                 Settings.OutbreakConditions.GroupZoneX = $"{spawncoordx:X8}";
                                 Settings.OutbreakConditions.GroupZoneY = $"{spawncoordy:X8}";
                                 Settings.OutbreakConditions.GroupZoneZ = $"{spawncoordz:X8}";
-                                await CheckEmbed(token, pk, map).ConfigureAwait(false);
+                                await CheckEmbed(token, pk, map, loglist.Last()).ConfigureAwait(false);
                             }
                         }
                         count = 0;
