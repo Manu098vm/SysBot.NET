@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Newtonsoft.Json.Serialization;
 using SysBot.Pokemon.Z3;
+using System.Threading;
+using SysBot.Pokemon.Discord;
 
 namespace SysBot.Pokemon.WinForms
 {
@@ -18,11 +20,11 @@ namespace SysBot.Pokemon.WinForms
         private readonly List<PokeBotState> Bots = new();
         private readonly IPokeBotRunner RunningEnvironment;
         private readonly ProgramConfig Config;
+        public readonly ISwitchConnectionAsync? SwitchConnection;
 
         public Main()
         {
             InitializeComponent();
-
             PokeTradeBot.SeedChecker = new Z3SeedSearchHandler<PK8>();
             if (File.Exists(Program.ConfigPath))
             {
@@ -67,9 +69,7 @@ namespace SysBot.Pokemon.WinForms
                     foreach (var c in FLP_Bots.Controls.OfType<BotController>())
                         c.ReadState();
                 }
-#pragma warning disable CA1031 // Do not catch general exception types
                 catch
-#pragma warning restore CA1031 // Do not catch general exception types
                 {
                     // Updating the collection by adding/removing bots will change the iterator
                     // Can try a for-loop or ToArray, but those still don't prevent concurrent mutations of the array.
@@ -193,7 +193,7 @@ namespace SysBot.Pokemon.WinForms
             foreach (var c in FLP_Bots.Controls.OfType<BotController>())
                 c.SendCommand(cmd, false);
 
-            EchoUtil.Echo($"All bots have been issued a command to {cmd}.");
+            LogUtil.LogText($"All bots have been issued a command to {cmd}.");
         }
 
         private void B_Stop_Click(object sender, EventArgs e)
@@ -239,7 +239,8 @@ namespace SysBot.Pokemon.WinForms
             if (!cfg.IsValid())
                 return false;
 
-            if (Bots.Any(z => z.Connection.Equals(cfg.Connection)))
+            // Disallow duplicate routines.
+            if (Bots.Any(z => z.Connection.Equals(cfg.Connection) && cfg.NextRoutineType == z.NextRoutineType))
                 return false;
 
             PokeRoutineExecutorBase newBot;
@@ -333,6 +334,65 @@ namespace SysBot.Pokemon.WinForms
 
             RTB_Results.AppendText(line);
             RTB_Results.ScrollToCaret();
+        }
+
+        public async Task<ulong> NewParsePointer(string pointer, CancellationToken token, bool heaprealtive = false) //Code from LiveHex
+        {
+            var ptr = pointer;
+            if (string.IsNullOrWhiteSpace(ptr) || ptr.IndexOfAny(new char[] { '-', '/', '*' }) != -1)
+                return 0;
+            while (ptr.Contains("]]"))
+                ptr = ptr.Replace("]]", "]+0]");
+            uint? finadd = null;
+            if (!ptr.EndsWith("]"))
+            {
+                finadd = Util.GetHexValue(ptr.Split('+').Last());
+                ptr = ptr.Substring(0, ptr.LastIndexOf('+'));
+            }
+            var jumps = ptr.Replace("main", "").Replace("[", "").Replace("]", "").Split(new[] { "+" }, StringSplitOptions.RemoveEmptyEntries);
+            if (jumps.Length == 0)
+                return 0;
+
+            var initaddress = Util.GetHexValue(jumps[0].Trim());
+            ulong address = BitConverter.ToUInt64(await SwitchConnection.ReadBytesMainAsync(initaddress, 0x8, token).ConfigureAwait(false), 0);
+            foreach (var j in jumps)
+            {
+                var val = Util.GetHexValue(j.Trim());
+                if (val == initaddress)
+                    continue;
+                address = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(address + val, 0x8, token).ConfigureAwait(false), 0);
+            }
+            if (finadd != null) address += (ulong)finadd;
+            if (heaprealtive)
+            {
+                ulong heap = await SwitchConnection.GetHeapBaseAsync(token);
+                address -= heap;
+            }
+            return address;
+        }
+
+        private void ContinueButton_Click(object sender, EventArgs e)
+        {
+            var bots = SysCord<PA8>.Runner.Bots.Select(z => z.Bot);
+            foreach (var b in bots)
+            {
+                if (b is not IArceusBot x)
+                    continue;
+                x.AcknowledgeConfirmation();
+                ResultsUtil.Log("Acknowledged. Continuing...", "");
+            }
+        }
+
+        private void TossButton_Click(object sender, EventArgs e)
+        {
+            var bots = SysCord<PA8>.Runner.Bots.Select(z => z.Bot);
+            foreach (var b in bots)
+            {
+                if (b is not IEncounterBot x)
+                    continue;
+                x.Acknowledge();
+                ResultsUtil.Log("Acknowledged. Tossing now!", "");
+            }
         }
     }
 }

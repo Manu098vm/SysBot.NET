@@ -1394,7 +1394,10 @@ namespace SysBot.Pokemon
                         loglist.Add($"\nOutbreak Spawn: #{count}" + print);
 
                         if (pk.IsShiny)
+                        {
                             await CheckEmbed(token, pk, "", loglist.Last()).ConfigureAwait(false);
+                            await Task.Delay(3_000, token).ConfigureAwait(false);
+                        }
                     }
                     count = 0;
                 };
@@ -1499,22 +1502,18 @@ namespace SysBot.Pokemon
                     EmbedMon = (pk, false);
                 else
                     EmbedMon = (pk, true);
-            }
-            await Task.Delay(2_000, token).ConfigureAwait(false);
+            }            
             ResultsUtil.Log(spawn, "");
             if (EmbedMon.Item2 == true)
             {
                 IsWaiting = true;
                 IsWaitingConfirmation = true;
-                ResultsUtil.Log($"Enter the desired map, type $continue and I'll teleport you to the location of {(Species)pk.Species}{map}!", "");
+                ResultsUtil.Log($"Match found! Enter{map}, type $continue or click the Continue button and I'll teleport you to the location of {(Species)pk.Species}!", "");
                 while (IsWaiting)
                 {
                     await Task.Delay(1_000, token).ConfigureAwait(false);
                     if (!IsWaitingConfirmation)
                     {
-                        await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + InvincibleTrainer1, token).ConfigureAwait(false);
-                        await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + InvincibleTrainer2, token).ConfigureAwait(false);
-
                         await TeleportToMMOGroupZone(token).ConfigureAwait(false);
                         await Click(HOME, 1_000, token).ConfigureAwait(false);
                         ResultsUtil.Log($"Teleported to the location of {(Species)pk.Species}! Pressing HOME incase you weren't ready in game.", "");
@@ -1581,6 +1580,7 @@ namespace SysBot.Pokemon
                                 Settings.OutbreakConditions.GroupZoneY = $"{spawncoordy:X8}";
                                 Settings.OutbreakConditions.GroupZoneZ = $"{spawncoordz:X8}";
                                 await CheckEmbed(token, pk, map, loglist.Last()).ConfigureAwait(false);
+                                await Task.Delay(3_000, token).ConfigureAwait(false);
                             }
                         }
                         count = 0;
@@ -1597,6 +1597,7 @@ namespace SysBot.Pokemon
                                 Settings.OutbreakConditions.GroupZoneY = $"{spawncoordy:X8}";
                                 Settings.OutbreakConditions.GroupZoneZ = $"{spawncoordz:X8}";
                                 await CheckEmbed(token, pk, map, loglist.Last()).ConfigureAwait(false);
+                                await Task.Delay(3_000, token).ConfigureAwait(false);
                             }
                         }
                         count = 0;

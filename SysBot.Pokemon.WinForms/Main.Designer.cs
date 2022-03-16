@@ -41,9 +41,11 @@ namespace SysBot.Pokemon.WinForms
             this.Tab_Hub = new System.Windows.Forms.TabPage();
             this.PG_Hub = new System.Windows.Forms.PropertyGrid();
             this.Tab_Logs = new System.Windows.Forms.TabPage();
-            this.Tab_Results = new System.Windows.Forms.TabPage();
-            this.RTB_Results = new System.Windows.Forms.RichTextBox();
             this.RTB_Logs = new System.Windows.Forms.RichTextBox();
+            this.Tab_Results = new System.Windows.Forms.TabPage();
+            this.TossButton = new System.Windows.Forms.Button();
+            this.ContinueButton = new System.Windows.Forms.Button();
+            this.RTB_Results = new System.Windows.Forms.RichTextBox();
             this.B_Stop = new System.Windows.Forms.Button();
             this.B_Start = new System.Windows.Forms.Button();
             this.TC_Main.SuspendLayout();
@@ -181,27 +183,6 @@ namespace SysBot.Pokemon.WinForms
             this.Tab_Logs.Text = "Logs";
             this.Tab_Logs.UseVisualStyleBackColor = true;
             // 
-            // Tab_Results
-            // 
-            this.Tab_Results.Controls.Add(this.RTB_Results);
-            this.Tab_Results.Location = new System.Drawing.Point(4, 22);
-            this.Tab_Results.Name = "Tab_Results";
-            this.Tab_Results.Padding = new System.Windows.Forms.Padding(3);
-            this.Tab_Results.Size = new System.Drawing.Size(449, 283);
-            this.Tab_Results.TabIndex = 3;
-            this.Tab_Results.Text = "Results";
-            this.Tab_Results.UseVisualStyleBackColor = true;
-            // 
-            // RTB_Results
-            // 
-            this.RTB_Results.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.RTB_Results.Location = new System.Drawing.Point(3, 3);
-            this.RTB_Results.Name = "RTB_Results";
-            this.RTB_Results.ReadOnly = true;
-            this.RTB_Results.Size = new System.Drawing.Size(443, 277);
-            this.RTB_Results.TabIndex = 0;
-            this.RTB_Results.Text = "";
-            // 
             // RTB_Logs
             // 
             this.RTB_Logs.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -211,6 +192,48 @@ namespace SysBot.Pokemon.WinForms
             this.RTB_Logs.Size = new System.Drawing.Size(449, 283);
             this.RTB_Logs.TabIndex = 0;
             this.RTB_Logs.Text = "";
+            // 
+            // Tab_Results
+            // 
+            this.Tab_Results.Controls.Add(this.TossButton);
+            this.Tab_Results.Controls.Add(this.ContinueButton);
+            this.Tab_Results.Controls.Add(this.RTB_Results);
+            this.Tab_Results.Location = new System.Drawing.Point(4, 22);
+            this.Tab_Results.Name = "Tab_Results";
+            this.Tab_Results.Padding = new System.Windows.Forms.Padding(3);
+            this.Tab_Results.Size = new System.Drawing.Size(449, 283);
+            this.Tab_Results.TabIndex = 3;
+            this.Tab_Results.Text = "Results";
+            this.Tab_Results.UseVisualStyleBackColor = true;
+            // 
+            // TossButton
+            // 
+            this.TossButton.Location = new System.Drawing.Point(6, 7);
+            this.TossButton.Name = "TossButton";
+            this.TossButton.Size = new System.Drawing.Size(75, 23);
+            this.TossButton.TabIndex = 4;
+            this.TossButton.Text = "Toss";
+            this.TossButton.UseVisualStyleBackColor = true;
+            this.TossButton.Click += new System.EventHandler(this.TossButton_Click);
+            // 
+            // ContinueButton
+            // 
+            this.ContinueButton.Location = new System.Drawing.Point(85, 7);
+            this.ContinueButton.Name = "ContinueButton";
+            this.ContinueButton.Size = new System.Drawing.Size(75, 23);
+            this.ContinueButton.TabIndex = 3;
+            this.ContinueButton.Text = "Continue";
+            this.ContinueButton.UseVisualStyleBackColor = true;
+            this.ContinueButton.Click += new System.EventHandler(this.ContinueButton_Click);
+            // 
+            // RTB_Results
+            // 
+            this.RTB_Results.Location = new System.Drawing.Point(3, 36);
+            this.RTB_Results.Name = "RTB_Results";
+            this.RTB_Results.ReadOnly = true;
+            this.RTB_Results.Size = new System.Drawing.Size(443, 244);
+            this.RTB_Results.TabIndex = 0;
+            this.RTB_Results.Text = "";
             // 
             // B_Stop
             // 
@@ -263,7 +286,7 @@ namespace SysBot.Pokemon.WinForms
         private System.Windows.Forms.TabControl TC_Main;
         private System.Windows.Forms.TabPage Tab_Bots;
         private System.Windows.Forms.TabPage Tab_Logs;
-        private System.Windows.Forms.RichTextBox RTB_Logs;
+        private System.Windows.Forms.RichTextBox RTB_Logs;        
         private System.Windows.Forms.TabPage Tab_Hub;
         private System.Windows.Forms.PropertyGrid PG_Hub;
         private System.Windows.Forms.Button B_Stop;
@@ -278,6 +301,8 @@ namespace SysBot.Pokemon.WinForms
         //Zyro additions
         private System.Windows.Forms.TabPage Tab_Results;
         private System.Windows.Forms.RichTextBox RTB_Results;
+        private System.Windows.Forms.Button ContinueButton;
+        private System.Windows.Forms.Button TossButton;
     }
 }
 
