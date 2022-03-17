@@ -1654,6 +1654,22 @@ namespace SysBot.Pokemon
                 // Loading screen
                 if (Settings.OutbreakConditions.TeleportToHunt)
                 {
+                    var prevmap = Settings.ScanLocation;
+                    var ofs = new long[] { 0x42BA6B0, 0x2B0, 0x58, 0x18, 0x1B0 };
+                    var mmolocationptr = SwitchConnection.PointerAll(ofs, token).Result;
+                    var location = SwitchConnection.ReadBytesAbsoluteAsync(mmolocationptr, 2, token).Result;
+                    string map = BitConverter.ToString(location);
+                    switch (map)
+                    {
+                        case "B7-56": Settings.ScanLocation = ArceupMap.CobaltCoastlands; break;
+                        case "04-55": Settings.ScanLocation = ArceupMap.CrimsonMirelands; break;
+                        case "51-53": Settings.ScanLocation = ArceupMap.AlabasterIcelands; break;
+                        case "9E-51": Settings.ScanLocation = ArceupMap.CoronetHighlands; break;
+                        case "1D-5A": Settings.ScanLocation = ArceupMap.ObsidianFieldlands; break;
+                        case "45-26": Settings.ScanLocation = prevmap; break;
+                        case "00-00": Settings.ScanLocation = prevmap; break;
+                    }
+                    await GetDefaultCoords(token);
                     await TeleportToCampZone(token).ConfigureAwait(false);
                     await SetStick(LEFT, -30_000, 0, 1_000, token).ConfigureAwait(false); // reset face forward
                     await ResetStick(token).ConfigureAwait(false); // reset

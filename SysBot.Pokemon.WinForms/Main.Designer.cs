@@ -208,7 +208,7 @@ namespace SysBot.Pokemon.WinForms
             // 
             // TossButton
             // 
-            this.TossButton.Location = new System.Drawing.Point(6, 7);
+            this.TossButton.Location = new System.Drawing.Point(3, 7);
             this.TossButton.Name = "TossButton";
             this.TossButton.Size = new System.Drawing.Size(75, 23);
             this.TossButton.TabIndex = 4;
@@ -218,7 +218,7 @@ namespace SysBot.Pokemon.WinForms
             // 
             // ContinueButton
             // 
-            this.ContinueButton.Location = new System.Drawing.Point(85, 7);
+            this.ContinueButton.Location = new System.Drawing.Point(81, 7);
             this.ContinueButton.Name = "ContinueButton";
             this.ContinueButton.Size = new System.Drawing.Size(75, 23);
             this.ContinueButton.TabIndex = 3;
@@ -228,6 +228,9 @@ namespace SysBot.Pokemon.WinForms
             // 
             // RTB_Results
             // 
+            this.RTB_Results.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.RTB_Results.Location = new System.Drawing.Point(3, 36);
             this.RTB_Results.Name = "RTB_Results";
             this.RTB_Results.ReadOnly = true;
