@@ -20,7 +20,7 @@ namespace SysBot.Pokemon
         public ArceusAutoFill AutoFillCoords { get; set; } = ArceusAutoFill.CampZone;
 
         [Category(Arceus), Description("Enter number of shiny rolls.")]
-        public int ShinyRolls { get; set; } = 2;
+        public ShinyRolls ShinyRolls { get; set; } = ShinyRolls.MMOPerfectCharm;
 
         [Category(Arceus), Description("Will hunt for the desired outbreak species if not empty. Separate species with a comma. Ex: Eevee,Rotom,Voltorb")]
         public string SpeciesToHunt { get; set; } = string.Empty;
@@ -58,25 +58,19 @@ namespace SysBot.Pokemon
             public bool TeleportToHunt { get; set; } = false;
 
             [Category(Arceus), Description("When enabled, the bot will search for our desired outbreak/mmo species, then read the seed for a shiny.")]
-            public bool HuntAndScan { get; set; } = false;
+            public bool SearchForSpecies { get; set; } = false;
+
+            [Category(Arceus), Description("When enabled AND SearchForSpecies is enabled, the bot will dump your MMO block for permutation usage.")]
+            public bool DumpBlockWhenSpeciesFound { get; set; } = false;
 
             [Category(Arceus), Description("When enabled, the bot will search for only an alpha shiny from a MMO.")]
             public bool MMOAlphaShinyOnly { get; set; } = false;
 
             [Category(Arceus), Description("Enter number of shiny rolls for regular outbreaks if you are scanning Both types.")]
-            public int ShinyRollsForRegularOutbreaks { get; set; } = 26;
+            public ShinyRolls OutbreakShinyRolls { get; set; } = ShinyRolls.OutbreakPerfectCharm;
 
             [Category(Arceus), Description("Duration in Ms for how long to hold B when returning to town for Outbreak Hunter.")]
             public int HoldBMs { get; set; } = 5000;
-
-            [Category(Arceus), Description("Autofills your player coordinates for a shiny MMO Spawn Location X Coordinate. Should be 8 characters long.")]
-            public string GroupZoneX { get; set; } = "";
-
-            [Category(Arceus), Description("Autofills your player coordinates for a shiny MMO Spawn Location Y Coordinate. Should be 8 characters long.")]
-            public string GroupZoneY { get; set; } = "";
-
-            [Category(Arceus), Description("Autofills your player coordinates for a shiny MMO Spawn Location Z Coordinate. Should be 8 characters long.")]
-            public string GroupZoneZ { get; set; } = "";
         }
 
         [Category(Arceus), TypeConverter(typeof(CategoryConverter<DistortionFiltersCategory>))]
