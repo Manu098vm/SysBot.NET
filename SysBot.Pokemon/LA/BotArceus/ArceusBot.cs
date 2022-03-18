@@ -1504,7 +1504,7 @@ namespace SysBot.Pokemon
                     EmbedMon = (pk, true);
             }            
             ResultsUtil.Log(spawn, "");
-            if (EmbedMon.Item2 == true)
+            if (EmbedMon.Item2 == true || !EmbedsInitialized)
             {
                 IsWaiting = true;
                 IsWaitingConfirmation = true;
@@ -1666,8 +1666,7 @@ namespace SysBot.Pokemon
                         case "51-53": Settings.ScanLocation = ArceupMap.AlabasterIcelands; break;
                         case "9E-51": Settings.ScanLocation = ArceupMap.CoronetHighlands; break;
                         case "1D-5A": Settings.ScanLocation = ArceupMap.ObsidianFieldlands; break;
-                        case "45-26": Settings.ScanLocation = prevmap; break;
-                        case "00-00": Settings.ScanLocation = prevmap; break;
+                        case "45-26" or "00-00": Settings.ScanLocation = prevmap; break;
                     }
                     await GetDefaultCoords(token);
                     await TeleportToCampZone(token).ConfigureAwait(false);
