@@ -1500,6 +1500,9 @@ namespace SysBot.Pokemon
                     await Task.Delay(1_000, token).ConfigureAwait(false);
                     if (!IsWaitingConfirmation)
                     {
+                        //await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + InvincibleTrainer1, token).ConfigureAwait(false);
+                        //await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + InvincibleTrainer2, token).ConfigureAwait(false);
+
                         await TeleportToMMOGroupZone(token).ConfigureAwait(false);
                         await Click(HOME, 1_000, token).ConfigureAwait(false);
                         ResultsUtil.Log($"Teleported to the location of {(Species)pk.Species}! Pressing HOME incase you weren't ready in game.", "");
@@ -1517,47 +1520,43 @@ namespace SysBot.Pokemon
             string report = string.Empty;
             Species species;
             string[] list = Settings.SpeciesToHunt.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
-            var groupcount = 0;
             var ofs = new long[] { 0x42BA6B0, 0x2B0, 0x58, 0x18, 0x1B0 };
             var outbreakptr = SwitchConnection.PointerAll(ofs, token).Result;
             info = SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr, 14720, token).Result;
 
             for (int mapcount = 0; mapcount < 5; mapcount++)
             {
-                Log($"Checking map #{mapcount + 1}...");
+                Log($"Checking map #{mapcount}...");
                 ofs = new long[] { 0x42BA6B0, 0x2B0, 0x58, 0x18, 0x1B0 + (mapcount * 0xB80) };
                 outbreakptr = SwitchConnection.PointerAll(ofs, token).Result;
                 var active = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr, 2, token).ConfigureAwait(false), 0);
                 bool areavalid = $"{active:X4}" is not ("0000" or "2645");
                 if (!areavalid)
                     continue;
+                var groupcount = 0;
+                var mapinfo = info.Slice(mapcount * 2944, 2944);
 
-                var mapinfo = info.Slice((0 * mapcount), 2944);
-                if (groupcount == 0)
+                switch ($"{active:X4}")
                 {
-                    var location = SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr, 2, token).Result;
-                    map = BitConverter.ToString(location);
-                    switch (map)
-                    {
-                        case "B7-56": map = " in the Cobalt Coastlands"; break;
-                        case "04-55": map = " in the Crimson Mirelands"; break;
-                        case "51-53": map = " in the Alabaster Icelands"; break;
-                        case "9E-51": map = " in the Coronet Highlands"; break;
-                        case "1D-5A": map = " in the Obsidian Fieldlands"; break;
-                        case "45-26" or "00-00": map = ""; break;
-                    }
+                    case "56B7": map = " in the Cobalt Coastlands"; break;
+                    case "5504": map = " in the Crimson Mirelands"; break;
+                    case "5351": map = " in the Alabaster Icelands"; break;
+                    case "519E": map = " in the Coronet Highlands"; break;
+                    case "5A1D": map = " in the Obsidian Fieldlands"; break;
+                    case "0000" or "2645": map = ""; break;
                 }
+
                 do
                 {
                     species = (Species)BitConverter.ToUInt16(mapinfo.Slice(36 + (groupcount * 144), 2), 0);
                     if (species != Species.None && species < Species.MAX_COUNT)
                     {
-                        var spawncount = BitConverter.ToUInt16(info.Slice(112 + (groupcount * 144), 2), 0);
-                        var encslot = BitConverter.ToUInt64(info.Slice(72 + (groupcount * 144), 8), 0);
-                        var bonusencslot = BitConverter.ToUInt64(info.Slice(80 + (groupcount * 144), 8), 0);
-                        var bonuscount = BitConverter.ToUInt16(info.Slice(132 + (groupcount * 144), 2), 0);
-                        var group_seed = BitConverter.ToUInt64(info.Slice(104 + (groupcount * 144), 8), 0);
-                        var xyz = info.Slice(16 + (groupcount * 144), 12);
+                        var spawncount = BitConverter.ToUInt16(mapinfo.Slice(112 + (groupcount * 144), 2), 0);
+                        var encslot = BitConverter.ToUInt64(mapinfo.Slice(72 + (groupcount * 144), 8), 0);
+                        var bonusencslot = BitConverter.ToUInt64(mapinfo.Slice(80 + (groupcount * 144), 8), 0);
+                        var bonuscount = BitConverter.ToUInt16(mapinfo.Slice(132 + (groupcount * 144), 2), 0);
+                        var group_seed = BitConverter.ToUInt64(mapinfo.Slice(104 + (groupcount * 144), 8), 0);
+                        var xyz = mapinfo.Slice(16 + (groupcount * 144), 12);
                         var spawncoordx = BitConverter.ToUInt32(xyz, 0);
                         var spawncoordy = BitConverter.ToUInt32(xyz, 4);
                         var spawncoordz = BitConverter.ToUInt32(xyz, 8);
@@ -1572,6 +1571,11 @@ namespace SysBot.Pokemon
                             {
                                 EmbedMon = (pk, true);
                                 ResultsUtil.Log($"{Hub.Config.StopConditions.MatchFoundEchoMention} Massive Mass Outbreak for {(Species)pk.Species} has been found{map}! Waiting for next command...", "");
+                                if (Settings.OutbreakConditions.DumpBlockWhenSpeciesFound)
+                                {
+                                    Log("Dumping mmo.bin for PermuteMMO usage.");
+                                    await DumpMMOBlock(token).ConfigureAwait(false);
+                                }
                                 IsWaiting = true;
                                 while (IsWaiting)
                                     await Task.Delay(1_000, token).ConfigureAwait(false);
@@ -1597,16 +1601,6 @@ namespace SysBot.Pokemon
                         count = 0;
                         foreach (PA8 pk in bonuslist)
                         {
-                            if (huntedspecies && Settings.OutbreakConditions.SearchForSpecies)
-                            {
-                                EmbedMon = (pk, true);
-                                ResultsUtil.Log($"{Hub.Config.StopConditions.MatchFoundEchoMention} Massive Mass Outbreak for {(Species)pk.Species} has been found{map}! Waiting for next command...", "");
-                                IsWaiting = true;
-                                while (IsWaiting)
-                                    await Task.Delay(1_000, token).ConfigureAwait(false);
-                                if (!IsWaiting)
-                                    break;
-                            }
                             count++;
                             var print = Hub.Config.StopConditions.GetAlphaPrintName(pk);
                             loglist.Add($"\nBonus Spawn: #{count}" + print);
@@ -1634,7 +1628,7 @@ namespace SysBot.Pokemon
                         bonuslist = new();
                         groupcount++;
                     };
-                } while (species != Species.None);
+                } while (species != Species.None && species < Species.MAX_COUNT);
             }
             if (!IsWaiting)
                 EmbedMon = (null, false);
