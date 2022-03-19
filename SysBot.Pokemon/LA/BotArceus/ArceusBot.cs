@@ -114,7 +114,7 @@ namespace SysBot.Pokemon
                     ArceusMode.DistortionSpammer => DistortionSpammer(token),
                     ArceusMode.DistortionReader => DistortionReader(token),
                     ArceusMode.MassiveOutbreakHunter => MassiveOutbreakHunter(token),
-                    ArceusMode.DumpMMOBlock => DumpMMOBlock(token),
+                    ArceusMode.MMOBlockDumper => DumpMMOBlock(token),
                     _ => PlayerCoordScan(token),
                 };
                 await task.ConfigureAwait(false);
@@ -1693,25 +1693,88 @@ namespace SysBot.Pokemon
 
         private async Task DumpMMOBlock(CancellationToken token)
         {
-            await Task.Delay(0_100).ConfigureAwait(false);
-            Log("Initiating dump...");
-            var ofs = new long[] { 0x42BA6B0, 0x2B0, 0x58, 0x18, 0x1B0 };
-            var outbreakptr = SwitchConnection.PointerAll(ofs, token).Result;
-            var info = SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr, 14720, token).Result;
+            while (!token.IsCancellationRequested)
+            {
+                await Task.Delay(0_100).ConfigureAwait(false);
+                Log("Initiating dump...");
+                var ofs = new long[] { 0x42BA6B0, 0x2B0, 0x58, 0x18, 0x1B0 };
+                var outbreakptr = SwitchConnection.PointerAll(ofs, token).Result;
+                var info = SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr, 14720, token).Result;
 
-            if (!File.Exists("mmo.bin"))
-            {
-                var blank = "";
-                File.Create("mmo.bin").Close();
-                File.WriteAllText("mmo.bin", blank);
+                if (!File.Exists("mmo.bin"))
+                {
+                    var blank = "";
+                    File.Create("mmo.bin").Close();
+                    File.WriteAllText("mmo.bin", blank);
+                }
+                else
+                {
+                    var blank = "";
+                    File.WriteAllText("mmo.bin", blank);
+                }
+                File.WriteAllBytes("mmo.bin", info);
+                Log("Done. Waiting for command to resume...");
+                ResultsUtil.Log("Done. Waiting for command to resume...", "");
+                IsWaiting = true;
+                while (IsWaiting)
+                    await Task.Delay(1_000, token).ConfigureAwait(false);
+
+                if (!IsWaiting)
+                {
+                    Log($"Search #{attempts}");
+                    if (Settings.OutbreakConditions.TeleportToHunt)
+                    {
+                        await TeleportToSpawnZone(token);
+                        await SetStick(LEFT, 0, -30_000, 1_000, token).ConfigureAwait(false);
+                        await ResetStick(token).ConfigureAwait(false); // reset
+                    }
+                    if (!Settings.OutbreakConditions.TeleportToHunt)
+                    {
+                        await SetStick(LEFT, 0, -30_000, 1_000, token).ConfigureAwait(false);
+                        await Click(Y, 1_000, token).ConfigureAwait(false);
+                        await ResetStick(token).ConfigureAwait(false); // reset
+                    }
+                    for (int i = 0; i < 2; i++)
+                        await Click(A, 1_000, token).ConfigureAwait(false);
+                    await Click(A, 10_000, token).ConfigureAwait(false);
+
+                    // Return to Jubilife
+                    if (Settings.OutbreakConditions.TeleportToHunt)
+                    {
+                        var prevmap = Settings.ScanLocation;
+                        ofs = new long[] { 0x42BA6B0, 0x2B0, 0x58, 0x18, 0x1B0 };
+                        var mmolocationptr = SwitchConnection.PointerAll(ofs, token).Result;
+                        var location = SwitchConnection.ReadBytesAbsoluteAsync(mmolocationptr, 2, token).Result;
+                        string map = BitConverter.ToString(location);
+                        switch (map)
+                        {
+                            case "B7-56": Settings.ScanLocation = ArceupMap.CobaltCoastlands; break;
+                            case "04-55": Settings.ScanLocation = ArceupMap.CrimsonMirelands; break;
+                            case "51-53": Settings.ScanLocation = ArceupMap.AlabasterIcelands; break;
+                            case "9E-51": Settings.ScanLocation = ArceupMap.CoronetHighlands; break;
+                            case "1D-5A": Settings.ScanLocation = ArceupMap.ObsidianFieldlands; break;
+                            case "45-26" or "00-00": Settings.ScanLocation = prevmap; break;
+                        }
+                        GetDefaultCoords();
+                        await TeleportToCampZone(token).ConfigureAwait(false);
+                        await SetStick(LEFT, -30_000, 0, 1_000, token).ConfigureAwait(false); // reset face forward
+                        await ResetStick(token).ConfigureAwait(false); // reset
+                    }
+                    if (!Settings.OutbreakConditions.TeleportToHunt)
+                    {
+                        await SetStick(LEFT, -10_000, 0, 0_500, token).ConfigureAwait(false);
+                        await ResetStick(token).ConfigureAwait(false); // reset
+                        await SetStick(RIGHT, -5_000, 0, 0_500, token).ConfigureAwait(false);
+                        await SetStick(RIGHT, 0, 0, 0_500, token).ConfigureAwait(false);
+                        await Click(ZL, 1_000, token).ConfigureAwait(false);
+                        await Click(PLUS, 1_000, token).ConfigureAwait(false);
+                        await PressAndHold(B, Settings.OutbreakConditions.HoldBMs, 0, token).ConfigureAwait(false);
+                    }
+                    await Click(A, 1_000, token).ConfigureAwait(false);
+                    await Click(A, 10_000, token).ConfigureAwait(false);
+                }
+
             }
-            else
-            {
-                var blank = "";
-                File.WriteAllText("mmo.bin", blank);
-            }
-            File.WriteAllBytes("mmo.bin", info);
-            Log("Done.");
         }
     }
 }

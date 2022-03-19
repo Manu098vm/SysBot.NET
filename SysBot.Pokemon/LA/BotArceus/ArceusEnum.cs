@@ -9,7 +9,7 @@
         DistortionSpammer,
         DistortionReader,
         PlayerCoordScan,
-        DumpMMOBlock,
+        MMOBlockDumper,
     }
     public enum ArceusAutoFill
     {
