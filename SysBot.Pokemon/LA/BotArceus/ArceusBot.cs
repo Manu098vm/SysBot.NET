@@ -1108,14 +1108,13 @@ namespace SysBot.Pokemon
                 mainrng.Next();
                 (pk, givs) = GrabMMOSpecies(encounter_slot, encslot);
                 var (shiny, shinyXor, encryption_constant, pid, ivs, ability, gender, nature, shinyseed) = GenerateFromSeed(fixedseed, (int)Settings.ShinyRolls, givs);
-                pk.IV_HP = ivs[0]; pk.IV_ATK = ivs[1]; pk.IV_DEF = ivs[2]; pk.IV_SPA = ivs[3]; pk.IV_SPD = ivs[4]; pk.IV_SPE = ivs[5]; pk.Nature = (int)nature; pk.EncryptionConstant = (uint)encryption_constant; pk.PID = (uint)pid;
-                if (shiny == true)
-                {
-                    if (shinyXor == 0)
-                        CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
-                    if (shinyXor <= 16)
-                        CommonEdits.SetShiny(pk, Shiny.AlwaysStar);
-                }
+                if (shiny && shinyXor == 0)
+                    CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
+                else if (shiny && shinyXor != 0 && shinyXor <= 16)
+                    CommonEdits.SetShiny(pk, Shiny.AlwaysStar);
+                pk.IV_HP = ivs[0]; pk.IV_ATK = ivs[1]; pk.IV_DEF = ivs[2]; pk.IV_SPA = ivs[3]; pk.IV_SPD = ivs[4]; pk.IV_SPE = ivs[5]; pk.EncryptionConstant = encryption_constant; pk.PID = pid;
+                pk.Nature = (int)nature;
+
                 monlist.Add(pk);
             }
             groupseed = mainrng.Next();
@@ -1131,14 +1130,13 @@ namespace SysBot.Pokemon
                 var fixed_seed = fixed_rng.Next();
                 (pk, givs) = GrabMMOSpecies(encounter_slot, encslot);
                 var (shiny, shinyXor, encryption_constant, pid, ivs, ability, gender, nature, shinyseed) = GenerateFromSeed(fixed_seed, (int)Settings.ShinyRolls, givs);
-                pk.IV_HP = ivs[0]; pk.IV_ATK = ivs[1]; pk.IV_DEF = ivs[2]; pk.IV_SPA = ivs[3]; pk.IV_SPD = ivs[4]; pk.IV_SPE = ivs[5]; pk.Nature = (int)nature; pk.EncryptionConstant = (uint)encryption_constant; pk.PID = (uint)pid;
-                if (shiny == true)
-                {
-                    if (shinyXor == 0)
-                        CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
-                    if (shinyXor <= 16)
-                        CommonEdits.SetShiny(pk, Shiny.AlwaysStar);
-                }
+                if (shiny && shinyXor == 0)
+                    CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
+                else if (shiny && shinyXor != 0 && shinyXor <= 16)
+                    CommonEdits.SetShiny(pk, Shiny.AlwaysStar);
+                pk.IV_HP = ivs[0]; pk.IV_ATK = ivs[1]; pk.IV_DEF = ivs[2]; pk.IV_SPA = ivs[3]; pk.IV_SPD = ivs[4]; pk.IV_SPE = ivs[5]; pk.EncryptionConstant = encryption_constant; pk.PID = pid;
+                pk.Nature = (int)nature;
+
                 monlist.Add(pk);
             }
             //Bonus round
@@ -1155,15 +1153,13 @@ namespace SysBot.Pokemon
                     mainrng.Next();
                     (pk, givs) = GrabMMOSpecies(encounter_slot, bonusencslot);
                     var (shiny, shinyXor, encryption_constant, pid, ivs, ability, gender, nature, shinyseed) = GenerateFromSeed(fixedseed, (int)Settings.ShinyRolls, givs);
-                    pk.IV_HP = ivs[0]; pk.IV_ATK = ivs[1]; pk.IV_DEF = ivs[2]; pk.IV_SPA = ivs[3]; pk.IV_SPD = ivs[4]; pk.IV_SPE = ivs[5]; pk.Nature = (int)nature; pk.EncryptionConstant = (uint)encryption_constant; pk.PID = (uint)pid;
+                    if (shiny && shinyXor == 0)
+                        CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
+                    else if (shiny && shinyXor != 0 && shinyXor <= 16)
+                        CommonEdits.SetShiny(pk, Shiny.AlwaysStar);
+                    pk.IV_HP = ivs[0]; pk.IV_ATK = ivs[1]; pk.IV_DEF = ivs[2]; pk.IV_SPA = ivs[3]; pk.IV_SPD = ivs[4]; pk.IV_SPE = ivs[5]; pk.EncryptionConstant = encryption_constant; pk.PID = pid;
+                    pk.Nature = (int)nature;
 
-                    if (shiny == true)
-                    {
-                        if (shinyXor == 0)
-                            CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
-                        if (shinyXor <= 16)
-                            CommonEdits.SetShiny(pk, Shiny.AlwaysStar);
-                    }
                     bonuslist.Add(pk);
                 }
                 bonus_seed = mainrng.Next();
@@ -1179,15 +1175,13 @@ namespace SysBot.Pokemon
                     var fixed_seed = fixed_rng.Next();
                     (pk, givs) = GrabMMOSpecies(encounter_slot, bonusencslot);
                     var (shiny, shinyXor, encryption_constant, pid, ivs, ability, gender, nature, shinyseed) = GenerateFromSeed(fixed_seed, (int)Settings.ShinyRolls, givs);
-                    pk.IV_HP = ivs[0]; pk.IV_ATK = ivs[1]; pk.IV_DEF = ivs[2]; pk.IV_SPA = ivs[3]; pk.IV_SPD = ivs[4]; pk.IV_SPE = ivs[5]; pk.Nature = (int)nature; pk.EncryptionConstant = (uint)encryption_constant; pk.PID = (uint)pid;
+                    if (shiny && shinyXor == 0)
+                        CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
+                    else if (shiny && shinyXor != 0 && shinyXor <= 16)
+                        CommonEdits.SetShiny(pk, Shiny.AlwaysStar);
+                    pk.IV_HP = ivs[0]; pk.IV_ATK = ivs[1]; pk.IV_DEF = ivs[2]; pk.IV_SPA = ivs[3]; pk.IV_SPD = ivs[4]; pk.IV_SPE = ivs[5]; pk.EncryptionConstant = encryption_constant; pk.PID = pid;
+                    pk.Nature = (int)nature;
 
-                    if (shiny == true)
-                    {
-                        if (shinyXor == 0)
-                            CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
-                        if (shinyXor <= 16)
-                            CommonEdits.SetShiny(pk, Shiny.AlwaysStar);
-                    }
                     bonuslist.Add(pk);
                 }
             }
@@ -1209,20 +1203,17 @@ namespace SysBot.Pokemon
                 var alpha = slot >= 100;
                 var fixedseed = spawner_rng.Next();
                 //mainrng.Next();
-                if (alpha)
-                    givs = 3;
+                if (alpha) givs = 3;
                 var (shiny, shinyXor, encryption_constant, pid, ivs, ability, gender, nature, shinyseed) = GenerateFromSeed(fixedseed, (int)Settings.OutbreakConditions.OutbreakShinyRolls, givs);
                 pk.Species = (int)species;
-                pk.IV_HP = ivs[0]; pk.IV_ATK = ivs[1]; pk.IV_DEF = ivs[2]; pk.IV_SPA = ivs[3]; pk.IV_SPD = ivs[4]; pk.IV_SPE = ivs[5]; pk.Nature = (int)nature; pk.EncryptionConstant = (uint)encryption_constant; pk.PID = (uint)pid;
-                if (alpha)
-                    pk.IsAlpha = true;
-                if (shiny == true)
-                {
-                    if (shinyXor == 0)
-                        CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
-                    if (shinyXor <= 16)
-                        CommonEdits.SetShiny(pk, Shiny.AlwaysStar);
-                }
+                if (shiny && shinyXor == 0)
+                    CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
+                else if (shiny && shinyXor != 0 && shinyXor <= 16)
+                    CommonEdits.SetShiny(pk, Shiny.AlwaysStar);
+                pk.IV_HP = ivs[0]; pk.IV_ATK = ivs[1]; pk.IV_DEF = ivs[2]; pk.IV_SPA = ivs[3]; pk.IV_SPD = ivs[4]; pk.IV_SPE = ivs[5]; pk.EncryptionConstant = encryption_constant; pk.PID = pid;
+                pk.Nature = (int)nature;
+                if (alpha) pk.IsAlpha = true;
+
                 monlist.Add(pk);
                 pk = new();
                 givs = 0;
@@ -1240,21 +1231,17 @@ namespace SysBot.Pokemon
                 var alpha = slot >= 100;
                 //fixed_rng.Next();
                 var fixed_seed = fixed_rng.Next();
-                if (alpha)
-                    givs = 3;
+                if (alpha) givs = 3;
                 var (shiny, shinyXor, encryption_constant, pid, ivs, ability, gender, nature, shinyseed) = GenerateFromSeed(fixed_seed, (int)Settings.OutbreakConditions.OutbreakShinyRolls, givs);
-
                 pk.Species = (int)species;
-                pk.IV_HP = ivs[0]; pk.IV_ATK = ivs[1]; pk.IV_DEF = ivs[2]; pk.IV_SPA = ivs[3]; pk.IV_SPD = ivs[4]; pk.IV_SPE = ivs[5]; pk.Nature = (int)nature; pk.EncryptionConstant = (uint)encryption_constant; pk.PID = (uint)pid;
-                if (alpha)
-                    pk.IsAlpha = true;
-                if (shiny == true)
-                {
-                    if (shinyXor == 0)
-                        CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
-                    if (shinyXor <= 16)
-                        CommonEdits.SetShiny(pk, Shiny.AlwaysStar);
-                }
+                pk.IV_HP = ivs[0]; pk.IV_ATK = ivs[1]; pk.IV_DEF = ivs[2]; pk.IV_SPA = ivs[3]; pk.IV_SPD = ivs[4]; pk.IV_SPE = ivs[5]; pk.EncryptionConstant = encryption_constant; pk.PID = pid;
+                pk.Nature = (int)nature;
+                if (alpha) pk.IsAlpha = true;
+                if (shiny && shinyXor == 0)
+                    CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
+                else if (shiny && shinyXor != 0 && shinyXor <= 16)
+                    CommonEdits.SetShiny(pk, Shiny.AlwaysStar);
+
                 monlist.Add(pk);
                 pk = new();
                 givs = 0;
@@ -1286,10 +1273,11 @@ namespace SysBot.Pokemon
                 return (pk, false, logs);
             }
 
-            pk.IV_HP = ivs[0]; pk.IV_ATK = ivs[1]; pk.IV_DEF = ivs[2]; pk.IV_SPA = ivs[3]; pk.IV_SPD = ivs[4]; pk.IV_SPE = ivs[5]; pk.Nature = (int)nature; pk.EncryptionConstant = (uint)encryption_constant; pk.PID = (uint)pid;
+            pk.IV_HP = ivs[0]; pk.IV_ATK = ivs[1]; pk.IV_DEF = ivs[2]; pk.IV_SPA = ivs[3]; pk.IV_SPD = ivs[4]; pk.IV_SPE = ivs[5]; pk.EncryptionConstant = encryption_constant; pk.PID = pid;
+            pk.Nature = (int)nature;
             if (shinyXor == 0)
                 CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
-            if (shinyXor <= 16)
+            else if (shinyXor != 0 && shinyXor <= 16)
                 CommonEdits.SetShiny(pk, Shiny.AlwaysStar);
             var print = Hub.Config.StopConditions.GetAlphaPrintName(pk);
             logs += $"Generator Seed: {(group_seed + 0x82A2B175229D6A5B & 0xFFFFFFFFFFFFFFFF):X16}\nGroup: {id}\n{(pk.ShinyXor == 0 ? "■ - Shiny" : pk.ShinyXor <= 16 ? "★ - Shiny" : "")}\n{print}\nEncounter Slot: {encounter_slot}\nLocation: {location}";
@@ -1328,7 +1316,6 @@ namespace SysBot.Pokemon
                 var rng = new Xoroshiro128Plus(generator_seed);
                 rng.Next();
                 var (shiny, shinytype, encryption_constant, pid, ivs, ability, gender, nature, shinyseed) = GenerateFromSeed(rng.Next(), (int)Settings.ShinyRolls, givs);
-
                 if (shiny)
                 {
                     if (Settings.SpeciesToHunt.Length != 0 && !Settings.SpeciesToHunt.Contains(SpawnerSpecies))
@@ -1500,6 +1487,9 @@ namespace SysBot.Pokemon
                     await Task.Delay(1_000, token).ConfigureAwait(false);
                     if (!IsWaitingConfirmation)
                     {
+                        //await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + InvincibleTrainer1, token).ConfigureAwait(false);
+                        //await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + InvincibleTrainer2, token).ConfigureAwait(false);
+
                         await TeleportToMMOGroupZone(token).ConfigureAwait(false);
                         await Click(HOME, 1_000, token).ConfigureAwait(false);
                         ResultsUtil.Log($"Teleported to the location of {(Species)pk.Species}! Pressing HOME incase you weren't ready in game.", "");

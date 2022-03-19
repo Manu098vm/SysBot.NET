@@ -299,58 +299,58 @@ namespace SysBot.Pokemon
             await Click(B, 1_000, token).ConfigureAwait(false);
         }
 
-        public (bool shiny, uint shinyXor, ulong EC, ulong PID, int[] IVs, ulong ability, ulong gender, Nature, ulong) GenerateFromSeed(ulong seed, int rolls, int guranteedivs)
+        private static uint GetShinyXor(in uint pid, in uint oid)
+        {
+            var xor = pid ^ oid;
+            return (xor ^ (xor >> 16)) & 0xFFFF;
+        }
+
+        public (bool shiny, uint shinyXor, uint EC, uint PID, int[] IVs, ulong ability, ulong gender, Nature, ulong) GenerateFromSeed(ulong seed, int rolls, int guranteedivs)
         {
             bool shiny = false;
-            ulong EC;
-            ulong pid = 0;
-            int[] ivs;
+            uint EC;
+            uint pid = 0;
             ulong ability;
             ulong gender;
             Nature nature;
-            ulong sseed = 0;
-            uint shinyXor = 0;
+            ulong newseed = 0;
+            uint shinyXor = 17;
             var rng = new Xoroshiro128Plus(seed);
-            EC = rng.NextInt(0xFFFFFFFF);
-            var sidtid = rng.NextInt(0xFFFFFFFF);
+            EC = (uint)rng.NextInt();
+            var sidtid = (uint)rng.NextInt();
             for (int i = 0; i < rolls; i++)
             {
-                pid = rng.NextInt(0xFFFFFFFF);
-                shiny = ((pid >> 16) ^ (sidtid >> 16) ^ (pid & 0xFFFF) ^ (sidtid & 0xFFFF)) < 0x10;
-                shinyXor = (uint)((pid & 0xFFFF) ^ (sidtid & 0xFFFF) ^ (pid >> 16) ^ (sidtid >> 16));
+                pid = (uint)rng.NextInt();
+                shinyXor = GetShinyXor(pid, sidtid);
+                shiny = shinyXor < 16;
                 if (shiny)
                 {
-                    sseed = rng.GetState().s0;
+                    newseed = rng.GetState().s0;
                     break;
                 }
             }
-            ivs = new int[] { -1, -1, -1, -1, -1, -1 };
+
+            const int UNSET = -1;
+            int[] ivs = { UNSET, UNSET, UNSET, UNSET, UNSET, UNSET };
+            const int MAX = 31;
             for (int i = 0; i < guranteedivs; i++)
             {
-                var index = rng.Next() & GetMask(6);
-                while ((int)index >= 6)
-                    index = rng.Next() & GetMask(6);
+                int index;
+                do { index = (int)rng.NextInt(6); }
+                while (ivs[index] != UNSET);
 
-
-                while (ivs[index] != -1)
-                {
-                    index = rng.Next() & GetMask(6);
-                    while ((int)index >= 6)
-                        index = rng.Next() & GetMask(6);
-
-                }
-
-                ivs[index] = 31;
+                ivs[index] = MAX;
             }
-            for (int i = 0; i < 6; i++)
+
+            for (int i = 0; i < ivs.Length; i++)
             {
-                if (ivs[i] == -1)
-                    ivs[i] = (int)(rng.Next() & GetMask(32));
+                if (ivs[i] == UNSET)
+                    ivs[i] = (int)rng.NextInt(32);
             }
             ability = rng.Next() & GetMask(2);
             gender = (rng.Next() & GetMask(252)) + 1;
             nature = (Nature)(rng.NextInt(25));
-            return (shiny, shinyXor, EC, pid, ivs, ability, gender, nature, sseed);
+            return (shiny, shinyXor, EC, pid, ivs, ability, gender, nature, newseed);
         }
 
         public uint GetMask(uint maximum)
