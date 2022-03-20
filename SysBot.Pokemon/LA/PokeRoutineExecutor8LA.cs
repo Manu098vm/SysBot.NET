@@ -225,7 +225,7 @@ namespace SysBot.Pokemon
         }
 
         // Only used to check if we made it off the title screen; the pointer isn't viable until a few seconds after clicking A.
-        private async Task<bool> IsOnOverworldTitle(CancellationToken token)
+        public async Task<bool> IsOnOverworldTitle(CancellationToken token)
         {
             var (valid, offset) = await ValidatePointerAll(Offsets.OverworldPointer, token).ConfigureAwait(false);
             if (!valid)
