@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <LangVersion>9</LangVersion>
+    <TargetFramework>net6.0</TargetFramework>
+    <LangVersion>10</LangVersion>
     <Nullable>enable</Nullable>
     <Platforms>AnyCPU</Platforms>
   </PropertyGroup>
@@ -29,11 +29,10 @@
     <PackageReference Include="System.Data.SQLite" Version="1.0.114.4" />
     <ProjectReference Include="..\SysBot.Base\SysBot.Base.csproj" />
   </ItemGroup>
-
   <ItemGroup>
-    <Folder Include="deps\" />
-  </ItemGroup>
-  <ItemGroup>
+    <Reference Include="PermuteMMO.Lib">
+      <HintPath>..\..\PermuteMMO\PermuteMMO.Lib\bin\Release\net6.0\PermuteMMO.Lib.dll</HintPath>
+    </Reference>
     <Reference Include="PKHeX.Core.AutoMod">
       <HintPath>deps\PKHeX.Core.AutoMod.dll</HintPath>
     </Reference>

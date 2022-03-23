@@ -9,8 +9,8 @@ using System.Collections.Generic;
 using static SysBot.Pokemon.PokeDataOffsetsLA;
 using System.Net;
 using Newtonsoft.Json;
-using SysBot.Base;
-using System.IO;
+using PermuteMMO.Lib;
+using ResultsUtil = SysBot.Base.ResultsUtil;
 
 namespace SysBot.Pokemon
 {
@@ -18,6 +18,7 @@ namespace SysBot.Pokemon
     {
         private readonly PokeTradeHub<PA8> Hub;
         private readonly IDumper DumpSetting;
+        private readonly IDumper DumpMMO;
         private readonly ArceusBotSettings Settings;
         public static CancellationTokenSource EmbedSource = new();
         public static bool EmbedsInitialized;
@@ -30,6 +31,7 @@ namespace SysBot.Pokemon
             Hub = hub;
             Settings = Hub.Config.Arceus;
             DumpSetting = Hub.Config.Folder;
+            DumpMMO = Hub.Config.Folder;
         }
 
         private ulong ofs;
@@ -47,6 +49,8 @@ namespace SysBot.Pokemon
         List<PA8> monlist = new();
         List<PA8> bonuslist = new();
         List<string> loglist = new();
+        List<string> results = new();
+        List<string> moreresults = new();
 
         public static readonly string[] ObsidianTitle =
         {
@@ -114,7 +118,6 @@ namespace SysBot.Pokemon
                     ArceusMode.DistortionSpammer => DistortionSpammer(token),
                     ArceusMode.DistortionReader => DistortionReader(token),
                     ArceusMode.MassiveOutbreakHunter => MassiveOutbreakHunter(token),
-                    ArceusMode.MMOBlockDumper => DumpMMOBlock(token),
                     _ => PlayerCoordScan(token),
                 };
                 await task.ConfigureAwait(false);
@@ -1558,11 +1561,6 @@ namespace SysBot.Pokemon
                             {
                                 EmbedMon = (pk, true);
                                 ResultsUtil.Log($"{Hub.Config.StopConditions.MatchFoundEchoMention} Massive Mass Outbreak for {(Species)pk.Species} has been found{map}! Waiting for next command...", "");
-                                if (Settings.OutbreakConditions.DumpBlockWhenSpeciesFound)
-                                {
-                                    Log("Dumping mmo.bin for PermuteMMO usage.");
-                                    await DumpMMOBlock(token).ConfigureAwait(false);
-                                }
                                 IsWaiting = true;
                                 while (IsWaiting)
                                     await Task.Delay(2_500, token).ConfigureAwait(false);
@@ -1617,6 +1615,23 @@ namespace SysBot.Pokemon
                     };
                 } while (species != Species.None && species < Species.MAX_COUNT);
             }
+            if (Settings.OutbreakConditions.Permute)
+            {
+                Log("Beginning permutations...");
+                (results, moreresults) = ConsolePermuter.PermuteMassiveMassOutbreak(info);
+                report = string.Join("\n", results);
+                ResultsUtil.Log(report, "");
+                string report2 = string.Join("\n", moreresults);
+                ResultsUtil.Log(report2, "");
+                results.Clear();
+                results = new();
+                moreresults.Clear();
+                moreresults = new();
+
+                IsWaiting = true;
+                while (IsWaiting)
+                    await Task.Delay(1_000, token).ConfigureAwait(false);
+            }
             if (!IsWaiting)
                 EmbedMon = (null, false);
         }
@@ -1642,92 +1657,6 @@ namespace SysBot.Pokemon
                 await CloseGame(Hub.Config, token).ConfigureAwait(false);
                 await StartGame(Hub.Config, token).ConfigureAwait(false);
                 attempts++;
-            }
-        }
-
-        private async Task DumpMMOBlock(CancellationToken token)
-        {
-            while (!token.IsCancellationRequested)
-            {
-                await Task.Delay(0_100).ConfigureAwait(false);
-                Log("Initiating dump...");
-                var ofs = new long[] { 0x42BA6B0, 0x2B0, 0x58, 0x18, 0x1B0 };
-                var outbreakptr = SwitchConnection.PointerAll(ofs, token).Result;
-                var info = SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr, 14720, token).Result;
-
-                if (!File.Exists("mmo.bin"))
-                {
-                    var blank = "";
-                    File.Create("mmo.bin").Close();
-                    File.WriteAllText("mmo.bin", blank);
-                }
-                else
-                {
-                    var blank = "";
-                    File.WriteAllText("mmo.bin", blank);
-                }
-                File.WriteAllBytes("mmo.bin", info);
-                Log("Done. Waiting for command to resume...");
-                ResultsUtil.Log("Done. Waiting for command to resume...", "");
-                IsWaiting = true;
-                while (IsWaiting)
-                    await Task.Delay(1_000, token).ConfigureAwait(false);
-
-                if (!IsWaiting)
-                {
-                    Log($"Search #{attempts}");
-                    if (Settings.OutbreakConditions.TeleportToHunt)
-                    {
-                        await TeleportToSpawnZone(token);
-                        await SetStick(LEFT, 0, -30_000, 1_000, token).ConfigureAwait(false);
-                        await ResetStick(token).ConfigureAwait(false); // reset
-                    }
-                    if (!Settings.OutbreakConditions.TeleportToHunt)
-                    {
-                        await SetStick(LEFT, 0, -30_000, 1_000, token).ConfigureAwait(false);
-                        await Click(Y, 1_000, token).ConfigureAwait(false);
-                        await ResetStick(token).ConfigureAwait(false); // reset
-                    }
-                    for (int i = 0; i < 2; i++)
-                        await Click(A, 1_000, token).ConfigureAwait(false);
-                    await Click(A, 10_000, token).ConfigureAwait(false);
-
-                    // Return to Jubilife
-                    if (Settings.OutbreakConditions.TeleportToHunt)
-                    {
-                        var prevmap = Settings.ScanLocation;
-                        ofs = new long[] { 0x42BA6B0, 0x2B0, 0x58, 0x18, 0x1B0 };
-                        var mmolocationptr = SwitchConnection.PointerAll(ofs, token).Result;
-                        var location = SwitchConnection.ReadBytesAbsoluteAsync(mmolocationptr, 2, token).Result;
-                        string map = BitConverter.ToString(location);
-                        switch (map)
-                        {
-                            case "B7-56": Settings.ScanLocation = ArceupMap.CobaltCoastlands; break;
-                            case "04-55": Settings.ScanLocation = ArceupMap.CrimsonMirelands; break;
-                            case "51-53": Settings.ScanLocation = ArceupMap.AlabasterIcelands; break;
-                            case "9E-51": Settings.ScanLocation = ArceupMap.CoronetHighlands; break;
-                            case "1D-5A": Settings.ScanLocation = ArceupMap.ObsidianFieldlands; break;
-                            case "45-26" or "00-00": Settings.ScanLocation = prevmap; break;
-                        }
-                        GetDefaultCoords();
-                        await TeleportToCampZone(token).ConfigureAwait(false);
-                        await SetStick(LEFT, -30_000, 0, 1_000, token).ConfigureAwait(false); // reset face forward
-                        await ResetStick(token).ConfigureAwait(false); // reset
-                    }
-                    if (!Settings.OutbreakConditions.TeleportToHunt)
-                    {
-                        await SetStick(LEFT, -10_000, 0, 0_500, token).ConfigureAwait(false);
-                        await ResetStick(token).ConfigureAwait(false); // reset
-                        await SetStick(RIGHT, -5_000, 0, 0_500, token).ConfigureAwait(false);
-                        await SetStick(RIGHT, 0, 0, 0_500, token).ConfigureAwait(false);
-                        await Click(ZL, 1_000, token).ConfigureAwait(false);
-                        await Click(PLUS, 1_000, token).ConfigureAwait(false);
-                        await PressAndHold(B, Settings.OutbreakConditions.HoldBMs, 0, token).ConfigureAwait(false);
-                    }
-                    await Click(A, 1_000, token).ConfigureAwait(false);
-                    await Click(A, 10_000, token).ConfigureAwait(false);
-                }
-
             }
         }
     }

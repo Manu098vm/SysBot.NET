@@ -24,9 +24,9 @@ namespace SysBot.Pokemon
 
         //ArcBot Additions 1.1.0
         public const uint MenuOffset = 0x042D4B04;
-        public const uint ActivateDistortion = 0x024A03B8;
-        public const uint InvincibleTrainer1 = 0x024E93D4;
-        public const uint InvincibleTrainer2 = 0x024E95DC;
+        public const uint ActivateDistortion = 0x024A0428;
+        public const uint InvincibleTrainer1 = 0x024E9444;
+        public const uint InvincibleTrainer2 = 0x024E964C;
         public const uint InfPP1 = 0x007AB30C;
         public const uint InfPP2 = 0x007AB31C;
         public const string WildPokemonPtrLA = "[[[[[main+42a6f00]+D0]+B8]+300]+70]+60]+98]+10]";

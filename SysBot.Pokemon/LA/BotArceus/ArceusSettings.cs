@@ -60,8 +60,8 @@ namespace SysBot.Pokemon
             [Category(Arceus), Description("When enabled, the bot will search for our desired outbreak/mmo species, then read the seed for a shiny.")]
             public bool SearchForSpecies { get; set; } = false;
 
-            [Category(Arceus), Description("When enabled AND SearchForSpecies is enabled, the bot will dump your MMO block for permutation usage.")]
-            public bool DumpBlockWhenSpeciesFound { get; set; } = false;
+            [Category(Arceus), Description("When enabled, the bot will permute all possible results.")]
+            public bool Permute { get; set; } = false;
 
             [Category(Arceus), Description("When enabled, the bot will search for only an alpha shiny from a MMO.")]
             public bool MMOAlphaShinyOnly { get; set; } = false;
