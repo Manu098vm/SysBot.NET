@@ -47,5 +47,6 @@ Uses [Discord.Net](https://github.com/discord-net/Discord.Net) , [TwitchLib](htt
 ## Other Dependencies
 Pokémon API logic is provided by [PKHeX](https://github.com/kwsch/PKHeX/), and template generation is provided by [AutoMod](https://github.com/architdate/PKHeX-Plugins/).
 
+Permutation generation provided by [PermuteMMO](https://github.com/kwsch/PermuteMMO).
 # License
 Refer to the `License.md` for details regarding licensing.
