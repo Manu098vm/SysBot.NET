@@ -18,7 +18,6 @@ namespace SysBot.Pokemon
     {
         private readonly PokeTradeHub<PA8> Hub;
         private readonly IDumper DumpSetting;
-        private readonly IDumper DumpMMO;
         private readonly ArceusBotSettings Settings;
         public static CancellationTokenSource EmbedSource = new();
         public static bool EmbedsInitialized;
@@ -31,7 +30,6 @@ namespace SysBot.Pokemon
             Hub = hub;
             Settings = Hub.Config.Arceus;
             DumpSetting = Hub.Config.Folder;
-            DumpMMO = Hub.Config.Folder;
         }
 
         private ulong ofs;
