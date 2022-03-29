@@ -1,14 +1,22 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <LangVersion>10</LangVersion>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net6.0-windows</TargetFramework>
+		<LangVersion>10</LangVersion>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="NLog" Version="4.7.11" />
-    <PackageReference Include="LibUsbDotNet" Version="2.2.29" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Discord.Net" Version="3.3.2" />
+		<PackageReference Include="NLog" Version="4.7.11" />
+		<PackageReference Include="LibUsbDotNet" Version="2.2.29" />
+		<PackageReference Include="PKHeX.Core" Version="22.3.18" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Reference Include="PermuteMMO.Lib">
+			<HintPath>..\..\PermuteZyro\PermuteMMO.Lib\bin\Release\net6.0-windows\PermuteMMO.Lib.dll</HintPath>
+		</Reference>
+	</ItemGroup>
 
 </Project>

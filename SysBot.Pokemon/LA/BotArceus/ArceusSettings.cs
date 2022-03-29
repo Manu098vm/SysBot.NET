@@ -13,7 +13,7 @@ namespace SysBot.Pokemon
         [Category(Arceus), Description("The method by which the bot will scan overworld Pokémon.")]
         public ArceusMode BotType { get; set; } = ArceusMode.PlayerCoordScan;
 
-        [Category(Arceus), Description("Select the Location of the map you are hunting for.")]
+        [Category(Arceus), Description("Select the Location of the map you are hunting for. Ignore this setting if you are running MMOHunter")]
         public ArceupMap ScanLocation { get; set; } = ArceupMap.ObsidianFieldlands;
 
         [Category(Arceus), Description("Select the Location to Autofill Coords upon running PlayerCoordScan.")]
@@ -57,14 +57,11 @@ namespace SysBot.Pokemon
             [Category(Arceus), Description("When enabled, the bot will teleport instead of walk/run for Outbreak/MMO Hunter.")]
             public bool TeleportToHunt { get; set; } = false;
 
-            [Category(Arceus), Description("When enabled, the bot will search for our desired outbreak/mmo species, then read the seed for a shiny.")]
-            public bool SearchForSpecies { get; set; } = false;
-
             [Category(Arceus), Description("When enabled, the bot will permute all possible results.")]
             public bool Permute { get; set; } = false;
 
             [Category(Arceus), Description("When enabled, the bot will search for only an alpha shiny from a MMO.")]
-            public bool MMOAlphaShinyOnly { get; set; } = false;
+            public bool AlphaShinyOnly { get; set; } = false;
 
             [Category(Arceus), Description("Enter number of shiny rolls for regular outbreaks if you are scanning Both types.")]
             public ShinyRolls OutbreakShinyRolls { get; set; } = ShinyRolls.OutbreakPerfectCharm;

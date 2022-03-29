@@ -393,6 +393,11 @@ namespace SysBot.Pokemon.WinForms
                 x.Acknowledge();
                 ResultsUtil.Log("Acknowledged. Tossing now!", "");
             }
+            if (Config.Hub.Arceus.OutbreakConditions.Permute)
+            {
+                RTB_Results.Clear();
+                ResultsUtil.Log("Clearing Results log for permutations!\n", "");
+            }
         }
     }
 }

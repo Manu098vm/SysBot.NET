@@ -49,6 +49,7 @@ namespace SysBot.Pokemon
         List<string> loglist = new();
         List<string> results = new();
         List<string> moreresults = new();
+        private byte[] info = { 0 };
 
         public static readonly string[] ObsidianTitle =
         {
@@ -1362,15 +1363,16 @@ namespace SysBot.Pokemon
 
         public async Task PerformOutbreakScan(CancellationToken token)
         {
+            var ofs = new long[] { 0x42BA6B0, 0x2B0, 0x58, 0x18, 0x20 };
+            var outbreakptr = SwitchConnection.PointerAll(ofs, token).Result;
+            info = SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr, 0x190, token).Result;
             for (int i = 0; i < 4; i++)
             {
-                var ofs = new long[] { 0x42BA6B0, 0x2B0, 0x58, 0x18, 0x20 + i * 0x50 };
-                var outbreakptr = SwitchConnection.PointerAll(ofs, token).Result;
-                Species outbreakspecies = (Species)BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr, 2, token).ConfigureAwait(false), 0);
+                Species outbreakspecies = (Species)BitConverter.ToUInt16(info.Slice(0 + (i * 80), 2));
                 if (outbreakspecies != Species.None)
                 {
-                    var outbreakseed = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr + 0x38, 8, token).ConfigureAwait(false), 0);
-                    var spawncount = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr + 0x40, 2, token).ConfigureAwait(false), 0);
+                    var outbreakseed = BitConverter.ToUInt64(info.Slice(56 + (i * 80), 8));
+                    var spawncount = BitConverter.ToUInt16(info.Slice(64 + (i * 80), 2));
                     Log($"Outbreak found for: {outbreakspecies} | Total Spawn Count: {spawncount}.");
                     monlist = ReadOutbreakSeed(outbreakspecies, spawncount, outbreakseed);
                     foreach (PA8 pk in monlist)
@@ -1379,10 +1381,10 @@ namespace SysBot.Pokemon
                         var print = Hub.Config.StopConditions.GetAlphaPrintName(pk);
                         loglist.Add($"\nOutbreak Spawn: #{count}" + print);
 
-                        if (pk.IsShiny)
+                        if (pk.IsShiny && Settings.OutbreakConditions.AlphaShinyOnly && pk.IsAlpha || pk.IsShiny && !Settings.OutbreakConditions.AlphaShinyOnly)
                         {
                             await CheckEmbed(token, pk, "", loglist.Last()).ConfigureAwait(false);
-                            await Task.Delay(2_500).ConfigureAwait(false);
+                            await Task.Delay(2_500, token).ConfigureAwait(false);
                         }
                     }
                     count = 0;
@@ -1465,14 +1467,14 @@ namespace SysBot.Pokemon
             }
             if (list.Length != 0)
             {
-                if (!huntedspecies)
+                if (!huntedspecies || huntedspecies && Settings.OutbreakConditions.AlphaShinyOnly && !pk.IsAlpha)
                     EmbedMon = (pk, false);
-                if (!huntedspecies && Settings.OutbreakConditions.MMOAlphaShinyOnly && pk.IsAlpha)
+                if (!huntedspecies && Settings.OutbreakConditions.AlphaShinyOnly && pk.IsAlpha || huntedspecies && Settings.OutbreakConditions.AlphaShinyOnly && pk.IsAlpha)
                     EmbedMon = (pk, true);
             }
-            if (list.Length == 0 || huntedspecies)
+            if (list.Length == 0)
             {
-                if (Settings.OutbreakConditions.MMOAlphaShinyOnly && !pk.IsAlpha)
+                if (Settings.OutbreakConditions.AlphaShinyOnly && !pk.IsAlpha)
                     EmbedMon = (pk, false);
                 else
                     EmbedMon = (pk, true);
@@ -1482,7 +1484,7 @@ namespace SysBot.Pokemon
             {
                 IsWaiting = true;
                 IsWaitingConfirmation = true;
-                ResultsUtil.Log($"Match found! Enter{map}, type $continue or click the Continue button and I'll teleport you to the location of {(Species)pk.Species}!", "");
+                ResultsUtil.Log($"Match found! Enter{map}, type $continue or click the Continue button and I'll teleport you to the location of {(Species)pk.Species} in a Massive Mass Outbreak!", "");
                 while (IsWaiting)
                 {
                     await Task.Delay(1_000, token).ConfigureAwait(false);
@@ -1503,11 +1505,9 @@ namespace SysBot.Pokemon
 
         public async Task PerformMMOScan(CancellationToken token)
         {
-            byte[] info;
             string map = string.Empty;
             string report = string.Empty;
             Species species;
-            string[] list = Settings.SpeciesToHunt.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
             var ofs = new long[] { 0x42BA6B0, 0x2B0, 0x58, 0x18, 0x1B0 };
             var outbreakptr = SwitchConnection.PointerAll(ofs, token).Result;
             info = SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr, 14720, token).Result;
@@ -1548,23 +1548,11 @@ namespace SysBot.Pokemon
                         var spawncoordx = BitConverter.ToUInt32(xyz, 0);
                         var spawncoordy = BitConverter.ToUInt32(xyz, 4);
                         var spawncoordz = BitConverter.ToUInt32(xyz, 8);
-                        bool huntedspecies = list.Contains($"{species}");
                         Log($"Group Seed: {string.Format("0x{0:X}", group_seed)}");
                         Log($"Massive Mass Outbreak found for: {species}{map} | Total Spawn Count: {spawncount} | Group ID: {groupcount}");
                         (monlist, bonuslist) = ReadMMOSeed(spawncount, group_seed, bonuscount, encslot, bonusencslot);
                         foreach (PA8 pk in monlist)
                         {
-
-                            if (huntedspecies && Settings.OutbreakConditions.SearchForSpecies)
-                            {
-                                EmbedMon = (pk, true);
-                                ResultsUtil.Log($"{Hub.Config.StopConditions.MatchFoundEchoMention} Massive Mass Outbreak for {(Species)pk.Species} has been found{map}! Waiting for next command...", "");
-                                IsWaiting = true;
-                                while (IsWaiting)
-                                    await Task.Delay(2_500, token).ConfigureAwait(false);
-                                if (!IsWaiting)
-                                    break;
-                            }
                             count++;
                             var print = Hub.Config.StopConditions.GetAlphaPrintName(pk);
                             loglist.Add($"\nRegular Spawn: #{count}" + print);
@@ -1617,6 +1605,7 @@ namespace SysBot.Pokemon
             {
                 Log("Beginning permutations...");
                 (results, moreresults) = ConsolePermuter.PermuteMassiveMassOutbreak(info);
+                Log("Done with permutations, check the results tab! If no results, no permutations/outbreaks are present!");
                 report = string.Join("\n", results);
                 ResultsUtil.Log(report, "");
                 string report2 = string.Join("\n", moreresults);

@@ -1,13 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net6.0</TargetFramework>
+		<TargetFramework>net6.0-windows</TargetFramework>
 		<Platforms>AnyCPU</Platforms>
-    <Nullable>enable</Nullable>
-    <LangVersion>10</LangVersion>
+		<Nullable>enable</Nullable>
+		<LangVersion>10</LangVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Discord.Net" Version="3.3.2" />
 		<PackageReference Include="Google.Apis" Version="1.55.0" />
 		<PackageReference Include="Google.Apis.Auth" Version="1.55.0" />
 		<PackageReference Include="Google.Apis.Core" Version="1.55.0" />
@@ -22,12 +23,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Reference Include="StreamingClient.Base">
-	    <HintPath>deps\StreamingClient.Base.dll</HintPath>
-	  </Reference>
-	  <Reference Include="YouTube.Base">
-	    <HintPath>deps\YouTube.Base.dll</HintPath>
-	  </Reference>
+		<Reference Include="StreamingClient.Base">
+			<HintPath>deps\StreamingClient.Base.dll</HintPath>
+		</Reference>
+		<Reference Include="YouTube.Base">
+			<HintPath>deps\YouTube.Base.dll</HintPath>
+		</Reference>
 	</ItemGroup>
 
 </Project>

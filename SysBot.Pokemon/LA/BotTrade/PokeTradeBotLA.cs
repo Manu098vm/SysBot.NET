@@ -1,11 +1,7 @@
-﻿using System.Linq;
-using PKHeX.Core;
+﻿using PKHeX.Core;
 using PKHeX.Core.Searching;
 using SysBot.Base;
-using System;
 using System.Net.Sockets;
-using System.Threading;
-using System.Threading.Tasks;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Pokemon.PokeDataOffsetsLA;
 
@@ -497,7 +493,6 @@ namespace SysBot.Pokemon
             await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
             await InitializeSessionOffsets(token).ConfigureAwait(false);
         }
-
         private async Task<PokeTradeResult> ProcessDumpTradeAsync(PokeTradeDetail<PA8> detail, CancellationToken token)
         {
             int ctr = 0;
@@ -535,7 +530,6 @@ namespace SysBot.Pokemon
                 detail.SendNotification(this, pk, verbose);
                 ctr++;
             }
-
             Log($"Ended Dump loop after processing {ctr} Pokémon.");
             if (ctr == 0)
                 return PokeTradeResult.TrainerTooSlow;

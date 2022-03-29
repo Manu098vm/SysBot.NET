@@ -1,41 +1,45 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <LangVersion>10</LangVersion>
-    <Nullable>enable</Nullable>
-    <Platforms>AnyCPU</Platforms>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net6.0-windows</TargetFramework>
+		<LangVersion>10</LangVersion>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<Platforms>AnyCPU</Platforms>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="SWSH\BotDen\FlatbuffersResource\shieldEnc.bin" />
-    <None Remove="SWSH\BotDen\FlatbuffersResource\swordEnc.bin" />
-    <None Remove="SWSH\BotLair\MoveInfo.json" />
-    <None Remove="TradeCord\Resources\DexFlavor.txt" />
-  </ItemGroup>
+	<ItemGroup>
+		<None Remove="SWSH\BotDen\FlatbuffersResource\shieldEnc.bin" />
+		<None Remove="SWSH\BotDen\FlatbuffersResource\swordEnc.bin" />
+		<None Remove="SWSH\BotLair\MoveInfo.json" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Include="SWSH\BotLair\MoveInfo.json" />
-    <EmbeddedResource Include="TradeCord\Resources\DexFlavor.txt" />
-    <EmbeddedResource Include="SWSH\BotDen\FlatbuffersResource\shieldEnc.bin" />
-    <EmbeddedResource Include="SWSH\BotDen\FlatbuffersResource\swordEnc.bin" />
-  </ItemGroup>
+	<ItemGroup>
+		<EmbeddedResource Include="SWSH\BotLair\MoveInfo.json" />
+		<EmbeddedResource Include="TradeCord\Resources\DexFlavor.txt" />
+		<EmbeddedResource Include="SWSH\BotDen\FlatbuffersResource\shieldEnc.bin" />
+		<EmbeddedResource Include="SWSH\BotDen\FlatbuffersResource\swordEnc.bin" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="PKHeX.Core" Version="22.3.18" />
-    <PackageReference Include="KdSoft.FlatBuffers" Version="1.12.0" />
-    <PackageReference Include="System.Data.SQLite" Version="1.0.114.4" />
-    <ProjectReference Include="..\SysBot.Base\SysBot.Base.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="PermuteMMO.Lib">
-      <HintPath>..\..\PermuteMMO\PermuteMMO.Lib\bin\Release\net6.0\PermuteMMO.Lib.dll</HintPath>
-    </Reference>
-    <Reference Include="PKHeX.Core.AutoMod">
-      <HintPath>deps\PKHeX.Core.AutoMod.dll</HintPath>
-    </Reference>
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Discord.Net" Version="3.3.2" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+		<PackageReference Include="PKHeX.Core" Version="22.3.18" />
+		<PackageReference Include="KdSoft.FlatBuffers" Version="1.12.0" />
+		<PackageReference Include="System.Data.SQLite" Version="1.0.114.4" />
+		<ProjectReference Include="..\SysBot.Base\SysBot.Base.csproj" />
+	</ItemGroup>
+
+
+
+
+	<ItemGroup>
+		<Reference Include="PermuteMMO.Lib">
+			<HintPath>..\..\PermuteMMO\PermuteMMO.Lib\bin\Release\net6.0-windows\PermuteMMO.Lib.dll</HintPath>
+		</Reference>
+		<Reference Include="PKHeX.Core.AutoMod">
+			<HintPath>deps\PKHeX.Core.AutoMod.dll</HintPath>
+		</Reference>
+	</ItemGroup>
 
 </Project>

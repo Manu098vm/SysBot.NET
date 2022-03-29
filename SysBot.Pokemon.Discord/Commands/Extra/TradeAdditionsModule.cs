@@ -516,9 +516,9 @@ namespace SysBot.Pokemon.Discord
                     string shinyurl = "https://img.favpng.com/6/14/25/computer-icons-icon-design-photography-royalty-free-png-favpng-mtjTHeWQe8FUAUB3RdJ3B2KJG.jpg";
                     if (ArceusBot.EmbedMon.Item1.IsAlpha)
                         shinyurl = "https://cdn.discordapp.com/emojis/944278189000228894.webp?size=96&quality=lossless";
-                    if (!Hub.Config.Arceus.OutbreakConditions.SearchForSpecies)
+                    if (Hub.Config.Arceus.SpeciesToHunt.Length == 0)
                         stats = $"{(ArceusBot.EmbedMon.Item1.ShinyXor == 0 ? "■ - " : ArceusBot.EmbedMon.Item1.ShinyXor <= 16 ? "★ - " : "")}{SpeciesName.GetSpeciesNameGeneration(ArceusBot.EmbedMon.Item1.Species, 2, 8)}{TradeExtensions<T>.FormOutput(ArceusBot.EmbedMon.Item1.Species, ArceusBot.EmbedMon.Item1.Form, out _)}\nIVs: {ArceusBot.EmbedMon.Item1.IV_HP}/{ArceusBot.EmbedMon.Item1.IV_ATK}/{ArceusBot.EmbedMon.Item1.IV_DEF}/{ArceusBot.EmbedMon.Item1.IV_SPA}/{ArceusBot.EmbedMon.Item1.IV_SPD}/{ArceusBot.EmbedMon.Item1.IV_SPE}";
-                    if (Hub.Config.Arceus.OutbreakConditions.SearchForSpecies)
+                    if (Hub.Config.Arceus.SpeciesToHunt.Length != 0)
                     {
                         stats = $"Hunting for a MMO with:\n{Hub.Config.Arceus.SpeciesToHunt.Replace(",", " or ")}";
                         if (ArceusBot.EmbedMon.Item1.IsAlpha && !string.IsNullOrEmpty(Hub.Config.Arceus.SpeciesToHunt))

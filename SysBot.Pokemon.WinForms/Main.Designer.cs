@@ -96,8 +96,8 @@ namespace SysBot.Pokemon.WinForms
             // 
             // FLP_Bots
             // 
-            this.FLP_Bots.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
+            this.FLP_Bots.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+            | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.FLP_Bots.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.FLP_Bots.Location = new System.Drawing.Point(0, 32);
@@ -228,8 +228,8 @@ namespace SysBot.Pokemon.WinForms
             // 
             // RTB_Results
             // 
-            this.RTB_Results.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
+            this.RTB_Results.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+            | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.RTB_Results.Location = new System.Drawing.Point(3, 36);
             this.RTB_Results.Name = "RTB_Results";
@@ -289,7 +289,7 @@ namespace SysBot.Pokemon.WinForms
         private System.Windows.Forms.TabControl TC_Main;
         private System.Windows.Forms.TabPage Tab_Bots;
         private System.Windows.Forms.TabPage Tab_Logs;
-        private System.Windows.Forms.RichTextBox RTB_Logs;        
+        private System.Windows.Forms.RichTextBox RTB_Logs;
         private System.Windows.Forms.TabPage Tab_Hub;
         private System.Windows.Forms.PropertyGrid PG_Hub;
         private System.Windows.Forms.Button B_Stop;
