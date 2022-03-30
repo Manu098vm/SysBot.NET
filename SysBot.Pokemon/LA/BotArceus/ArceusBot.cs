@@ -47,6 +47,7 @@ namespace SysBot.Pokemon
         List<PA8> monlist = new();
         List<PA8> bonuslist = new();
         List<string> loglist = new();
+        List<Species> specieslist = new();
         List<string> results = new();
         List<string> moreresults = new();
         private byte[] info = { 0 };
@@ -191,7 +192,7 @@ namespace SysBot.Pokemon
                 await Click(A, 1_000, token).ConfigureAwait(false);
 
                 menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(MenuOffset, 2, token).ConfigureAwait(false), 0);
-                if (menucheck == 66)
+                if (menucheck == 42)
                     return;
 
                 Log("Attempting face up");
@@ -206,7 +207,7 @@ namespace SysBot.Pokemon
                 await Click(A, 1_000, token).ConfigureAwait(false);
 
                 menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(MenuOffset, 2, token).ConfigureAwait(false), 0);
-                if (menucheck == 66)
+                if (menucheck == 42)
                     return;
 
                 Log("Attempting face down");
@@ -221,7 +222,7 @@ namespace SysBot.Pokemon
                 await Click(A, 1_000, token).ConfigureAwait(false);
 
                 menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(MenuOffset, 2, token).ConfigureAwait(false), 0);
-                if (menucheck == 66)
+                if (menucheck == 42)
                     return;
                 Log("Attempting face right");
                 await TeleportToCampZone(token);
@@ -235,7 +236,7 @@ namespace SysBot.Pokemon
                 await Click(A, 1_000, token).ConfigureAwait(false);
 
                 menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(MenuOffset, 2, token).ConfigureAwait(false), 0);
-                if (menucheck == 66)
+                if (menucheck == 42)
                     return;
                 Log("Attempting face left");
                 await TeleportToCampZone(token);
@@ -249,7 +250,7 @@ namespace SysBot.Pokemon
                 await Click(A, 1_000, token).ConfigureAwait(false);
 
                 menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(MenuOffset, 2, token).ConfigureAwait(false), 0);
-                if (menucheck == 66)
+                if (menucheck == 42)
                     return;
             }
         }
@@ -718,16 +719,16 @@ namespace SysBot.Pokemon
                         await TeleportToCampZone(token).ConfigureAwait(false);
                         var menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(offset, 2, token).ConfigureAwait(false), 0);
                         //Log($"Menu check: {menucheck}");
-                        if (menucheck == 66)
+                        if (menucheck == 42)
                             await Click(A, 0_800, token).ConfigureAwait(false);
-                        while (menucheck == 64 || menucheck == 0)
+                        while (menucheck == 40 || menucheck == 0)
                         {
                             Log("Wrong menu opened? Backing out now and trying to reposition.");
                             await Click(B, 1_500, token).ConfigureAwait(false);
                             await Reposition(token).ConfigureAwait(false);
                             await Click(B, 1_500, token).ConfigureAwait(false);
                             menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(offset, 2, token).ConfigureAwait(false), 0);
-                            if (menucheck == 66)
+                            if (menucheck == 42)
                                 break;
                         }
                         await Click(A, 1_000, token).ConfigureAwait(false);
@@ -774,16 +775,16 @@ namespace SysBot.Pokemon
                     await Click(B, 1_000, token).ConfigureAwait(false);// Random B incase of button miss
                     await Click(A, 1_000, token).ConfigureAwait(false);
                     var menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(MenuOffset, 2, token).ConfigureAwait(false), 0);
-                    if (menucheck == 66)
+                    if (menucheck == 42)
                         await Click(A, 0_800, token).ConfigureAwait(false);
-                    while (menucheck == 64 || menucheck == 0)
+                    while (menucheck == 40 || menucheck == 0)
                     {
                         Log("Wrong menu opened? Backing out now and trying to reposition.");
                         await Click(B, 1_500, token).ConfigureAwait(false);
                         await Reposition(token).ConfigureAwait(false);
                         await Click(B, 1_500, token).ConfigureAwait(false);
                         menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(MenuOffset, 2, token).ConfigureAwait(false), 0);
-                        if (menucheck == 66)
+                        if (menucheck == 42)
                             break;
                     }
                     if (adv % 2 == 0)
@@ -1363,6 +1364,7 @@ namespace SysBot.Pokemon
 
         public async Task PerformOutbreakScan(CancellationToken token)
         {
+            string report = string.Empty;
             var ofs = new long[] { 0x42BA6B0, 0x2B0, 0x58, 0x18, 0x20 };
             var outbreakptr = SwitchConnection.PointerAll(ofs, token).Result;
             info = SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr, 0x190, token).Result;
@@ -1390,7 +1392,42 @@ namespace SysBot.Pokemon
                     count = 0;
                 };
             }
-            string report = string.Join("\n", loglist);
+            if (Settings.OutbreakConditions.Permute)
+            {
+                Log("Beginning Outbreak permutations...");
+                (specieslist, results, moreresults) = ConsolePermuter.PermuteBlockMassOutbreak(info);
+                Log("Done with permutations, check the results tab! If no results, no permutations/outbreaks are present!");
+                report = string.Join("\n", results);
+                ResultsUtil.Log(report, "");
+                string report2 = string.Join("\n", moreresults);
+                ResultsUtil.Log(report2, "");
+                string[] list = Settings.SpeciesToHunt.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                bool afk = false;
+                foreach (Species s in specieslist)
+                {
+                    if (list.Contains(s.ToString()))
+                        afk = true;
+                }
+                if (afk)
+                {
+                    Log("Desired species has a permutation!");
+                    Log(report2);
+                    IsWaiting = true;
+                    while (IsWaiting)
+                        await Task.Delay(1_000).ConfigureAwait(false);
+                }
+                results.Clear();
+                results = new();
+                moreresults.Clear();
+                moreresults = new();
+                specieslist.Clear();
+                specieslist = new();
+                IsWaiting = false;
+            }
+            if (!IsWaiting)
+                EmbedMon = (null, false);
+
+            report = string.Join("\n", loglist);
             Log(report);
             loglist.Clear();
             loglist = new();
@@ -1603,25 +1640,45 @@ namespace SysBot.Pokemon
             }
             if (Settings.OutbreakConditions.Permute)
             {
-                Log("Beginning permutations...");
-                (results, moreresults) = ConsolePermuter.PermuteMassiveMassOutbreak(info);
+                Log("Beginning MMO permutations...");
+                (specieslist, results, moreresults) = ConsolePermuter.PermuteMassiveMassOutbreak(info);
                 Log("Done with permutations, check the results tab! If no results, no permutations/outbreaks are present!");
                 report = string.Join("\n", results);
-                ResultsUtil.Log(report, "");
                 string report2 = string.Join("\n", moreresults);
                 ResultsUtil.Log(report2, "");
+                ResultsUtil.Log(report, "");
+                string[] list = Settings.SpeciesToHunt.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                bool afk = false;
+                foreach (Species s in specieslist)
+                {
+                    if (list.Contains(s.ToString()))
+                    {
+                        afk = true;
+                        PA8 s1 = new();
+                        s1.Species = (int)s;
+                        EmbedMon = (s1, true);
+                    }
+                }
+                if (afk)
+                {
+                    Log("Desired species has a permutation!");
+                    Log(report);
+                    IsWaiting = true;
+                    while (IsWaiting)
+                        await Task.Delay(1_000).ConfigureAwait(false);
+                }
                 results.Clear();
                 results = new();
                 moreresults.Clear();
                 moreresults = new();
-
-                IsWaiting = true;
-                while (IsWaiting)
-                    await Task.Delay(1_000, token).ConfigureAwait(false);
+                specieslist.Clear();
+                specieslist = new();
+                IsWaiting = false;
             }
             if (!IsWaiting)
                 EmbedMon = (null, false);
         }
+
         public async Task MassiveOutbreakHunter(CancellationToken token)
         {
             Log("Reading map for active outbreaks...");
