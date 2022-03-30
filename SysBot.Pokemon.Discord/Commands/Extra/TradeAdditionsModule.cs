@@ -514,17 +514,15 @@ namespace SysBot.Pokemon.Discord
                         nomatch = "Not an Alpha...";
                     var url = TradeExtensions<PA8>.PokeImg(ArceusBot.EmbedMon.Item1, ArceusBot.EmbedMon.Item1.CanGigantamax, SysCord<T>.Runner.Hub.Config.TradeCord.UseFullSizeImages);
                     string shinyurl = "https://img.favpng.com/6/14/25/computer-icons-icon-design-photography-royalty-free-png-favpng-mtjTHeWQe8FUAUB3RdJ3B2KJG.jpg";
-                    if (ArceusBot.EmbedMon.Item1.IsAlpha)
-                        shinyurl = "https://cdn.discordapp.com/emojis/944278189000228894.webp?size=96&quality=lossless";
                     if (Hub.Config.Arceus.SpeciesToHunt.Length == 0)
                         stats = $"{(ArceusBot.EmbedMon.Item1.ShinyXor == 0 ? "■ - " : ArceusBot.EmbedMon.Item1.ShinyXor <= 16 ? "★ - " : "")}{SpeciesName.GetSpeciesNameGeneration(ArceusBot.EmbedMon.Item1.Species, 2, 8)}{TradeExtensions<T>.FormOutput(ArceusBot.EmbedMon.Item1.Species, ArceusBot.EmbedMon.Item1.Form, out _)}\nIVs: {ArceusBot.EmbedMon.Item1.IV_HP}/{ArceusBot.EmbedMon.Item1.IV_ATK}/{ArceusBot.EmbedMon.Item1.IV_DEF}/{ArceusBot.EmbedMon.Item1.IV_SPA}/{ArceusBot.EmbedMon.Item1.IV_SPD}/{ArceusBot.EmbedMon.Item1.IV_SPE}";
                     if (Hub.Config.Arceus.SpeciesToHunt.Length != 0)
                     {
-                        stats = $"Hunting for a MMO with:\n{Hub.Config.Arceus.SpeciesToHunt.Replace(",", " or ")}";
-                        if (ArceusBot.EmbedMon.Item1.IsAlpha && !string.IsNullOrEmpty(Hub.Config.Arceus.SpeciesToHunt))
-                            stats = $"Hunting for a MMO with:\n{Hub.Config.Arceus.SpeciesToHunt.Replace(",", " or ")} but this is nice too!";
+                        stats = $"Hunting for something special!";
                         shinyurl = "https://previews.123rf.com/images/fokaspokas/fokaspokas1809/fokaspokas180901587/109973633-loupe-search-or-magnifying-linear-icon-thin-outline-black-glass-icon-with-soft-shadow-on-transparent.jpg";
                     }
+                    if (ArceusBot.EmbedMon.Item1.IsAlpha)
+                        shinyurl = "https://cdn.discordapp.com/emojis/944278189000228894.webp?size=96&quality=lossless";
                     var author = new EmbedAuthorBuilder { IconUrl = shinyurl, Name = ArceusBot.EmbedMon.Item2 ? match : nomatch };
                     var footer = new EmbedFooterBuilder { Text = $"Found in {location}." };
                     if (Hub.Config.Arceus.BotType == ArceusMode.DistortionReader)
@@ -556,6 +554,30 @@ namespace SysBot.Pokemon.Discord
                 else await Task.Delay(1_000).ConfigureAwait(false);
             }
             ArceusBot.EmbedSource = new();
+        }
+
+        [Command("repeek")]
+        [Summary("Take and send a screenshot from the specified Switch.")]
+        [RequireOwner]
+        public async Task RePeek(string address)
+        {
+            var source = new CancellationTokenSource();
+            var token = source.Token;
+
+            var bot = SysCord<T>.Runner.GetBot(address);
+            if (bot == null)
+            {
+                await ReplyAsync($"No bot found with the specified address ({address}).").ConfigureAwait(false);
+                return;
+            }
+
+            var c = bot.Bot.Connection;
+            c.Reset();
+            var bytes = Task.Run(async () => await c.Screengrab(token).ConfigureAwait(false)).Result;
+            MemoryStream ms = new(bytes);
+            var img = "cap.jpg";
+            var embed = new EmbedBuilder { ImageUrl = $"attachment://{img}", Color = Color.Purple }.WithFooter(new EmbedFooterBuilder { Text = $"Captured image from bot at address {address}." });
+            await Context.Channel.SendFileAsync(ms, img, "", false, embed: embed.Build());
         }
     }
 }
