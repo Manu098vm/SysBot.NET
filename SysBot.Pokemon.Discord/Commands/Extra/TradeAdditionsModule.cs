@@ -506,7 +506,7 @@ namespace SysBot.Pokemon.Discord
             {
                 if (ArceusBot.EmbedMon.Item1 != null)
                 {
-                    var location = Hub.Config.Arceus.ScanLocation;
+                    var location = Hub.Config.Arceus.AlphaScanConditions.ScanLocation;
                     string match = "Match found!";
                     string nomatch = "Unwanted match...";
                     string stats = string.Empty;
