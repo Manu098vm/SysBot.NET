@@ -13,10 +13,4 @@
 		<PackageReference Include="PKHeX.Core" Version="22.3.18" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<Reference Include="PermuteMMO.Lib">
-			<HintPath>..\..\PermuteZyro\PermuteMMO.Lib\bin\Release\net6.0-windows\PermuteMMO.Lib.dll</HintPath>
-		</Reference>
-	</ItemGroup>
-
 </Project>

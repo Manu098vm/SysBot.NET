@@ -16,7 +16,7 @@
         SpawnZone = 1,
     }
 
-    public enum ArceupMap
+    public enum ArceusMap
     {
         ObsidianFieldlands = 0,
         CrimsonMirelands = 1,

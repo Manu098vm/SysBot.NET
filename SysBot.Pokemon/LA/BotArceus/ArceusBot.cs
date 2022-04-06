@@ -2,9 +2,8 @@
 using static SysBot.Base.SwitchButton;
 using static SysBot.Base.SwitchStick;
 using static SysBot.Pokemon.PokeDataOffsetsLA;
-using System.Net;
-using Newtonsoft.Json;
 using PermuteMMO.Lib;
+using System.Globalization;
 using ResultsUtil = SysBot.Base.ResultsUtil;
 
 namespace SysBot.Pokemon
@@ -14,9 +13,9 @@ namespace SysBot.Pokemon
         private readonly PokeTradeHub<PA8> Hub;
         private readonly IDumper DumpSetting;
         private readonly ArceusBotSettings Settings;
-        public static CancellationTokenSource EmbedSource = new();
-        public static bool EmbedsInitialized;
-        public static (PA8?, bool) EmbedMon;
+        public static bool EmbedsInitialized { get; set; }
+        public static readonly List<(PA8?, bool)> EmbedMons = new();
+        public static CancellationTokenSource EmbedSource { get; set; } = new();
         public ICountSettings Counts => (ICountSettings)Settings;
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         public ArceusBot(PokeBotState cfg, PokeTradeHub<PA8> hub) : base(cfg)
@@ -28,62 +27,45 @@ namespace SysBot.Pokemon
         }
 
         private ulong ofs;
-        private long[] disofs;
         private ulong MainNsoBase;
         private ulong OverworldOffset;
-        private int alphacount;
-        private int SpawnerID;
         private int attempts = 1;
         private int count = 0;
-        string SpawnerSpecies = string.Empty;
-        string x = string.Empty;
-        string y = string.Empty;
-        string z = string.Empty;
-        List<PA8> monlist = new();
-        List<PA8> bonuslist = new();
-        List<string> loglist = new();
-        List<Species> specieslist = new();
-        List<string> results = new();
-        List<string> moreresults = new();
+        private string x = string.Empty;
+        private string y = string.Empty;
+        private string z = string.Empty;
+        private List<PA8> monlist = new();
+        private List<PA8> bonuslist = new();
+        private readonly List<string> loglist = new();
+        private List<Species> specieslist = new();
+        private List<string> results = new();
+        private List<string> moreresults = new();
         private byte[] info = { 0 };
 
-        public static readonly string[] ObsidianTitle =
+        private static readonly string[] ObsidianTitle =
         {
             "Rapidash","Snorlax","Luxio","Floatzel","Staravia","Parasect","Kricketune","Stantler","Bibarel","Scyther","Lopunny","Graveler","Blissey","Heracross","Magikarp","Infernape","Alakazam","Gyarados",
         };
 
-        public static readonly string[] CrimsonTitle =
+        private static readonly string[] CrimsonTitle =
         {
             "Tangrowth","Hippowdon","Skuntank","Onix","Rhyhorn","Honchkrow","Roserade","Lickilicky","Pachirisu","Carnivine","Vespiquen","Yanmega","Ursaring","Toxicroak","Torterra","Sliggoo","Raichu","Ursaring","Whiscash",
         };
 
-        public static readonly string[] CoronetTitle =
+        private static readonly string[] CoronetTitle =
         {
             "Mothim","Bronzong","Carnivine","Gligar","Gabite","Luxray","Electivire","Goodra","Steelix","Clefable","Golem","Mismagius","Rhyperior","Probopass","Gliscor",
         };
 
-        public static readonly string[] CobaltTitle =
+        private static readonly string[] CobaltTitle =
         {
             "Walrein","Drapion","Purugly","Ambipom","Golduck","Dusknoir","Machoke","Octillery","Mantine","Tentacruel","Ninetales","Chansey","Lumineon","Gyarados","Gastrodon","Qwilfish","Empoleon","Mothim",
         };
 
-        public static readonly string[] AlabasterTitle =
+        private static readonly string[] AlabasterTitle =
         {
             "Glalie","Abomasnow","Mamoswine","Gardevoir","Sneasel","Chimecho","Machamp","Swinub","Piloswine","Lucario","Electabuzz","Froslass","Garchomp",
         };
-
-        public class SpawnerMMO
-        {
-            public int Slot { get; set; }
-            public Species Name { get; set; }
-
-            public int Form { get; set; }
-            public bool Alpha { get; set; }
-            public int[] Levels { get; set; } = Array.Empty<int>();
-            public int IVs { get; set; }
-        }
-
-        public Dictionary<string, SpawnerMMO[]> mmoslots { get; set; } = new();
 
         public override async Task MainLoop(CancellationToken token)
         {
@@ -94,12 +76,6 @@ namespace SysBot.Pokemon
             {
                 Log($"Starting main {GetType().Name} loop.");
                 Config.IterateNextRoutine();
-
-                if (Hub.Config.Arceus.BotType == ArceusMode.MassiveOutbreakHunter)
-                {
-                    var Spawnersjson = new WebClient().DownloadString($"https://raw.githubusercontent.com/zyro670/JS-Finder/notabranch/Resources/pla_spawners/jsons/massivemassoutbreaks.json");
-                    mmoslots = JsonConvert.DeserializeObject<Dictionary<string, SpawnerMMO[]>>(Spawnersjson) ?? new();
-                }
 
                 // Clear out any residual stick weirdness.
                 await ResetStick(token).ConfigureAwait(false);
@@ -137,13 +113,14 @@ namespace SysBot.Pokemon
         public void Acknowledge() => IsWaiting = false;
         public void AcknowledgeConfirmation() => IsWaitingConfirmation = false;
 
-        public async Task TimeTest(CancellationToken token)
+        private async Task TimeTest(CancellationToken token)
         {
             var timeofs = await NewParsePointer(TimePtrLA, token).ConfigureAwait(false);
             var timeVal = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(timeofs, 2, token).ConfigureAwait(false), 0);
             if (timeVal <= 7)
                 timeVal = 15;
             else timeVal = 00;
+
             byte[] timeByte = BitConverter.GetBytes(timeVal);
             await SwitchConnection.WriteBytesAbsoluteAsync(timeByte, timeofs, token).ConfigureAwait(false);
         }
@@ -176,7 +153,6 @@ namespace SysBot.Pokemon
 
         private async Task Reposition(CancellationToken token)
         {
-            var menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(MenuOffset, 2, token).ConfigureAwait(false), 0);
             while (!token.IsCancellationRequested)
             {
                 Log("Not in camp, repositioning and trying again.");
@@ -186,7 +162,7 @@ namespace SysBot.Pokemon
 
                 await Click(A, 1_000, token).ConfigureAwait(false);
 
-                menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(MenuOffset, 2, token).ConfigureAwait(false), 0);
+                var menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(MenuOffset, 2, token).ConfigureAwait(false), 0);
                 if (menucheck == 42)
                     return;
 
@@ -250,36 +226,38 @@ namespace SysBot.Pokemon
             }
         }
 
-        public async Task DistortionReader(CancellationToken token)
+        private async Task DistortionReader(CancellationToken token)
         {
             List<PA8> matchlist = new();
             List<string> loglist = new();
             Log($"Starting Distortion Scanner for {Settings.DistortionConditions.DistortionLocation}...");
-            var mode = Settings.DistortionConditions.DistortionLocation;
-            int count = 0;
             int tries = 1;
-            int encounter_slot_sum = 0;
-            switch (mode)
+            int count = Settings.DistortionConditions.DistortionLocation switch
             {
-                case ArceupMap.ObsidianFieldlands: count = 16; break;
-                case ArceupMap.CrimsonMirelands: count = 25; break;
-                case ArceupMap.CobaltCoastlands: count = 20; break;
-                case ArceupMap.CoronetHighlands: count = 20; break;
-                case ArceupMap.AlabasterIcelands: count = 24; break;
-            }
+                ArceusMap.ObsidianFieldlands => 16,
+                ArceusMap.CrimsonMirelands => 25,
+                ArceusMap.CobaltCoastlands or ArceusMap.CoronetHighlands => 20,
+                ArceusMap.AlabasterIcelands => 24,
+                _ => 0,
+            };
+
             while (!token.IsCancellationRequested)
             {
                 Log($"Scan #{tries}...");
                 for (int i = 0; i < count; i++)
                 {
-                    switch (mode)
+                    int encounter_slot_sum;
+                    long[] disofs;
+                    switch (Settings.DistortionConditions.DistortionLocation)
                     {
-                        case ArceupMap.ObsidianFieldlands: disofs = new long[] { 0x42CC4D8, 0xC0, 0x1C0, 0x990 + i * 0x8, 0x18, 0x430, 0xC0 }; encounter_slot_sum = 112; break;
-                        case ArceupMap.CrimsonMirelands: disofs = new long[] { 0x42CC4D8, 0xC0, 0x1C0, 0xC70 + i * 0x8, 0x18, 0x430, 0xC0 }; encounter_slot_sum = 276; break;
-                        case ArceupMap.CobaltCoastlands: disofs = new long[] { 0x42CC4D8, 0xC0, 0x1C0, 0xCC0 + i * 0x8, 0x18, 0x430, 0xC0 }; encounter_slot_sum = 163; break;
-                        case ArceupMap.CoronetHighlands: disofs = new long[] { 0x42CC4D8, 0xC0, 0x1C0, 0x818 + i * 0x8, 0x18, 0x430, 0xC0 }; encounter_slot_sum = 382; break;
-                        case ArceupMap.AlabasterIcelands: disofs = new long[] { 0x42CC4D8, 0xC0, 0x1C0, 0x948 + i * 0x8, 0x18, 0x430, 0xC0 }; encounter_slot_sum = 259; break;
+                        case ArceusMap.ObsidianFieldlands: disofs = new long[] { 0x42CC4D8, 0xC0, 0x1C0, 0x990 + i * 0x8, 0x18, 0x430, 0xC0 }; encounter_slot_sum = 112; break;
+                        case ArceusMap.CrimsonMirelands: disofs = new long[] { 0x42CC4D8, 0xC0, 0x1C0, 0xC70 + i * 0x8, 0x18, 0x430, 0xC0 }; encounter_slot_sum = 276; break;
+                        case ArceusMap.CobaltCoastlands: disofs = new long[] { 0x42CC4D8, 0xC0, 0x1C0, 0xCC0 + i * 0x8, 0x18, 0x430, 0xC0 }; encounter_slot_sum = 163; break;
+                        case ArceusMap.CoronetHighlands: disofs = new long[] { 0x42CC4D8, 0xC0, 0x1C0, 0x818 + i * 0x8, 0x18, 0x430, 0xC0 }; encounter_slot_sum = 382; break;
+                        case ArceusMap.AlabasterIcelands: disofs = new long[] { 0x42CC4D8, 0xC0, 0x1C0, 0x948 + i * 0x8, 0x18, 0x430, 0xC0 }; encounter_slot_sum = 259; break;
+                        default: throw new NotImplementedException("Invalid distortion location.");
                     }
+
                     var SpawnerOff = SwitchConnection.PointerAll(disofs, token).Result;
                     var GeneratorSeed = SwitchConnection.ReadBytesAbsoluteAsync(SpawnerOff, 8, token).Result;
                     //Log($"GroupID: {i} | Generator Seed: {BitConverter.ToString(GeneratorSeed).Replace("-", "")}");
@@ -287,10 +265,9 @@ namespace SysBot.Pokemon
                     if (group_seed != 0)
                     {
                         //Log($"Group Seed: {string.Format("0x{0:X}", group_seed)}");
-                        if (i >= 13 && i <= 15 && Settings.DistortionConditions.DistortionLocation == ArceupMap.CrimsonMirelands)
-                        {
+                        if (i >= 13 && i <= 15 && Settings.DistortionConditions.DistortionLocation == ArceusMap.CrimsonMirelands)
                             encounter_slot_sum = 118;
-                        }
+
                         var (match, shiny, logs) = ReadDistortionSeed(i, group_seed, encounter_slot_sum);
                         loglist.Add(logs);
                         if (shiny)
@@ -301,7 +278,7 @@ namespace SysBot.Pokemon
                                 bool huntedspecies = monlist.Contains($"{(Species)match.Species}");
                                 if (!huntedspecies)
                                 {
-                                    EmbedMon = (match, false);
+                                    EmbedMons.Add((match, false));
                                     Log(logs);
                                     break;
                                 }
@@ -317,13 +294,13 @@ namespace SysBot.Pokemon
                             {
                                 if (!match.IsAlpha)
                                 {
-                                    EmbedMon = (match, false);
+                                    EmbedMons.Add((match, false));
                                     break;
                                 }
                             }
                             Log(loglist.Last());
 
-                            EmbedMon = (match, true);
+                            EmbedMons.Add((match, true));
                             await Click(HOME, 1_000, token).ConfigureAwait(false);
                             IsWaiting = true;
                             while (IsWaiting)
@@ -334,12 +311,10 @@ namespace SysBot.Pokemon
                         }
                     }
                     matchlist.Clear();
-                    new List<PA8>(matchlist);
                 }
                 string report = string.Join("\n", loglist);
                 Log(report);
                 loglist.Clear();
-                new List<string>(loglist);
                 tries++;
 
                 if (Settings.OutbreakConditions.CheckDistortionFirst && Settings.BotType == ArceusMode.MassiveOutbreakHunter)
@@ -351,224 +326,95 @@ namespace SysBot.Pokemon
             }
         }
 
-        public string GetDistortionSpeciesLocation(int id)
+        private string GetDistortionSpeciesLocation(int id) => Settings.DistortionConditions.DistortionLocation switch
         {
-            string location = string.Empty;
-            var mode = Settings.DistortionConditions.DistortionLocation;
-            switch (mode)
-            {
-                case ArceupMap.ObsidianFieldlands:
-                    {
-                        if (id <= 4) location = "Horseshoe Plains";
-                        if (id > 4 && id <= 8) location = "Windswept Run";
-                        if (id > 8 && id <= 12) location = "Nature's Pantry";
-                        if (id > 12 && id <= 16) location = "Sandgem Flats";
-                    }
-                    break;
-                case ArceupMap.CrimsonMirelands:
-                    {
-                        if (id <= 4) location = "Droning Meadow";
-                        if (id > 4 && id <= 8) location = "Holm of Trials";
-                        if (id > 8 && id <= 12) location = "Unknown";
-                        if (id > 12 && id <= 16) location = "Ursa's Ring";
-                        if (id > 16 && id <= 20) location = "Prairie";
-                        if (id > 20 && id <= 24) location = "Gapejaw Bog";
-                    }
-                    break;
-                case ArceupMap.CobaltCoastlands:
-                    {
-                        if (id <= 4) location = "Ginko Landing";
-                        if (id > 4 && id <= 8) location = "Aipom Hill";
-                        if (id > 8 && id <= 12) location = "Deadwood Haunt";
-                        if (id > 12 && id <= 16) location = "Spring Path";
-                        if (id > 16 && id <= 20) location = "Windbreak Stand";
-                    }
-                    break;
-                case ArceupMap.CoronetHighlands:
-                    {
-                        if (id <= 4) location = "Sonorous Path";
-                        if (id > 4 && id <= 8) location = "Ancient Quarry";
-                        if (id > 8 && id <= 12) location = "Celestica Ruins";
-                        if (id > 12 && id <= 16) location = "Primeval Grotto";
-                        if (id > 16 && id <= 20) location = "Boulderoll Ravine";
-                    }
-                    break;
-                case ArceupMap.AlabasterIcelands:
-                    {
-                        if (id <= 4) location = "Bonechill Wastes North";
-                        if (id > 4 && id <= 8) location = "Avalugg's Legacy";
-                        if (id > 8 && id <= 12) location = "Bonechill Wastes South";
-                        if (id > 12 && id <= 16) location = "Southeast of Arena";
-                        if (id > 16 && id <= 20) location = "Heart's Crag";
-                        if (id > 20 && id <= 24) location = "Arena's Approach";
-                    }
-                    break;
-            }
-            return location;
-        }
+            ArceusMap.ObsidianFieldlands when id is <= 4 => "Horseshoe Plains",
+            ArceusMap.ObsidianFieldlands when id is > 4 and <= 8 => "Windswept Run",
+            ArceusMap.ObsidianFieldlands when id is > 8 and <= 12 => "Nature's Pantry",
+            ArceusMap.ObsidianFieldlands when id is > 12 and <= 16 => "Sandgem Flats",
 
-        public PA8 GetDistortionSpecies(double encslot)
+            ArceusMap.CrimsonMirelands when id is <= 4 => "Droning Meadow",
+            ArceusMap.CrimsonMirelands when id is > 4 and <= 8 => "Holm of Trials",
+            ArceusMap.CrimsonMirelands when id is > 8 and <= 12 => "Unknown",
+            ArceusMap.CrimsonMirelands when id is > 12 and <= 16 => "Ursa's Ring",
+            ArceusMap.CrimsonMirelands when id is > 16 and <= 20 => "Prairie",
+            ArceusMap.CrimsonMirelands when id is > 20 and <= 24 => "Gapejaw Bog",
+
+            ArceusMap.CobaltCoastlands when id is <= 4 => "Ginko Landing",
+            ArceusMap.CobaltCoastlands when id is > 4 and <= 8 => "Aipom Hill",
+            ArceusMap.CobaltCoastlands when id is > 8 and <= 12 => "Deadwood Haunt",
+            ArceusMap.CobaltCoastlands when id is > 12 and <= 16 => "Spring Path",
+            ArceusMap.CobaltCoastlands when id is > 16 and <= 20 => "Windbreak Stand",
+
+            ArceusMap.CoronetHighlands when id is <= 4 => "Sonorous Path",
+            ArceusMap.CoronetHighlands when id is > 4 and <= 8 => "Ancient Quarry",
+            ArceusMap.CoronetHighlands when id is > 8 and <= 12 => "Celestica Ruins",
+            ArceusMap.CoronetHighlands when id is > 12 and <= 16 => "Primeval Grotto",
+            ArceusMap.CoronetHighlands when id is > 16 and <= 20 => "Boulderoll Ravine",
+
+            ArceusMap.AlabasterIcelands when id is <= 4 => "Bonechill Wastes North",
+            ArceusMap.AlabasterIcelands when id is > 4 and <= 8 => "Avalugg's Legacy",
+            ArceusMap.AlabasterIcelands when id is > 8 and <= 12 => "Bonechill Wastes South",
+            ArceusMap.AlabasterIcelands when id is > 12 and <= 16 => "Southeast of Arena",
+            ArceusMap.AlabasterIcelands when id is > 16 and <= 20 => "Heart's Crag",
+            ArceusMap.AlabasterIcelands when id is > 20 and <= 24 => "Arena's Approach",
+            _ => throw new NotImplementedException("Invalid location ID."),
+        };
+
+        private PA8 GetDistortionSpecies(double encslot) => Settings.DistortionConditions.DistortionLocation switch
         {
-            var pk = new PA8();
-            var mode = Settings.DistortionConditions.DistortionLocation;
-            switch (mode)
-            {
-                case ArceupMap.ObsidianFieldlands:
-                    {
-                        if (encslot < 100) pk.Species = (int)Species.Sneasel;
-                        if (encslot > 100 && encslot < 101)
-                        {
-                            pk.Species = (int)Species.Sneasel;
-                            pk.IsAlpha = true;
-                        }
-                        if (encslot > 101 && encslot < 111) pk.Species = (int)Species.Weavile;
-                        if (encslot > 111 && encslot < 112)
-                        {
-                            pk.Species = (int)Species.Weavile;
-                            pk.IsAlpha = true;
-                        }
-                    }
-                    break;
-                case ArceupMap.CrimsonMirelands:
-                    {
-                        if (encslot < 100) pk.Species = (int)Species.Porygon;
-                        if (encslot > 100 && encslot < 101)
-                        {
-                            pk.Species = (int)Species.Porygon;
-                            pk.IsAlpha = true;
-                        }
-                        if (encslot > 101 && encslot < 111) pk.Species = (int)Species.Porygon2;
-                        if (encslot > 111 && encslot < 112)
-                        {
-                            pk.Species = (int)Species.Porygon2;
-                            pk.IsAlpha = true;
-                        }
-                        if (encslot > 112 && encslot < 117) pk.Species = (int)Species.PorygonZ;
-                        if (encslot > 117 && encslot < 118)
-                        {
-                            pk.Species = (int)Species.PorygonZ;
-                            pk.IsAlpha = true;
-                        }
-                        if (encslot > 118 && encslot < 218) pk.Species = (int)Species.Cyndaquil;
-                        if (encslot > 218 && encslot < 219)
-                        {
-                            pk.Species = (int)Species.Cyndaquil;
-                            pk.IsAlpha = true;
-                        }
-                        if (encslot > 219 && encslot < 269) pk.Species = (int)Species.Quilava;
-                        if (encslot > 269 && encslot < 270)
-                        {
-                            pk.Species = (int)Species.Quilava;
-                            pk.IsAlpha = true;
-                        }
-                        if (encslot > 270 && encslot < 275) pk.Species = (int)Species.Typhlosion;
-                        if (encslot >= 275)
-                        {
-                            pk.Species = (int)Species.Typhlosion;
-                            pk.IsAlpha = true;
-                        }
-                    }
-                    break;
-                case ArceupMap.CobaltCoastlands:
-                    {
-                        if (encslot < 100) pk.Species = (int)Species.Magnemite;
-                        if (encslot > 100 && encslot < 101)
-                        {
-                            pk.Species = (int)Species.Magnemite;
-                            pk.IsAlpha = true;
-                        }
-                        if (encslot > 101 && encslot < 151) pk.Species = (int)Species.Magneton;
-                        if (encslot > 151 && encslot < 152)
-                        {
-                            pk.Species = (int)Species.Magneton;
-                            pk.IsAlpha = true;
-                        }
-                        if (encslot > 152 && encslot < 162) pk.Species = (int)Species.Magnezone;
-                        if (encslot >= 162)
-                        {
-                            pk.Species = (int)Species.Magnezone;
-                            pk.IsAlpha = true;
-                        }
-                    }
-                    break;
-                case ArceupMap.CoronetHighlands:
-                    {
-                        if (encslot < 100) pk.Species = (int)Species.Cranidos;
-                        if (encslot > 100 && encslot < 101)
-                        {
-                            pk.Species = (int)Species.Cranidos;
-                            pk.IsAlpha = true;
-                        }
-                        if (encslot > 101 && encslot < 111) pk.Species = (int)Species.Rampardos;
-                        if (encslot > 111 && encslot < 112)
-                        {
-                            pk.Species = (int)Species.Rampardos;
-                            pk.IsAlpha = true;
-                        }
-                        if (encslot > 112 && encslot < 212) pk.Species = (int)Species.Shieldon;
-                        if (encslot > 212 && encslot < 213)
-                        {
-                            pk.Species = (int)Species.Shieldon;
-                            pk.IsAlpha = true;
-                        }
-                        if (encslot > 213 && encslot < 223) pk.Species = (int)Species.Bastiodon;
-                        if (encslot > 223 && encslot < 224)
-                        {
-                            pk.Species = (int)Species.Bastiodon;
-                            pk.IsAlpha = true;
-                        }
-                        if (encslot > 224 && encslot < 324) pk.Species = (int)Species.Rowlet;
-                        if (encslot > 324 && encslot < 325)
-                        {
-                            pk.Species = (int)Species.Rowlet;
-                            pk.IsAlpha = true;
-                        }
-                        if (encslot > 325 && encslot < 375) pk.Species = (int)Species.Dartrix;
-                        if (encslot > 375 && encslot < 376)
-                        {
-                            pk.Species = (int)Species.Dartrix;
-                            pk.IsAlpha = true;
-                        }
-                        if (encslot > 376 && encslot < 381) pk.Species = (int)Species.Decidueye;
-                        if (encslot >= 381)
-                        {
-                            pk.Species = (int)Species.Decidueye;
-                            pk.IsAlpha = true;
-                        }
-                    }
-                    break;
-                case ArceupMap.AlabasterIcelands:
-                    {
-                        if (encslot < 100) pk.Species = (int)Species.Scizor;
-                        if (encslot > 100 && encslot < 101)
-                        {
-                            pk.Species = (int)Species.Scizor;
-                            pk.IsAlpha = true;
-                        }
-                        if (encslot > 101 && encslot < 201) pk.Species = (int)Species.Oshawott;
-                        if (encslot > 201 && encslot < 202)
-                        {
-                            pk.Species = (int)Species.Oshawott;
-                            pk.IsAlpha = true;
-                        }
-                        if (encslot > 202 && encslot < 252) pk.Species = (int)Species.Dewott;
-                        if (encslot > 252 && encslot < 253)
-                        {
-                            pk.Species = (int)Species.Dewott;
-                            pk.IsAlpha = true;
-                        }
-                        if (encslot > 253 && encslot < 258) pk.Species = (int)Species.Samurott;
-                        if (encslot > 258)
-                        {
-                            pk.Species = (int)Species.Samurott;
-                            pk.IsAlpha = true;
-                        }
-                    }
-                    break;
-            }
-            return pk;
-        }
-        public async Task DistortionSpammer(CancellationToken token)
+            ArceusMap.ObsidianFieldlands when encslot is < 100 => new() { Species = (int)Species.Sneasel },
+            ArceusMap.ObsidianFieldlands when encslot is > 100 and < 101 => new() { Species = (int)Species.Sneasel, IsAlpha = true },
+            ArceusMap.ObsidianFieldlands when encslot is > 101 and < 111 => new() { Species = (int)Species.Weavile },
+            ArceusMap.ObsidianFieldlands when encslot is > 111 and < 112 => new() { Species = (int)Species.Weavile, IsAlpha = true },
+
+            ArceusMap.CrimsonMirelands when encslot is < 100 => new() { Species = (int)Species.Porygon },
+            ArceusMap.CrimsonMirelands when encslot is > 100 and < 101 => new() { Species = (int)Species.Porygon, IsAlpha = true },
+            ArceusMap.CrimsonMirelands when encslot is > 101 and < 111 => new() { Species = (int)Species.Porygon2 },
+            ArceusMap.CrimsonMirelands when encslot is > 111 and < 112 => new() { Species = (int)Species.Porygon2, IsAlpha = true },
+            ArceusMap.CrimsonMirelands when encslot is > 112 and < 117 => new() { Species = (int)Species.PorygonZ },
+            ArceusMap.CrimsonMirelands when encslot is > 117 and < 118 => new() { Species = (int)Species.PorygonZ, IsAlpha = true },
+            ArceusMap.CrimsonMirelands when encslot is > 118 and < 218 => new() { Species = (int)Species.Cyndaquil },
+            ArceusMap.CrimsonMirelands when encslot is > 218 and < 219 => new() { Species = (int)Species.Cyndaquil, IsAlpha = true },
+            ArceusMap.CrimsonMirelands when encslot is > 219 and < 269 => new() { Species = (int)Species.Quilava },
+            ArceusMap.CrimsonMirelands when encslot is > 269 and < 270 => new() { Species = (int)Species.Quilava, IsAlpha = true },
+            ArceusMap.CrimsonMirelands when encslot is > 270 and < 275 => new() { Species = (int)Species.Typhlosion },
+            ArceusMap.CrimsonMirelands when encslot is >= 275 => new() { Species = (int)Species.Typhlosion, IsAlpha = true },
+
+            ArceusMap.CobaltCoastlands when encslot is < 100 => new() { Species = (int)Species.Magnemite },
+            ArceusMap.CobaltCoastlands when encslot is > 100 and < 101 => new() { Species = (int)Species.Magnemite, IsAlpha = true },
+            ArceusMap.CobaltCoastlands when encslot is > 101 and < 151 => new() { Species = (int)Species.Magneton },
+            ArceusMap.CobaltCoastlands when encslot is > 151 and < 152 => new() { Species = (int)Species.Magneton, IsAlpha = true },
+            ArceusMap.CobaltCoastlands when encslot is > 152 and < 162 => new() { Species = (int)Species.Magnezone },
+            ArceusMap.CobaltCoastlands when encslot is >= 162 => new() { Species = (int)Species.Magnezone, IsAlpha = true },
+
+            ArceusMap.CoronetHighlands when encslot is < 100 => new() { Species = (int)Species.Cranidos },
+            ArceusMap.CoronetHighlands when encslot is > 100 and < 101 => new() { Species = (int)Species.Cranidos, IsAlpha = true },
+            ArceusMap.CoronetHighlands when encslot is > 101 and < 111 => new() { Species = (int)Species.Rampardos },
+            ArceusMap.CoronetHighlands when encslot is > 111 and < 112 => new() { Species = (int)Species.Rampardos, IsAlpha = true },
+            ArceusMap.CoronetHighlands when encslot is > 112 and < 212 => new() { Species = (int)Species.Shieldon },
+            ArceusMap.CoronetHighlands when encslot is > 212 and < 213 => new() { Species = (int)Species.Shieldon, IsAlpha = true },
+            ArceusMap.CoronetHighlands when encslot is > 213 and < 223 => new() { Species = (int)Species.Bastiodon },
+            ArceusMap.CoronetHighlands when encslot is > 223 and < 224 => new() { Species = (int)Species.Bastiodon, IsAlpha = true },
+            ArceusMap.CoronetHighlands when encslot is > 224 and < 324 => new() { Species = (int)Species.Rowlet },
+            ArceusMap.CoronetHighlands when encslot is > 324 and < 325 => new() { Species = (int)Species.Rowlet, IsAlpha = true },
+            ArceusMap.CoronetHighlands when encslot is > 325 and < 375 => new() { Species = (int)Species.Dartrix },
+            ArceusMap.CoronetHighlands when encslot is > 375 and < 376 => new() { Species = (int)Species.Dartrix, IsAlpha = true },
+            ArceusMap.CoronetHighlands when encslot is > 376 and < 381 => new() { Species = (int)Species.Decidueye },
+            ArceusMap.CoronetHighlands when encslot is > 381 and < 382 => new() { Species = (int)Species.Decidueye, IsAlpha = true },
+
+            ArceusMap.AlabasterIcelands when encslot is < 100 => new() { Species = (int)Species.Scizor },
+            ArceusMap.AlabasterIcelands when encslot is > 100 and < 101 => new() { Species = (int)Species.Scizor, IsAlpha = true },
+            ArceusMap.AlabasterIcelands when encslot is > 101 and < 201 => new() { Species = (int)Species.Oshawott },
+            ArceusMap.AlabasterIcelands when encslot is > 201 and < 202 => new() { Species = (int)Species.Oshawott, IsAlpha = true },
+            ArceusMap.AlabasterIcelands when encslot is > 202 and < 252 => new() { Species = (int)Species.Dewott },
+            ArceusMap.AlabasterIcelands when encslot is > 252 and < 253 => new() { Species = (int)Species.Dewott, IsAlpha = true },
+            ArceusMap.AlabasterIcelands when encslot is > 253 and < 258 => new() { Species = (int)Species.Samurott },
+            ArceusMap.AlabasterIcelands when encslot is >= 258 => new() { Species = (int)Species.Samurott, IsAlpha = true },
+            _ => throw new NotImplementedException("Not a valid encounter slot."),
+        };
+
+        private async Task DistortionSpammer(CancellationToken token)
         {
             while (!token.IsCancellationRequested)
             {
@@ -581,17 +427,17 @@ namespace SysBot.Pokemon
                 Log($"Waiting {Settings.DistortionConditions.WaitTimeDistortion} minutes then starting the next one...");
                 while (DateTime.Now - delta < cd && !token.IsCancellationRequested)
                 {
-                    await Task.Delay(5_000).ConfigureAwait(false);
+                    await Task.Delay(5_000, token).ConfigureAwait(false);
                     Log($"Time Remaining: {cd - (DateTime.Now - delta)}");
                 }
 
                 await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0x5280010A), MainNsoBase + ActivateDistortion, token).ConfigureAwait(false);
                 await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0x7100052A), MainNsoBase + ActivateDistortion, token).ConfigureAwait(false);
-                await Task.Delay(5_000).ConfigureAwait(false);
+                await Task.Delay(5_000, token).ConfigureAwait(false);
             }
         }
 
-        public async Task TimeSeedAdvancer(CancellationToken token)
+        private async Task TimeSeedAdvancer(CancellationToken token)
         {
             int success = 0;
             int heal = 0;
@@ -623,17 +469,18 @@ namespace SysBot.Pokemon
                     await Click(B, 1_000, token).ConfigureAwait(false);// Random B incase of button miss
                     await Click(A, 1_000, token).ConfigureAwait(false);
                     await TimeTest(token).ConfigureAwait(false);
-                    await Task.Delay(2_000).ConfigureAwait(false);
+                    await Task.Delay(2_000, token).ConfigureAwait(false);
                     if (Settings.AlphaScanConditions.SpawnIsStaticAlpha)
                     {
                         for (int i = 0; i < 2; i++)
                         {
                             await TimeTest(token).ConfigureAwait(false);
-                            await Task.Delay(2_000).ConfigureAwait(false);
+                            await Task.Delay(2_000, token).ConfigureAwait(false);
                         }
                     }
                     await TeleportToSpawnZone(token).ConfigureAwait(false);
                     Log("Trying to enter battle!");
+
                     await PressAndHold(ZL, 1_000, 0, token).ConfigureAwait(false);
                     await Click(ZR, 2_000, token).ConfigureAwait(false);
                     await ResetStick(token).ConfigureAwait(false);
@@ -649,7 +496,7 @@ namespace SysBot.Pokemon
                                 Log("Tried 3 times, is the encounter present? Changing time to try again.");
                                 await TimeTest(token).ConfigureAwait(false);
                                 await TeleportToSpawnZone(token).ConfigureAwait(false);
-                                adv = adv - 1;
+                                adv--;
                                 break;
                             }
                             await PressAndHold(ZL, 0_800, 0, token).ConfigureAwait(false);
@@ -658,18 +505,21 @@ namespace SysBot.Pokemon
                             overworldcheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(OverworldOffset, 2, token).ConfigureAwait(false), 0);
                             if (overworldcheck != 1)
                                 break;
+
                             await SetStick(LEFT, 0, -5_000, 0_500, token).ConfigureAwait(false); // turn around check encounter
                             await ResetStick(token).ConfigureAwait(false); // reset
                             await Click(ZL, 1_000, token).ConfigureAwait(false);
                             overworldcheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(OverworldOffset, 2, token).ConfigureAwait(false), 0);
                             if (overworldcheck != 1)
                                 break;
+
                             await PressAndHold(ZL, 0_800, 0, token).ConfigureAwait(false);
                             await Click(ZR, 1_000, token).ConfigureAwait(false);
                             await ResetStick(token).ConfigureAwait(false); // reset
                             overworldcheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(OverworldOffset, 2, token).ConfigureAwait(false), 0);
                             if (overworldcheck != 1)
                                 break;
+
                             await SetStick(LEFT, 0, 5_000, 0_500, token).ConfigureAwait(false); // turn around check encounter
                             await ResetStick(token).ConfigureAwait(false); // reset
                             await Click(ZL, 1_000, token).ConfigureAwait(false);
@@ -680,16 +530,17 @@ namespace SysBot.Pokemon
                     {
                         ulong ofs = await NewParsePointer(WildPokemonPtrLA, token).ConfigureAwait(false);
                         var pk = await ReadPokemon(ofs, 0x168, token).ConfigureAwait(false);
-                        if (pk != null)
+                        if (pk.Species > 0 && pk.Species < (int)Species.MAX_COUNT)
                         {
                             success++;
                             heal++;
                             var print = Hub.Config.StopConditions.GetAlphaPrintName(pk);
-                            if (pk.IsAlpha) alpha = "Alpha - ";
+                            if (pk.IsAlpha)
+                                alpha = "Alpha - ";
                             if (pk.IsShiny)
                             {
                                 Log($"In battle with {print}!");
-                                EmbedMon = (pk, true);
+                                EmbedMons.Add((pk, true));
 
                                 if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
                                     DumpPokemon(DumpSetting.DumpFolder, "advances", pk);
@@ -697,14 +548,14 @@ namespace SysBot.Pokemon
                                 return;
                             }
                             Log($"Mashing A to knockout {alpha}{(Species)pk.Species}!");
-                            while (overworldcheck != 1 && pk != null)
+                            while (overworldcheck != 1)
                             {
                                 overworldcheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(OverworldOffset, 2, token).ConfigureAwait(false), 0);
                                 pk = await ReadPokemon(ofs, 0x168, token).ConfigureAwait(false);
                                 for (int i = 0; i < 3; i++)
                                     await Click(A, 0_500, token).ConfigureAwait(false);
 
-                                if (overworldcheck == 1 || pk == null)
+                                if (overworldcheck == 1 || pk.Species <= 0 || pk.Species >= (int)Species.MAX_COUNT)
                                     break;
                             }
                             Log($"Defeated {alpha}{(Species)pk.Species}! Returning to spawn point.");
@@ -749,7 +600,7 @@ namespace SysBot.Pokemon
             Log("Advances reached! Shiny should be on the next respawn! Refer to the live map if unsure of frame!");
             await Click(HOME, 1_000, token).ConfigureAwait(false);
         }
-        public async Task SeedAdvancer(CancellationToken token)
+        private async Task SeedAdvancer(CancellationToken token)
         {
             string[] coords = { Settings.SpecialConditions.CampZoneX, Settings.SpecialConditions.CampZoneY, Settings.SpecialConditions.CampZoneZ, Settings.SpecialConditions.SpawnZoneX, Settings.SpecialConditions.SpawnZoneY, Settings.SpecialConditions.SpawnZoneZ };
             for (int a = 0; a < coords.Length; a++)
@@ -910,11 +761,12 @@ namespace SysBot.Pokemon
                         if (pk != null)
                         {
                             var print = Hub.Config.StopConditions.GetAlphaPrintName(pk);
-                            if (pk.IsAlpha) alpha = "Alpha - ";
+                            if (pk.IsAlpha)
+                                alpha = "Alpha - ";
                             if (pk.IsShiny)
                             {
                                 Log($"In battle with {print}!");
-                                EmbedMon = (pk, true);
+                                EmbedMons.Add((pk, true));
 
                                 if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
                                     DumpPokemon(DumpSetting.DumpFolder, "advances", pk);
@@ -950,11 +802,11 @@ namespace SysBot.Pokemon
             var mode = Settings.AlphaScanConditions.ScanLocation;
             switch (mode)
             {
-                case ArceupMap.ObsidianFieldlands: x = "43AC18AC"; y = "4242DEC9"; z = "4305C37C"; break;
-                case ArceupMap.CrimsonMirelands: x = "436208ED"; y = "425FD612"; z = "43DBCD87"; break;
-                case ArceupMap.CoronetHighlands: x = "44636F1B"; y = "420FDC78"; z = "446A1DE5"; break;
-                case ArceupMap.CobaltCoastlands: x = "425E5D04"; y = "4237E63D"; z = "44207689"; break;
-                case ArceupMap.AlabasterIcelands: x = "440B8982"; y = "41F37461"; z = "4467EAF7"; break;
+                case ArceusMap.ObsidianFieldlands: x = "43AC18AC"; y = "4242DEC9"; z = "4305C37C"; break;
+                case ArceusMap.CrimsonMirelands: x = "436208ED"; y = "425FD612"; z = "43DBCD87"; break;
+                case ArceusMap.CoronetHighlands: x = "44636F1B"; y = "420FDC78"; z = "446A1DE5"; break;
+                case ArceusMap.CobaltCoastlands: x = "425E5D04"; y = "4237E63D"; z = "44207689"; break;
+                case ArceusMap.AlabasterIcelands: x = "440B8982"; y = "41F37461"; z = "4467EAF7"; break;
             }
 
             Settings.SpecialConditions.SpawnZoneX = "4408C60D";
@@ -971,11 +823,11 @@ namespace SysBot.Pokemon
             var mode = Settings.AlphaScanConditions.ScanLocation;
             switch (mode)
             {
-                case ArceupMap.ObsidianFieldlands: x = "43B7F23A"; y = "424FF99B"; z = "4308306A"; break;
-                case ArceupMap.CrimsonMirelands: x = "43751CD5"; y = "425E7B13"; z = "43D92BA9"; break;
-                case ArceupMap.CoronetHighlands: x = "445E8412"; y = "4211C885"; z = "4466973A"; break;
-                case ArceupMap.CobaltCoastlands: x = "4291B987"; y = "4234AEB4"; z = "441BF96B"; break;
-                case ArceupMap.AlabasterIcelands: x = "4404BA24"; y = "41F91B54"; z = "446417D3"; break;
+                case ArceusMap.ObsidianFieldlands: x = "43B7F23A"; y = "424FF99B"; z = "4308306A"; break;
+                case ArceusMap.CrimsonMirelands: x = "43751CD5"; y = "425E7B13"; z = "43D92BA9"; break;
+                case ArceusMap.CoronetHighlands: x = "445E8412"; y = "4211C885"; z = "4466973A"; break;
+                case ArceusMap.CobaltCoastlands: x = "4291B987"; y = "4234AEB4"; z = "441BF96B"; break;
+                case ArceusMap.AlabasterIcelands: x = "4404BA24"; y = "41F91B54"; z = "446417D3"; break;
             }
 
             Settings.SpecialConditions.CampZoneX = x;
@@ -1017,14 +869,14 @@ namespace SysBot.Pokemon
             }
         }
 
-        public async Task TeleportToCampZone(CancellationToken token)
+        private async Task TeleportToCampZone(CancellationToken token)
         {
             ofs = await NewParsePointer(PlayerCoordPtrLA, token).ConfigureAwait(false);
-            uint coordX1 = uint.Parse(Settings.SpecialConditions.CampZoneX, System.Globalization.NumberStyles.AllowHexSpecifier);
+            uint coordX1 = uint.Parse(Settings.SpecialConditions.CampZoneX, NumberStyles.AllowHexSpecifier);
             byte[] X1 = BitConverter.GetBytes(coordX1);
-            uint coordY1 = uint.Parse(Settings.SpecialConditions.CampZoneY, System.Globalization.NumberStyles.AllowHexSpecifier);
+            uint coordY1 = uint.Parse(Settings.SpecialConditions.CampZoneY, NumberStyles.AllowHexSpecifier);
             byte[] Y1 = BitConverter.GetBytes(coordY1);
-            uint coordZ1 = uint.Parse(Settings.SpecialConditions.CampZoneZ, System.Globalization.NumberStyles.AllowHexSpecifier);
+            uint coordZ1 = uint.Parse(Settings.SpecialConditions.CampZoneZ, NumberStyles.AllowHexSpecifier);
             byte[] Z1 = BitConverter.GetBytes(coordZ1);
 
             X1 = X1.Concat(Y1).Concat(Z1).ToArray();
@@ -1033,14 +885,14 @@ namespace SysBot.Pokemon
             await Task.Delay(Settings.SpecialConditions.WaitMsBetweenTeleports, token).ConfigureAwait(false);
         }
 
-        public async Task TeleportToSpawnZone(CancellationToken token)
+        private async Task TeleportToSpawnZone(CancellationToken token)
         {
             ofs = await NewParsePointer(PlayerCoordPtrLA, token).ConfigureAwait(false);
-            uint coordX1 = uint.Parse(Settings.SpecialConditions.SpawnZoneX, System.Globalization.NumberStyles.AllowHexSpecifier);
+            uint coordX1 = uint.Parse(Settings.SpecialConditions.SpawnZoneX, NumberStyles.AllowHexSpecifier);
             byte[] X1 = BitConverter.GetBytes(coordX1);
-            uint coordY1 = uint.Parse(Settings.SpecialConditions.SpawnZoneY, System.Globalization.NumberStyles.AllowHexSpecifier);
+            uint coordY1 = uint.Parse(Settings.SpecialConditions.SpawnZoneY, NumberStyles.AllowHexSpecifier);
             byte[] Y1 = BitConverter.GetBytes(coordY1);
-            uint coordZ1 = uint.Parse(Settings.SpecialConditions.SpawnZoneZ, System.Globalization.NumberStyles.AllowHexSpecifier);
+            uint coordZ1 = uint.Parse(Settings.SpecialConditions.SpawnZoneZ, NumberStyles.AllowHexSpecifier);
             byte[] Z1 = BitConverter.GetBytes(coordZ1);
 
             X1 = X1.Concat(Y1).Concat(Z1).ToArray();
@@ -1049,14 +901,14 @@ namespace SysBot.Pokemon
             await Task.Delay(Settings.SpecialConditions.WaitMsBetweenTeleports, token).ConfigureAwait(false);
         }
 
-        public async Task TeleportToMMOGroupZone(CancellationToken token)
+        private async Task TeleportToMMOGroupZone(CancellationToken token)
         {
             ofs = await NewParsePointer(PlayerCoordPtrLA, token).ConfigureAwait(false);
-            uint coordX1 = uint.Parse(x, System.Globalization.NumberStyles.AllowHexSpecifier);
+            uint coordX1 = uint.Parse(x, NumberStyles.AllowHexSpecifier);
             byte[] X1 = BitConverter.GetBytes(coordX1);
-            uint coordY1 = uint.Parse(y, System.Globalization.NumberStyles.AllowHexSpecifier);
+            uint coordY1 = uint.Parse(y, NumberStyles.AllowHexSpecifier);
             byte[] Y1 = BitConverter.GetBytes(coordY1);
-            uint coordZ1 = uint.Parse(z, System.Globalization.NumberStyles.AllowHexSpecifier);
+            uint coordZ1 = uint.Parse(z, NumberStyles.AllowHexSpecifier);
             byte[] Z1 = BitConverter.GetBytes(coordZ1);
 
             X1 = X1.Concat(Y1).Concat(Z1).ToArray();
@@ -1067,59 +919,60 @@ namespace SysBot.Pokemon
 
         private async Task SpawnerScan(CancellationToken token)
         {
-            await Task.Delay(0_500).ConfigureAwait(false);
+            await Task.Delay(0_500, token).ConfigureAwait(false);
             Log($"Starting Alpha Scanner for {Settings.AlphaScanConditions.ScanLocation}...");
-            var mode = Settings.AlphaScanConditions.ScanLocation;
-            switch (mode)
+            int alphacount = Settings.AlphaScanConditions.ScanLocation switch
             {
-                case ArceupMap.ObsidianFieldlands: alphacount = 18; break;
-                case ArceupMap.CrimsonMirelands: alphacount = 19; break;
-                case ArceupMap.CoronetHighlands: alphacount = 15; break;
-                case ArceupMap.CobaltCoastlands: alphacount = 18; break;
-                case ArceupMap.AlabasterIcelands: alphacount = 13; break;
-            }
+                ArceusMap.ObsidianFieldlands or ArceusMap.CobaltCoastlands => 18,
+                ArceusMap.CrimsonMirelands => 19,
+                ArceusMap.CoronetHighlands => 15,
+                ArceusMap.AlabasterIcelands => 13,
+                _ => throw new NotImplementedException("Invalid scan location."),
+            };
+
             for (int i = 0; i < alphacount; i++)
             {
                 var SpawnerOffpoint = new long[] { 0x42a6ee0, 0x330, 0x70 + i * 0x440 + 0x20 };
-                var SpawnerOff = SwitchConnection.PointerAll(SpawnerOffpoint, token).Result;
-                var GeneratorSeed = SwitchConnection.ReadBytesAbsoluteAsync(SpawnerOff, 8, token).Result;
+                var SpawnerOff = await SwitchConnection.PointerAll(SpawnerOffpoint, token).ConfigureAwait(false);
+                var GeneratorSeed = await SwitchConnection.ReadBytesAbsoluteAsync(SpawnerOff, 8, token).ConfigureAwait(false);
                 Log($"Generator Seed: {BitConverter.ToString(GeneratorSeed).Replace("-", "")}");
                 var group_seed = (BitConverter.ToUInt64(GeneratorSeed, 0) - 0x82A2B175229D6A5B) & 0xFFFFFFFFFFFFFFFF;
                 Log($"Group Seed: {string.Format("0x{0:X}", group_seed)}");
-                SpawnerID = i;
-                GenerateNextShiny(SpawnerSpecies, i, group_seed);
+                GenerateNextShiny(i, group_seed);
             }
         }
 
-        public (List<PA8>, List<PA8>) ReadMMOSeed(int totalspawn, ulong group_seed, int bonuscount, ulong encslot, ulong bonusencslot)
+        private (List<PA8>, List<PA8>) ReadMMOSeed(int totalspawn, ulong group_seed, int bonuscount, ulong encslot, ulong bonusencslot)
         {
             List<PA8> monlist = new();
-            PA8 pk = new();
             List<PA8> bonuslist = new();
             var groupseed = group_seed;
-            int givs = 0;
-            int encsum;
-            int bonusum;
             var mainrng = new Xoroshiro128Plus(groupseed);
-            (encsum, bonusum) = GrabEncounterSum(encslot, bonusencslot);
+            var sum = GrabEncounterSum(encslot, bonusencslot);
+
             for (int i = 0; i < 4; i++)
             {
                 var spawner_seed = mainrng.Next();
                 var spawner_rng = new Xoroshiro128Plus(spawner_seed);
-                var encounter_slot = spawner_rng.Next() / Math.Pow(2, 64) * encsum;
+                var encounter_slot = spawner_rng.Next() / Math.Pow(2, 64) * sum.Item1;
                 var fixedseed = spawner_rng.Next();
                 mainrng.Next();
-                (pk, givs) = GrabMMOSpecies(encounter_slot, encslot);
-                var (shiny, shinyXor, encryption_constant, pid, ivs, ability, gender, nature, shinyseed) = GenerateFromSeed(fixedseed, (int)Settings.OutbreakConditions.MMOShinyRolls, givs);
-                pk.IV_HP = ivs[0]; pk.IV_ATK = ivs[1]; pk.IV_DEF = ivs[2]; pk.IV_SPA = ivs[3]; pk.IV_SPD = ivs[4]; pk.IV_SPE = ivs[5]; pk.EncryptionConstant = encryption_constant; pk.PID = pid;
-                pk.Nature = (int)nature;
-                if (shiny && shinyXor == 0)
-                    CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
-                else if (shiny && shinyXor != 0 && shinyXor <= 16)
-                    CommonEdits.SetShiny(pk, Shiny.AlwaysStar);
 
-                monlist.Add(pk);
+                var poke = GrabMMOSpecies(encounter_slot, encslot);
+                var gen = GenerateFromSeed(fixedseed, (int)Settings.OutbreakConditions.MMOShinyRolls, poke.Item2);
+                poke.Item1.IVs = gen.IVs;
+                poke.Item1.EncryptionConstant = gen.EC;
+                poke.Item1.PID = gen.PID;
+                poke.Item1.Nature = (int)gen.Item8;
+
+                if (gen.shiny && gen.shinyXor == 0)
+                    CommonEdits.SetShiny(poke.Item1, Shiny.AlwaysSquare);
+                else if (gen.shiny && gen.shinyXor != 0 && gen.shinyXor <= 16)
+                    CommonEdits.SetShiny(poke.Item1, Shiny.AlwaysStar);
+
+                monlist.Add(poke.Item1);
             }
+
             groupseed = mainrng.Next();
             mainrng = new Xoroshiro128Plus(groupseed);
             var respawnrng = new Xoroshiro128Plus(groupseed);
@@ -1129,21 +982,26 @@ namespace SysBot.Pokemon
                 respawnrng.Next();
                 respawnrng = new Xoroshiro128Plus(respawnrng.Next());
                 var fixed_rng = new Xoroshiro128Plus(spawner_seed);
-                var encounter_slot = fixed_rng.Next() / Math.Pow(2, 64) * encsum;
+                var encounter_slot = fixed_rng.Next() / Math.Pow(2, 64) * sum.Item1;
                 var fixed_seed = fixed_rng.Next();
-                (pk, givs) = GrabMMOSpecies(encounter_slot, encslot);
-                var (shiny, shinyXor, encryption_constant, pid, ivs, ability, gender, nature, shinyseed) = GenerateFromSeed(fixed_seed, (int)Settings.OutbreakConditions.MMOShinyRolls, givs);
-                pk.IV_HP = ivs[0]; pk.IV_ATK = ivs[1]; pk.IV_DEF = ivs[2]; pk.IV_SPA = ivs[3]; pk.IV_SPD = ivs[4]; pk.IV_SPE = ivs[5]; pk.EncryptionConstant = encryption_constant; pk.PID = pid;
-                pk.Nature = (int)nature;
-                if (shiny && shinyXor == 0)
-                    CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
-                else if (shiny && shinyXor != 0 && shinyXor <= 16)
-                    CommonEdits.SetShiny(pk, Shiny.AlwaysStar);
 
-                monlist.Add(pk);
+                var poke = GrabMMOSpecies(encounter_slot, encslot);
+                var gen = GenerateFromSeed(fixed_seed, (int)Settings.OutbreakConditions.MMOShinyRolls, poke.Item2);
+                poke.Item1.IVs = gen.IVs;
+                poke.Item1.EncryptionConstant = gen.EC;
+                poke.Item1.PID = gen.PID;
+                poke.Item1.Nature = (int)gen.Item8;
+
+                if (gen.shiny && gen.shinyXor == 0)
+                    CommonEdits.SetShiny(poke.Item1, Shiny.AlwaysSquare);
+                else if (gen.shiny && gen.shinyXor != 0 && gen.shinyXor <= 16)
+                    CommonEdits.SetShiny(poke.Item1, Shiny.AlwaysStar);
+
+                monlist.Add(poke.Item1);
             }
+
             //Bonus round
-            if (bonusum != 0)
+            if (sum.Item2 != 0)
             {
                 var bonus_seed = respawnrng.Next() - 0x82A2B175229D6A5B & 0xFFFFFFFFFFFFFFFF;
                 mainrng = new Xoroshiro128Plus(bonus_seed);
@@ -1151,20 +1009,25 @@ namespace SysBot.Pokemon
                 {
                     var spawner_seed = mainrng.Next();
                     var spawner_rng = new Xoroshiro128Plus(spawner_seed);
-                    var encounter_slot = spawner_rng.Next() / Math.Pow(2, 64) * bonusum;
+                    var encounter_slot = spawner_rng.Next() / Math.Pow(2, 64) * sum.Item2;
                     var fixedseed = spawner_rng.Next();
                     mainrng.Next();
-                    (pk, givs) = GrabMMOSpecies(encounter_slot, bonusencslot);
-                    var (shiny, shinyXor, encryption_constant, pid, ivs, ability, gender, nature, shinyseed) = GenerateFromSeed(fixedseed, (int)Settings.OutbreakConditions.MMOShinyRolls, givs);
-                    pk.IV_HP = ivs[0]; pk.IV_ATK = ivs[1]; pk.IV_DEF = ivs[2]; pk.IV_SPA = ivs[3]; pk.IV_SPD = ivs[4]; pk.IV_SPE = ivs[5]; pk.EncryptionConstant = encryption_constant; pk.PID = pid;
-                    pk.Nature = (int)nature;
-                    if (shiny && shinyXor == 0)
-                        CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
-                    else if (shiny && shinyXor != 0 && shinyXor <= 16)
-                        CommonEdits.SetShiny(pk, Shiny.AlwaysStar);
 
-                    bonuslist.Add(pk);
+                    var poke = GrabMMOSpecies(encounter_slot, bonusencslot);
+                    var gen = GenerateFromSeed(fixedseed, (int)Settings.OutbreakConditions.MMOShinyRolls, poke.Item2);
+                    poke.Item1.IVs = gen.IVs;
+                    poke.Item1.EncryptionConstant = gen.EC;
+                    poke.Item1.PID = gen.PID;
+                    poke.Item1.Nature = (int)gen.Item8;
+
+                    if (gen.shiny && gen.shinyXor == 0)
+                        CommonEdits.SetShiny(poke.Item1, Shiny.AlwaysSquare);
+                    else if (gen.shiny && gen.shinyXor != 0 && gen.shinyXor <= 16)
+                        CommonEdits.SetShiny(poke.Item1, Shiny.AlwaysStar);
+
+                    bonuslist.Add(poke.Item1);
                 }
+
                 bonus_seed = mainrng.Next();
                 mainrng = new Xoroshiro128Plus(bonus_seed);
                 var bonusrng = new Xoroshiro128Plus(bonus_seed);
@@ -1174,27 +1037,31 @@ namespace SysBot.Pokemon
                     bonusrng.Next();
                     bonusrng = new Xoroshiro128Plus(bonusrng.Next());
                     var fixed_rng = new Xoroshiro128Plus(bonusspawner_seed);
-                    var encounter_slot = fixed_rng.Next() / Math.Pow(2, 64) * bonusum;
+                    var encounter_slot = fixed_rng.Next() / Math.Pow(2, 64) * sum.Item2;
                     var fixed_seed = fixed_rng.Next();
-                    (pk, givs) = GrabMMOSpecies(encounter_slot, bonusencslot);
-                    var (shiny, shinyXor, encryption_constant, pid, ivs, ability, gender, nature, shinyseed) = GenerateFromSeed(fixed_seed, (int)Settings.OutbreakConditions.MMOShinyRolls, givs);
-                    pk.IV_HP = ivs[0]; pk.IV_ATK = ivs[1]; pk.IV_DEF = ivs[2]; pk.IV_SPA = ivs[3]; pk.IV_SPD = ivs[4]; pk.IV_SPE = ivs[5]; pk.EncryptionConstant = encryption_constant; pk.PID = pid;
-                    pk.Nature = (int)nature;
-                    if (shiny && shinyXor == 0)
-                        CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
-                    else if (shiny && shinyXor != 0 && shinyXor <= 16)
-                        CommonEdits.SetShiny(pk, Shiny.AlwaysStar);
 
-                    bonuslist.Add(pk);
+                    var poke = GrabMMOSpecies(encounter_slot, bonusencslot);
+                    var gen = GenerateFromSeed(fixed_seed, (int)Settings.OutbreakConditions.MMOShinyRolls, poke.Item2);
+                    poke.Item1.IVs = gen.IVs;
+                    poke.Item1.EncryptionConstant = gen.EC;
+                    poke.Item1.PID = gen.PID;
+                    poke.Item1.Nature = (int)gen.Item8;
+
+                    if (gen.shiny && gen.shinyXor == 0)
+                        CommonEdits.SetShiny(poke.Item1, Shiny.AlwaysSquare);
+                    else if (gen.shiny && gen.shinyXor != 0 && gen.shinyXor <= 16)
+                        CommonEdits.SetShiny(poke.Item1, Shiny.AlwaysStar);
+
+                    bonuslist.Add(poke.Item1);
                 }
             }
             return (monlist, bonuslist);
         }
 
-        public List<PA8> ReadOutbreakSeed(Species species, int totalspawn, ulong groupseed)
+        private List<PA8> ReadOutbreakSeed(Species species, int totalspawn, ulong groupseed)
         {
             List<PA8> monlist = new();
-            PA8 pk = new();
+            PA8 pk = new() { Species = (int)species };
             int givs = 0;
             var mainrng = new Xoroshiro128Plus(groupseed);
             for (int i = 0; i < 4; i++)
@@ -1205,22 +1072,26 @@ namespace SysBot.Pokemon
                 var slot = spawner_rng.Next() / Math.Pow(2, 64) * 101;
                 var alpha = slot >= 100;
                 var fixedseed = spawner_rng.Next();
-                //mainrng.Next();
-                if (alpha) givs = 3;
-                var (shiny, shinyXor, encryption_constant, pid, ivs, ability, gender, nature, shinyseed) = GenerateFromSeed(fixedseed, (int)Settings.OutbreakConditions.OutbreakShinyRolls, givs);
-                pk.Species = (int)species;
-                pk.IV_HP = ivs[0]; pk.IV_ATK = ivs[1]; pk.IV_DEF = ivs[2]; pk.IV_SPA = ivs[3]; pk.IV_SPD = ivs[4]; pk.IV_SPE = ivs[5]; pk.EncryptionConstant = encryption_constant; pk.PID = pid;
-                pk.Nature = (int)nature;
-                if (shiny && shinyXor == 0)
+
+                if (alpha)
+                    givs = 3;
+
+                var gen = GenerateFromSeed(fixedseed, (int)Settings.OutbreakConditions.OutbreakShinyRolls, givs);
+                pk.IVs = gen.IVs;
+                pk.EncryptionConstant = gen.EC;
+                pk.PID = gen.PID;
+                pk.Nature = (int)gen.Item8;
+                pk.IsAlpha = alpha;
+
+                if (gen.shiny && gen.shinyXor == 0)
                     CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
-                else if (shiny && shinyXor != 0 && shinyXor <= 16)
+                else if (gen.shiny && gen.shinyXor != 0 && gen.shinyXor <= 16)
                     CommonEdits.SetShiny(pk, Shiny.AlwaysStar);
-                if (alpha) pk.IsAlpha = true;
 
                 monlist.Add(pk);
-                pk = new();
                 givs = 0;
             }
+
             groupseed = mainrng.Next();
             mainrng = new Xoroshiro128Plus(groupseed);
             var respawnrng = new Xoroshiro128Plus(groupseed);
@@ -1232,28 +1103,31 @@ namespace SysBot.Pokemon
                 var fixed_rng = new Xoroshiro128Plus(spawner_seed);
                 var slot = fixed_rng.Next() / Math.Pow(2, 64) * 101;
                 var alpha = slot >= 100;
-                //fixed_rng.Next();
                 var fixed_seed = fixed_rng.Next();
-                if (alpha) givs = 3;
-                var (shiny, shinyXor, encryption_constant, pid, ivs, ability, gender, nature, shinyseed) = GenerateFromSeed(fixed_seed, (int)Settings.OutbreakConditions.OutbreakShinyRolls, givs);
-                pk.Species = (int)species;
-                pk.IV_HP = ivs[0]; pk.IV_ATK = ivs[1]; pk.IV_DEF = ivs[2]; pk.IV_SPA = ivs[3]; pk.IV_SPD = ivs[4]; pk.IV_SPE = ivs[5]; pk.EncryptionConstant = encryption_constant; pk.PID = pid;
-                pk.Nature = (int)nature;
-                if (alpha) pk.IsAlpha = true;
-                if (shiny && shinyXor == 0)
+
+                if (alpha)
+                    givs = 3;
+
+                var gen = GenerateFromSeed(fixed_seed, (int)Settings.OutbreakConditions.OutbreakShinyRolls, givs);
+                pk.IVs = gen.IVs;
+                pk.EncryptionConstant = gen.EC;
+                pk.PID = gen.PID;
+                pk.Nature = (int)gen.Item8;
+                pk.IsAlpha = alpha;
+
+                if (gen.shiny && gen.shinyXor == 0)
                     CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
-                else if (shiny && shinyXor != 0 && shinyXor <= 16)
+                else if (gen.shiny && gen.shinyXor != 0 && gen.shinyXor <= 16)
                     CommonEdits.SetShiny(pk, Shiny.AlwaysStar);
 
                 monlist.Add(pk);
-                pk = new();
                 givs = 0;
             }
 
             return monlist;
         }
 
-        public (PA8 match, bool shiny, string log) ReadDistortionSeed(int id, ulong group_seed, int encslotsum)
+        private (PA8 match, bool shiny, string log) ReadDistortionSeed(int id, ulong group_seed, int encslotsum)
         {
             string logs = string.Empty;
             var groupseed = group_seed;
@@ -1262,112 +1136,126 @@ namespace SysBot.Pokemon
             var rng = new Xoroshiro128Plus(generator_seed);
             var encounter_slot = rng.Next() / Math.Pow(2, 64) * encslotsum;
             var fixedseed = rng.Next();
-            var (shiny, shinyXor, encryption_constant, pid, ivs, ability, gender, nature, shinyseed) = GenerateFromSeed(fixedseed, (int)Settings.DistortionConditions.DistortionShinyRolls, 0);
+            var givs = 0;
             var pk = GetDistortionSpecies(encounter_slot);
+            if (pk.IsAlpha)
+                givs = 3;
+            var gen = GenerateFromSeed(fixedseed, (int)Settings.DistortionConditions.DistortionShinyRolls, givs);
+
             string location = GetDistortionSpeciesLocation(id);
             if (id == 0 || id == 4 || id == 8 || id == 12 || id == 16 || id == 20)
             {
                 logs += $"Ignoring Common Spawner from GroupID: {id}.";
                 return (pk, false, logs);
             }
-            if (id >= 9 && id <= 12 && Settings.DistortionConditions.DistortionLocation == ArceupMap.CrimsonMirelands)
+
+            if (id >= 9 && id <= 12 && Settings.DistortionConditions.DistortionLocation == ArceusMap.CrimsonMirelands)
             {
                 logs += $"Ignoring Spawner from GroupID: {id} as location currently unknown.";
                 return (pk, false, logs);
             }
 
-            pk.IV_HP = ivs[0]; pk.IV_ATK = ivs[1]; pk.IV_DEF = ivs[2]; pk.IV_SPA = ivs[3]; pk.IV_SPD = ivs[4]; pk.IV_SPE = ivs[5]; pk.EncryptionConstant = encryption_constant; pk.PID = pid;
-            pk.Nature = (int)nature;
-            if (shinyXor == 0)
+            pk.IVs = gen.IVs;
+            pk.EncryptionConstant = gen.EC;
+            pk.PID = gen.PID;
+            pk.Nature = (int)gen.Item8;
+
+            if (gen.shiny && gen.shinyXor == 0)
                 CommonEdits.SetShiny(pk, Shiny.AlwaysSquare);
-            else if (shinyXor != 0 && shinyXor <= 16)
+            else if (gen.shiny && gen.shinyXor != 0 && gen.shinyXor <= 16)
                 CommonEdits.SetShiny(pk, Shiny.AlwaysStar);
+
             var print = Hub.Config.StopConditions.GetAlphaPrintName(pk);
-            logs += $"Generator Seed: {(group_seed + 0x82A2B175229D6A5B & 0xFFFFFFFFFFFFFFFF):X16}\nGroup: {id}\n{(pk.ShinyXor == 0 ? "■ - Shiny" : pk.ShinyXor <= 16 ? "★ - Shiny" : "")}\n{print}\nEncounter Slot: {encounter_slot}\nLocation: {location}";
+            logs += $"Generator Seed: {(group_seed + 0x82A2B175229D6A5B & 0xFFFFFFFFFFFFFFFF):X16}\nGroup: {id}{print}\nEncounter Slot: {encounter_slot}\nLocation: {location}";
             mainrng.Next();
             mainrng.Next();
             _ = new Xoroshiro128Plus(mainrng.Next());
-            return (pk, shiny, logs);
+            return (pk, gen.shiny, logs);
         }
-        public ulong GenerateNextShiny(string species, int spawnerid, ulong seed, ulong seed1 = 0x82A2B175229D6A5B)
+
+        private ulong GenerateNextShiny(int spawnerid, ulong seed)
         {
             int hits = 0;
-            var mode = Settings.AlphaScanConditions.ScanLocation;
             ulong newseed = 0;
             var mainrng = new Xoroshiro128Plus(seed);
             int givs = 0;
             if (Settings.AlphaScanConditions.SpawnIsStaticAlpha)
                 givs = 3;
+
             if (!Settings.AlphaScanConditions.InItSpawn)
             {
                 mainrng.Next();
                 mainrng.Next();
                 mainrng = new Xoroshiro128Plus(mainrng.Next());
             }
-            switch (mode)
+
+            string species = Settings.AlphaScanConditions.ScanLocation switch
             {
-                case ArceupMap.ObsidianFieldlands: SpawnerSpecies = ObsidianTitle[SpawnerID]; break;
-                case ArceupMap.CrimsonMirelands: SpawnerSpecies = CrimsonTitle[SpawnerID]; break;
-                case ArceupMap.CoronetHighlands: SpawnerSpecies = CoronetTitle[SpawnerID]; break;
-                case ArceupMap.CobaltCoastlands: SpawnerSpecies = CobaltTitle[SpawnerID]; break;
-                case ArceupMap.AlabasterIcelands: SpawnerSpecies = AlabasterTitle[SpawnerID]; break;
-            }
+                ArceusMap.ObsidianFieldlands => ObsidianTitle[spawnerid],
+                ArceusMap.CrimsonMirelands => CrimsonTitle[spawnerid],
+                ArceusMap.CoronetHighlands => CoronetTitle[spawnerid],
+                ArceusMap.CobaltCoastlands => CobaltTitle[spawnerid],
+                ArceusMap.AlabasterIcelands => AlabasterTitle[spawnerid],
+                _ => throw new NotImplementedException("Invalid spawner ID or location."),
+            };
+
             for (int i = 0; i < Settings.AlphaScanConditions.MaxAdvancesToSearch; i++)
             {
                 var generator_seed = mainrng.Next();
                 mainrng.Next();
                 var rng = new Xoroshiro128Plus(generator_seed);
                 rng.Next();
-                var (shiny, shinytype, encryption_constant, pid, ivs, ability, gender, nature, shinyseed) = GenerateFromSeed(rng.Next(), (int)Settings.AlphaScanConditions.StaticAlphaShinyRolls, givs);
-                if (shiny)
+
+                var gen = GenerateFromSeed(rng.Next(), (int)Settings.AlphaScanConditions.StaticAlphaShinyRolls, givs);
+                if (gen.shiny)
                 {
-                    if (Settings.SpeciesToHunt.Length != 0 && !Settings.SpeciesToHunt.Contains(SpawnerSpecies))
+                    if (Settings.SpeciesToHunt.Length != 0 && !Settings.SpeciesToHunt.Contains(species))
                         break;
 
                     if (Settings.SearchForIVs.Length != 0)
                     {
-                        if (Settings.SearchForIVs[0] == ivs[0] && Settings.SearchForIVs[1] == ivs[1] && Settings.SearchForIVs[2] == ivs[2] && Settings.SearchForIVs[3] == ivs[3] && Settings.SearchForIVs[4] == ivs[4] && Settings.SearchForIVs[5] == ivs[5])
+                        if (Settings.SearchForIVs.SequenceEqual(gen.IVs))
                         {
-                            Log($"\nAdvances: {i}\nAlpha: {SpawnerSpecies} - {shinytype} | SpawnerID: {spawnerid}\nEC: {encryption_constant:X8}\nPID: {pid:X8}\nIVs: {ivs[0]}/{ivs[1]}/{ivs[2]}/{ivs[3]}/{ivs[4]}/{ivs[5]}\nNature: {nature}\nSeed: {shinyseed:X16}");
+                            Log($"\nAdvances: {i}\nAlpha: {species} - {gen.shinyXor} | SpawnerID: {spawnerid}\nEC: {gen.EC:X8}\nPID: {gen.PID:X8}\nIVs: {string.Join("/", gen.IVs)}\nNature: {gen.Item8}\nSeed: {gen.Item9:X16}");
                             newseed = generator_seed;
                             Settings.AlphaScanConditions.StopOnMatch = true;
                             hits++;
 
                             if (hits == 3)
                             {
-                                Log($"First three shiny results for {SpawnerSpecies} found.");
+                                Log($"First three shiny results for {species} found.");
                                 break;
                             }
                         }
                     }
                     if (Settings.SearchForIVs.Length == 0)
                     {
-                        Log($"\nAdvances: {i}\nAlpha: {SpawnerSpecies} - {shinytype} | SpawnerID: {spawnerid}\nEC: {encryption_constant:X8}\nPID: {pid:X8}\nIVs: {ivs[0]}/{ivs[1]}/{ivs[2]}/{ivs[3]}/{ivs[4]}/{ivs[5]}\nNature: {nature}\nSeed: {shinyseed:X16}");
+                        Log($"\nAdvances: {i}\nAlpha: {species} - {gen.shinyXor} | SpawnerID: {spawnerid}\nEC: {gen.EC:X8}\nPID: {gen.PID:X8}\nIVs: {string.Join("/", gen.IVs)}\nNature: {gen.Item8}\nSeed: {gen.Item9:X16}");
                         newseed = generator_seed;
                         Settings.AlphaScanConditions.StopOnMatch = true;
                         hits++;
 
                         if (hits == 3)
                         {
-                            Log($"First three shiny results for {SpawnerSpecies} found.");
+                            Log($"First three shiny results for {species} found.");
                             break;
                         }
                     }
                 }
                 mainrng = new Xoroshiro128Plus(mainrng.Next());
-                if (i == Settings.AlphaScanConditions.MaxAdvancesToSearch - 1 && !shiny)
-                    Log($"No results within {Settings.AlphaScanConditions.MaxAdvancesToSearch} advances for {SpawnerSpecies} | SpawnerID: {spawnerid}.");
+                if (i == Settings.AlphaScanConditions.MaxAdvancesToSearch - 1 && !gen.shiny)
+                    Log($"No results within {Settings.AlphaScanConditions.MaxAdvancesToSearch} advances for {species} | SpawnerID: {spawnerid}.");
             }
 
             return newseed;
         }
 
-        public async Task PerformOutbreakScan(CancellationToken token)
+        private async Task PerformOutbreakScan(CancellationToken token)
         {
-            string report = string.Empty;
+            string report;
             var ofs = new long[] { 0x42BA6B0, 0x2B0, 0x58, 0x18, 0x20 };
-            var outbreakptr = SwitchConnection.PointerAll(ofs, token).Result;
-            info = SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr, 0x190, token).Result;
+            var outbreakptr = await SwitchConnection.PointerAll(ofs, token).ConfigureAwait(false);
+            info = await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr, 0x190, token).ConfigureAwait(false);
             for (int i = 0; i < 4; i++)
             {
                 Species outbreakspecies = (Species)BitConverter.ToUInt16(info.Slice(0 + (i * 80), 2));
@@ -1385,13 +1273,13 @@ namespace SysBot.Pokemon
 
                         if (pk.IsShiny && Settings.OutbreakConditions.AlphaShinyOnly && pk.IsAlpha || pk.IsShiny && !Settings.OutbreakConditions.AlphaShinyOnly)
                         {
-                            await CheckEmbed(token, pk, "", loglist.Last()).ConfigureAwait(false);
-                            await Task.Delay(2_500, token).ConfigureAwait(false);
+                            await CheckEmbed(pk, "", loglist.Last(), token).ConfigureAwait(false);
                         }
                     }
                     count = 0;
                 };
             }
+
             if (Settings.OutbreakConditions.Permute)
             {
                 Log("Beginning Outbreak permutations...");
@@ -1410,55 +1298,48 @@ namespace SysBot.Pokemon
                 }
                 if (afk)
                 {
-                    Log("Desired species has a permutation!");
-                    Log(report2);
+                    Log($"Desired species has a permutation!\n{report2}");
                     IsWaiting = true;
                     while (IsWaiting)
-                        await Task.Delay(1_000).ConfigureAwait(false);
+                        await Task.Delay(1_000, token).ConfigureAwait(false);
                 }
                 results.Clear();
-                results = new();
                 moreresults.Clear();
-                moreresults = new();
                 specieslist.Clear();
-                specieslist = new();
                 IsWaiting = false;
             }
+
             if (!IsWaiting)
-                EmbedMon = (null, false);
+                EmbedMons.Add((null, false));
 
             report = string.Join("\n", loglist);
             Log(report);
             loglist.Clear();
-            loglist = new();
             monlist.Clear();
-            monlist = new();
         }
 
-        public (int, int) GrabEncounterSum(ulong encslot, ulong bonusslot)
+        private static (int, int) GrabEncounterSum(ulong encslot, ulong bonusslot)
         {
             int encmax = 0;
             int bonusmax = 0;
-            foreach (var keyValuePair in mmoslots)
+            foreach (var keyValuePair in SpawnGenerator.EncounterTables)
             {
-                if (keyValuePair.Key == "0x" + $"{encslot:X16}")
+                if (keyValuePair.Key == encslot)
                 {
                     foreach (var keyValue in keyValuePair.Value)
-                    {
-                        encmax += keyValue.Slot;
-                    }
+                        encmax += keyValue.Rate;
                 }
-                if (keyValuePair.Key == "0x" + $"{bonusslot:X16}")
+
+                if (keyValuePair.Key == bonusslot)
                 {
                     foreach (var keyValue in keyValuePair.Value)
-                    {
-                        bonusmax += keyValue.Slot;
-                    }
+                        bonusmax += keyValue.Rate;
                 }
             }
             return (encmax, bonusmax);
         }
-        public (PA8, int) GrabMMOSpecies(double encounter_slot, ulong encslot)
+
+        private static (PA8, int) GrabMMOSpecies(double encounter_slot, ulong encslot)
         {
             PA8 pk = new();
             var encmax = 0;
@@ -1466,32 +1347,32 @@ namespace SysBot.Pokemon
             Species name = Species.None;
             int ivs = 0;
             bool isalpha = false;
-            foreach (var keyValuePair in mmoslots)
+            foreach (var keyValuePair in SpawnGenerator.EncounterTables)
             {
-                if (keyValuePair.Key == "0x" + $"{encslot:X16}")
+                if (keyValuePair.Key == encslot)
                 {
                     foreach (var keyValue in keyValuePair.Value)
                     {
-                        encmax += keyValue.Slot;
+                        encmax += keyValue.Rate;
                         if (encounter_slot < encmax)
                         {
-                            name = keyValue.Name;
+                            name = (Species)keyValue.Species;
                             form = keyValue.Form;
-                            ivs = keyValue.IVs;
-                            isalpha = keyValue.Alpha;
+                            ivs = keyValue.FlawlessIVs;
+                            isalpha = keyValue.IsAlpha;
                             break;
                         }
                     }
+
                     pk.Species = (int)name;
                     pk.Form = form;
-                    if (isalpha == true)
-                        pk.IsAlpha = true;
+                    pk.IsAlpha = isalpha;
                 }
             }
             return (pk, ivs);
         }
 
-        public async Task CheckEmbed(CancellationToken token, PA8 pk, string map, string spawn)
+        private async Task CheckEmbed(PA8 pk, string map, string spawn, CancellationToken token)
         {
             string[] list = Settings.SpeciesToHunt.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
             bool huntedspecies = list.Contains($"{(Species)pk.Species}");
@@ -1502,22 +1383,33 @@ namespace SysBot.Pokemon
                 while (IsWaiting)
                     await Task.Delay(1_000, token).ConfigureAwait(false);
             }
+
+            bool match = false;
             if (list.Length != 0)
             {
                 if (!huntedspecies || huntedspecies && Settings.OutbreakConditions.AlphaShinyOnly && !pk.IsAlpha)
-                    EmbedMon = (pk, false);
+                    EmbedMons.Add((pk, false));
+
                 if (huntedspecies && Settings.OutbreakConditions.AlphaShinyOnly && pk.IsAlpha)
-                    EmbedMon = (pk, true);
+                {
+                    EmbedMons.Add((pk, true));
+                    match = true;
+                }
             }
+
             if (list.Length == 0)
             {
                 if (Settings.OutbreakConditions.AlphaShinyOnly && !pk.IsAlpha)
-                    EmbedMon = (pk, false);
+                    EmbedMons.Add((pk, false));
                 else
-                    EmbedMon = (pk, true);
+                {
+                    EmbedMons.Add((pk, true));
+                    match = true;
+                }
             }
+
             ResultsUtil.Log(spawn, "");
-            if (EmbedMon.Item2 == true && EmbedsInitialized || EmbedMon.Item2 == true && !EmbedsInitialized)
+            if (match)
             {
                 IsWaiting = true;
                 IsWaitingConfirmation = true;
@@ -1527,8 +1419,8 @@ namespace SysBot.Pokemon
                     await Task.Delay(1_000, token).ConfigureAwait(false);
                     if (!IsWaitingConfirmation)
                     {
-                        //await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + InvincibleTrainer1, token).ConfigureAwait(false);
-                        //await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + InvincibleTrainer2, token).ConfigureAwait(false);
+                        await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + InvincibleTrainer1, token).ConfigureAwait(false);
+                        await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + InvincibleTrainer2, token).ConfigureAwait(false);
 
                         await TeleportToMMOGroupZone(token).ConfigureAwait(false);
                         await Click(HOME, 1_000, token).ConfigureAwait(false);
@@ -1540,36 +1432,36 @@ namespace SysBot.Pokemon
             }
         }
 
-        public async Task PerformMMOScan(CancellationToken token)
+        private async Task PerformMMOScan(CancellationToken token)
         {
-            string map = string.Empty;
-            string report = string.Empty;
+            string report;
             Species species;
             var ofs = new long[] { 0x42BA6B0, 0x2B0, 0x58, 0x18, 0x1B0 };
-            var outbreakptr = SwitchConnection.PointerAll(ofs, token).Result;
-            info = SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr, 14720, token).Result;
+            var outbreakptr = await SwitchConnection.PointerAll(ofs, token).ConfigureAwait(false);
+            info = await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr, 14720, token).ConfigureAwait(false);
 
             for (int mapcount = 0; mapcount < 5; mapcount++)
             {
                 Log($"Checking map #{mapcount}...");
                 ofs = new long[] { 0x42BA6B0, 0x2B0, 0x58, 0x18, 0x1B0 + (mapcount * 0xB80) };
-                outbreakptr = SwitchConnection.PointerAll(ofs, token).Result;
+                outbreakptr = await SwitchConnection.PointerAll(ofs, token).ConfigureAwait(false);
                 var active = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr, 2, token).ConfigureAwait(false), 0);
                 bool areavalid = $"{active:X4}" is not ("0000" or "2645");
                 if (!areavalid)
                     continue;
+
                 var groupcount = 0;
                 var mapinfo = info.Slice(mapcount * 2944, 2944);
 
-                switch ($"{active:X4}")
+                string map = $"{active:X4}" switch
                 {
-                    case "56B7": map = " in the Cobalt Coastlands"; break;
-                    case "5504": map = " in the Crimson Mirelands"; break;
-                    case "5351": map = " in the Alabaster Icelands"; break;
-                    case "519E": map = " in the Coronet Highlands"; break;
-                    case "5A1D": map = " in the Obsidian Fieldlands"; break;
-                    case "0000" or "2645": map = ""; break;
-                }
+                    "56B7" => " in the Cobalt Coastlands",
+                    "5504" => " in the Crimson Mirelands",
+                    "5351" => " in the Alabaster Icelands",
+                    "519E" => " in the Coronet Highlands",
+                    "5A1D" => " in the Obsidian Fieldlands",
+                    _ => throw new NotImplementedException("Unknown map."),
+                };
 
                 do
                 {
@@ -1585,8 +1477,8 @@ namespace SysBot.Pokemon
                         var spawncoordx = BitConverter.ToUInt32(xyz, 0);
                         var spawncoordy = BitConverter.ToUInt32(xyz, 4);
                         var spawncoordz = BitConverter.ToUInt32(xyz, 8);
-                        Log($"Group Seed: {string.Format("0x{0:X}", group_seed)}");
-                        Log($"Massive Mass Outbreak found for: {species}{map} | Total Spawn Count: {spawncount} | Group ID: {groupcount}");
+                        Log($"Group Seed: {string.Format("0x{0:X}", group_seed)}\nMassive Mass Outbreak found for: {species}{map} | Total Spawn Count: {spawncount} | Group ID: {groupcount}");
+
                         (monlist, bonuslist) = ReadMMOSeed(spawncount, group_seed, bonuscount, encslot, bonusencslot);
                         foreach (PA8 pk in monlist)
                         {
@@ -1597,13 +1489,12 @@ namespace SysBot.Pokemon
                             if (pk.IsShiny && pk.Species != (int)Species.None)
                             {
                                 report = string.Join("\n", loglist);
-                                Log(report);
-                                Log($"Autofilling coords for {(Species)pk.Species}. Check the Results tab for more information.");
+                                Log($"{report}\n\nAutofilling coords for {(Species)pk.Species}. Check the Results tab for more information.");
                                 x = $"{spawncoordx:X8}";
                                 y = $"{spawncoordy:X8}";
                                 z = $"{spawncoordz:X8}";
-                                await CheckEmbed(token, pk, map, loglist.Last()).ConfigureAwait(false);
-                                await Task.Delay(2_500, token).ConfigureAwait(false);
+                                await CheckEmbed(pk, map, loglist.Last(), token).ConfigureAwait(false);
+                                //await Task.Delay(2_500, token).ConfigureAwait(false);
                             }
                         }
                         count = 0;
@@ -1616,28 +1507,25 @@ namespace SysBot.Pokemon
                             if (pk.IsShiny && pk.Species != (int)Species.None)
                             {
                                 report = string.Join("\n", loglist);
-                                Log(report);
-                                Log($"Autofilling coords for {(Species)pk.Species}. Check the Results tab for more information.");
+                                Log($"{report}\n\nAutofilling coords for {(Species)pk.Species}. Check the Results tab for more information.");
                                 x = $"{spawncoordx:X8}";
                                 y = $"{spawncoordy:X8}";
                                 z = $"{spawncoordz:X8}";
-                                await CheckEmbed(token, pk, map, loglist.Last()).ConfigureAwait(false);
-                                await Task.Delay(2_500).ConfigureAwait(false);
+                                await CheckEmbed(pk, map, loglist.Last(), token).ConfigureAwait(false);
+                                //await Task.Delay(2_500, token).ConfigureAwait(false);
                             }
                         }
                         count = 0;
                         report = string.Join("\n", loglist);
                         Log(report);
                         loglist.Clear();
-                        loglist = new();
                         monlist.Clear();
-                        monlist = new();
                         bonuslist.Clear();
-                        bonuslist = new();
                         groupcount++;
                     };
                 } while (species != Species.None && species < Species.MAX_COUNT);
             }
+
             if (Settings.OutbreakConditions.Permute)
             {
                 Log("Beginning MMO permutations...");
@@ -1658,16 +1546,16 @@ namespace SysBot.Pokemon
                             afk = true;
                             PA8 s1 = new();
                             s1.Species = (int)s;
-                            EmbedMon = (s1, true);
+                            EmbedMons.Add((s1, true));
                         }
                     }
                     if (afk)
                     {
-                        Log("Desired species has a permutation!");
-                        Log(report);
+                        Log($"Desired species has a permutation!\n{report}");
+
                         IsWaiting = true;
                         while (IsWaiting)
-                            await Task.Delay(1_000).ConfigureAwait(false);
+                            await Task.Delay(1_000, token).ConfigureAwait(false);
                     }
                 }
                 if (list.Length == 0 && specieslist.Count > 0)
@@ -1678,18 +1566,15 @@ namespace SysBot.Pokemon
                 }
 
                 results.Clear();
-                results = new();
                 moreresults.Clear();
-                moreresults = new();
                 specieslist.Clear();
-                specieslist = new();
                 IsWaiting = false;
             }
             if (!IsWaiting)
-                EmbedMon = (null, false);
+                EmbedMons.Add((null, false));
         }
 
-        public async Task MassiveOutbreakHunter(CancellationToken token)
+        private async Task MassiveOutbreakHunter(CancellationToken token)
         {
             while (!token.IsCancellationRequested)
             {
@@ -1698,9 +1583,7 @@ namespace SysBot.Pokemon
                     Log("Checking our distortions before scanning outbreaks!");
                     await DistortionReader(token).ConfigureAwait(false);
                 }
-                Log("Reading map for active outbreaks...");
-
-                Log($"Search #{attempts}");
+                Log($"Reading map for active outbreaks...\nSearch #{attempts}");
                 await Click(Y, 1_000, token).ConfigureAwait(false);
                 while (!await IsOnOverworldTitle(token).ConfigureAwait(false))
                     await Click(A, 1_000, token).ConfigureAwait(false);
@@ -1714,6 +1597,7 @@ namespace SysBot.Pokemon
                 }
 
                 Log($"No match found, resetting.");
+                await Click(B, 1_000, token).ConfigureAwait(false);
                 await CloseGame(Hub.Config, token).ConfigureAwait(false);
                 await StartGame(Hub.Config, token).ConfigureAwait(false);
                 attempts++;

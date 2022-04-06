@@ -1,5 +1,4 @@
-﻿using System;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using SysBot.Base;
 
 namespace SysBot.Pokemon
@@ -17,7 +16,7 @@ namespace SysBot.Pokemon
         public string SpeciesToHunt { get; set; } = string.Empty;
 
         [Category(Arceus), Description("If you have a desired IV spread enter it here, else leave empty. (EX: 31/31/31/31/31/0 for a 5IV 0SPE spread.")]
-        public int[] SearchForIVs { get; set; } = { };
+        public int[] SearchForIVs { get; set; } = Array.Empty<int>();
 
         [Category(Arceus), Description("Special Conditions"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
         public SpecialFiltersCategory SpecialConditions { get; set; } = new();
@@ -76,7 +75,7 @@ namespace SysBot.Pokemon
             public ShinyRolls DistortionShinyRolls { get; set; } = ShinyRolls.PerfectCharm;
 
             [Category(Arceus), Description("Select the Location of the map you are hunting distortions for.")]
-            public ArceupMap DistortionLocation { get; set; } = ArceupMap.ObsidianFieldlands;
+            public ArceusMap DistortionLocation { get; set; } = ArceusMap.ObsidianFieldlands;
 
             [Category(Arceus), Description("Wait time in minutes before starting a new distortion. If one does not spawn initially, stop and start the bot again.")]
             public int WaitTimeDistortion { get; set; } = 1;
@@ -91,7 +90,7 @@ namespace SysBot.Pokemon
             public override string ToString() => "AlphaScan Conditions";
 
             [Category(Arceus), Description("Select the Location of the map you are hunting for. Ignore this setting if you are running MMOHunter")]
-            public ArceupMap ScanLocation { get; set; } = ArceupMap.ObsidianFieldlands;
+            public ArceusMap ScanLocation { get; set; } = ArceusMap.ObsidianFieldlands;
 
             [Category(Arceus), Description("Select the Location to Autofill Coords upon running PlayerCoordScan.")]
             public ArceusAutoFill AutoFillCoords { get; set; } = ArceusAutoFill.CampZone;
@@ -152,7 +151,7 @@ namespace SysBot.Pokemon
         {
             public override bool GetPropertiesSupported(ITypeDescriptorContext? context) => true;
 
-            public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[]? attributes) => TypeDescriptor.GetProperties(typeof(T));
+            public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext? context, object value, Attribute[]? attributes) => TypeDescriptor.GetProperties(typeof(T));
 
             public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType) => destinationType != typeof(string) && base.CanConvertTo(context, destinationType);
         }
