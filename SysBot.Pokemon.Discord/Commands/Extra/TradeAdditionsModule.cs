@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using Discord.WebSocket;
 
 namespace SysBot.Pokemon.Discord
 {
@@ -547,15 +548,17 @@ namespace SysBot.Pokemon.Discord
                         };
 
                         var embed = new EmbedBuilder { Color = Color.Gold, ThumbnailUrl = url }.WithAuthor(author).WithDescription(stats).WithFooter(footer);
-                        foreach (var guild in Context.Client.Guilds)
+                        var guilds = Context.Client.Guilds;
+                        foreach (var guild in guilds)
                         {
                             foreach (var channel in channels)
                             {
-                                if (guild.Channels.FirstOrDefault(x => x.Id == channel) != default)
+                                var ch = guild.Channels.FirstOrDefault(x => x.Id == channel);
+                                if (ch != default && ch is ISocketMessageChannel sock)
                                 {
                                     try
                                     {
-                                        await guild.GetTextChannel(channel).SendMessageAsync(mons[i].Item2 ? ping : "", embed: embed.Build()).ConfigureAwait(false);
+                                        await sock.SendMessageAsync(mons[i].Item2 ? ping : "", embed: embed.Build()).ConfigureAwait(false);
                                     }
                                     catch { }
                                 }

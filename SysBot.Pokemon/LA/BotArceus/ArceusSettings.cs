@@ -3,7 +3,7 @@ using SysBot.Base;
 
 namespace SysBot.Pokemon
 {
-    public class ArceusBotSettings : IBotStateSettings
+    public class ArceusBotSettings : IBotStateSettings, ICountSettings
     {
         private const string Arceus = nameof(Arceus);
         private const string Counts = nameof(Counts);
@@ -154,6 +154,28 @@ namespace SysBot.Pokemon
             public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext? context, object value, Attribute[]? attributes) => TypeDescriptor.GetProperties(typeof(T));
 
             public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType) => destinationType != typeof(string) && base.CanConvertTo(context, destinationType);
+        }
+
+        private int _completedShinyAlphasFound;
+
+        [Category(Counts), Description("Arceus Encountered Pokémon")]
+        public int CompletedShinyAlphasFound
+        {
+            get => _completedShinyAlphasFound;
+            set => _completedShinyAlphasFound = value;
+        }
+
+        [Category(Counts), Description("When enabled, the counts will be emitted when a status check is requested.")]
+        public bool EmitCountsOnStatusCheck { get; set; }
+
+        public int AddCompletedShinyAlphaFound() => Interlocked.Increment(ref _completedShinyAlphasFound);
+
+        public IEnumerable<string> GetNonZeroCounts()
+        {
+            if (!EmitCountsOnStatusCheck)
+                yield break;
+            if (CompletedShinyAlphasFound != 0)
+                yield return $"Shiny Alphas Found: {CompletedShinyAlphasFound}";
         }
     }
 }
