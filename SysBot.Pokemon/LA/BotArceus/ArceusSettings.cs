@@ -53,6 +53,12 @@ namespace SysBot.Pokemon
             [Category(Arceus), Description("When enabled, the bot will search for only an alpha shiny from a MMO.")]
             public bool AlphaShinyOnly { get; set; } = false;
 
+            [Category(Arceus), Description("When enabled, the bot will check all Distortion spawns before going into Jubilife to read spawns.")]
+            public bool CheckDistortionFirst { get; set; } = false;
+
+            [Category(Arceus), Description("When enabled, the bot will read every box to see if the encounter exists. It checks for Species, Shiny, and IsAlpha.")]
+            public bool CheckBoxes { get; set; } = false;
+
             [Category(Arceus), Description("Enter number of shiny rolls for MMOs.")]
             public ShinyRolls MMOShinyRolls { get; set; } = ShinyRolls.MMOPerfectCharm;
 
@@ -61,9 +67,6 @@ namespace SysBot.Pokemon
 
             [Category(Arceus), Description("Duration in Ms for how long to hold B when returning to town for Outbreak Hunter.")]
             public int HoldBMs { get; set; } = 5000;
-
-            [Category(Arceus), Description("When enabled, the bot will check all Distortion spawns before going into Jubilife to read spawns.")]
-            public bool CheckDistortionFirst { get; set; } = false;
         }
 
         [Category(Arceus), TypeConverter(typeof(CategoryConverter<DistortionFiltersCategory>))]

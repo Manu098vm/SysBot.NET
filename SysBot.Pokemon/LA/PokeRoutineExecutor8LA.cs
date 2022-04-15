@@ -305,13 +305,13 @@ namespace SysBot.Pokemon
             return (xor ^ (xor >> 16)) & 0xFFFF;
         }
 
-        public (bool shiny, uint shinyXor, uint EC, uint PID, int[] IVs, ulong ability, ulong gender, Nature, ulong) GenerateFromSeed(ulong seed, int rolls, int guranteedivs)
+        public (bool shiny, uint shinyXor, uint EC, uint PID, int[] IVs, ulong ability, int gender, Nature nature, ulong newseed) GenerateFromSeed(ulong seed, int rolls, int guranteedivs, in int genderRatio)
         {
             bool shiny = false;
             uint EC;
             uint pid = 0;
             ulong ability;
-            ulong gender;
+            int gender;
             Nature nature;
             ulong newseed = 0;
             uint shinyXor = 17;
@@ -348,7 +348,13 @@ namespace SysBot.Pokemon
                     ivs[i] = (int)rng.NextInt(32);
             }
             ability = rng.Next() & GetMask(2);
-            gender = (rng.Next() & GetMask(252)) + 1;
+            gender = genderRatio switch
+            {
+                PersonalInfo.RatioMagicGenderless => 2,
+                PersonalInfo.RatioMagicFemale => 1,
+                PersonalInfo.RatioMagicMale => 0,
+                _ => (int)rng.NextInt(252) + 1 < genderRatio ? (byte)1 : (byte)0,
+            };
             nature = (Nature)(rng.NextInt(25));
             return (shiny, shinyXor, EC, pid, ivs, ability, gender, nature, newseed);
         }
