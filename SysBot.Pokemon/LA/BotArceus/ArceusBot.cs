@@ -935,7 +935,7 @@ namespace SysBot.Pokemon
                 var SpawnerOff = await SwitchConnection.PointerAll(SpawnerOffpoint, token).ConfigureAwait(false);
                 var GeneratorSeed = await SwitchConnection.ReadBytesAbsoluteAsync(SpawnerOff, 8, token).ConfigureAwait(false);
                 var group_seed = (BitConverter.ToUInt64(GeneratorSeed, 0) - 0x82A2B175229D6A5B) & 0xFFFFFFFFFFFFFFFF;
-                ResultsUtil.LogText($"Generator Seed: {BitConverter.ToString(GeneratorSeed).Replace("-", "")}\nGroup Seed: {string.Format("0x{0:X}", group_seed)}");
+                ResultsUtil.Log($"Generator Seed: {BitConverter.ToString(GeneratorSeed).Replace("-", "")}\nGroup Seed: {string.Format("0x{0:X}", group_seed)}", "");
                 GenerateNextShiny(i, group_seed);
             }
         }
@@ -1405,22 +1405,22 @@ namespace SysBot.Pokemon
                 int n = 0;
                 foreach (var mon in boxlist.ToList())
                 {
-                    bool alpha = !mon.IsAlpha && pk.IsAlpha;
-                    bool newform = mon.Form != pk.Form;
-                    bool newgender = mon.Gender != pk.Gender;
-                    if (alpha || alpha && newform || alpha && newgender || alpha && newform && newgender)
+                    bool alpha = !mon.IsAlpha && pk.IsAlpha && mon.Species == pk.Species;
+                    bool newform = mon.Form != pk.Form && alpha;
+                    //bool newgender = mon.Gender != pk.Gender;
+                    if (alpha || newform || !mon.IsAlpha && pk.IsAlpha && (Species)pk.Species == Species.Eevee)// || alpha && newform)// || alpha && newgender || alpha && newform && newgender)
                     {
-                        if (mon.Species == pk.Species)
+                        //if (mon.Species == pk.Species)
+                        //  {
+                        if (f == 0)
                         {
-                            if (f == 0)
-                            {
-                                Log($"Found a {(Species)pk.Species}! It's something we don't have!\nAdding it to our boxlist!");
-                                EmbedMons.Add((pk, true));
-                                match = true;
-                                boxlist.Add(pk);
-                            }
-                            f++;
+                            Log($"Found a {(Species)pk.Species}! It's something we don't have!\nAdding it to our boxlist!");
+                            EmbedMons.Add((pk, true));
+                            match = true;
+                            boxlist.Add(pk);
                         }
+                        f++;
+                        // }
                     }
                     else
                     {
@@ -1468,7 +1468,7 @@ namespace SysBot.Pokemon
 
             for (int mapcount = 0; mapcount < 5; mapcount++)
             {
-                ResultsUtil.LogText($"Checking map #{mapcount}...");
+                ResultsUtil.Log($"Checking map #{mapcount}...", "");
                 ofs = new long[] { 0x42BA6B0, 0x2B0, 0x58, 0x18, 0x1B0 + (mapcount * 0xB80) };
                 outbreakptr = await SwitchConnection.PointerAll(ofs, token).ConfigureAwait(false);
                 var active = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr, 2, token).ConfigureAwait(false), 0);
