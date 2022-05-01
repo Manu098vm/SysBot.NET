@@ -9,6 +9,7 @@
         DistortionSpammer,
         DistortionReader,
         PlayerCoordScan,
+        MultiSpawnPathSearch,
     }
     public enum ArceusAutoFill
     {
@@ -49,5 +50,12 @@
         Perfect = 4,
         Lv10 = 2,
         NoBonusRolls = 1,
+    }
+
+    public enum MultiSpawners
+    {
+        Combee = 390,
+        Eevee = 49,
+        //Unown = 395,
     }
 }

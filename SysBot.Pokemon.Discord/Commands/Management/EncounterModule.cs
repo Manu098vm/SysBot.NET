@@ -8,6 +8,7 @@ namespace SysBot.Pokemon.Discord
     public class EchoModule<T> : ModuleBase<SocketCommandContext> where T : PKM, new()
     {
         [Command("toss")]
+        [Alias("yeet")]
         [Summary("Makes all bots that are currently waiting for a go-ahead continue operation.")]
         [RequireSudo]
         public async Task TossAsync(string name = "")

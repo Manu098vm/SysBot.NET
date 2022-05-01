@@ -27,6 +27,9 @@ namespace SysBot.Pokemon
         [Category(Arceus), Description("Distortion Conditions"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
         public DistortionFiltersCategory DistortionConditions { get; set; } = new();
 
+        [Category(Arceus), Description("MultiScan Conditions"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
+        public MultiScanFiltersCategory MultiScanConditions { get; set; } = new();
+
         [Category(Arceus), Description("AlphaScan Conditions"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
         public AlphaScanFiltersCategory AlphaScanConditions { get; set; } = new();
 
@@ -56,7 +59,7 @@ namespace SysBot.Pokemon
             [Category(Arceus), Description("When enabled, the bot will check all Distortion spawns before going into Jubilife to read spawns.")]
             public bool CheckDistortionFirst { get; set; } = false;
 
-            [Category(Arceus), Description("When enabled, the bot will read every box to see if the encounter exists. It checks for Species, Shiny, and IsAlpha.")]
+            [Category(Arceus), Description("EXPERIMENTAL, does not work 100% of the time. When enabled, the bot will read every box to see if the encounter exists. It checks for Species, Shiny, and IsAlpha.")]
             public bool CheckBoxes { get; set; } = false;
 
             [Category(Arceus), Description("Enter number of shiny rolls for MMOs.")]
@@ -85,6 +88,18 @@ namespace SysBot.Pokemon
 
             [Category(Arceus), Description("When enabled, the bot will only stop on Alpha Shinies in Distortions.")]
             public bool DistortionAlphaOnly { get; set; } = false;
+        }
+
+        [Category(Arceus), TypeConverter(typeof(CategoryConverter<MultiScanFiltersCategory>))]
+        public class MultiScanFiltersCategory
+        {
+            public override string ToString() => "MultiScan Conditions";
+
+            [Category(Arceus), Description("Enter the max number of advances for pathing.")]
+            public int Advances { get; set; } = 20;
+
+            [Category(Arceus), Description("Species for MultiSpawners Group ID")]
+            public MultiSpawners MultiSpecies { get; set; } = MultiSpawners.Eevee;
         }
 
         [Category(Arceus), TypeConverter(typeof(CategoryConverter<AlphaScanFiltersCategory>))]

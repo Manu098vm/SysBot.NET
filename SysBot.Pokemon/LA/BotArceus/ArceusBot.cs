@@ -16,7 +16,7 @@ namespace SysBot.Pokemon
         public static bool EmbedsInitialized { get; set; }
         public static readonly List<(PA8?, bool)> EmbedMons = new();
         public static CancellationTokenSource EmbedSource { get; set; } = new();
-        public ICountSettings Counts => (ICountSettings)Settings;
+        public ICountSettings Counts => Settings;
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         public ArceusBot(PokeBotState cfg, PokeTradeHub<PA8> hub) : base(cfg)
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
@@ -78,6 +78,7 @@ namespace SysBot.Pokemon
                     ArceusMode.DistortionSpammer => DistortionSpammer(token),
                     ArceusMode.DistortionReader => DistortionReader(token),
                     ArceusMode.MassiveOutbreakHunter => MassiveOutbreakHunter(token),
+                    ArceusMode.MultiSpawnPathSearch => PerformMultiSpawnerScan(token),
                     _ => PlayerCoordScan(token),
                 };
                 await task.ConfigureAwait(false);
@@ -1407,11 +1408,8 @@ namespace SysBot.Pokemon
                 {
                     bool alpha = !mon.IsAlpha && pk.IsAlpha && mon.Species == pk.Species;
                     bool newform = mon.Form != pk.Form && alpha;
-                    //bool newgender = mon.Gender != pk.Gender;
-                    if (alpha || newform || !mon.IsAlpha && pk.IsAlpha && (Species)pk.Species == Species.Eevee)// || alpha && newform)// || alpha && newgender || alpha && newform && newgender)
+                    if (alpha || newform || !mon.IsAlpha && pk.IsAlpha && (Species)pk.Species == Species.Eevee || !mon.IsAlpha && pk.IsAlpha && (Species)pk.Species == Species.Unown)
                     {
-                        //if (mon.Species == pk.Species)
-                        //  {
                         if (f == 0)
                         {
                             Log($"Found a {(Species)pk.Species}! It's something we don't have!\nAdding it to our boxlist!");
@@ -1420,7 +1418,6 @@ namespace SysBot.Pokemon
                             boxlist.Add(pk);
                         }
                         f++;
-                        // }
                     }
                     else
                     {
@@ -1440,6 +1437,7 @@ namespace SysBot.Pokemon
                 IsWaitingConfirmation = true;
                 Settings.AddCompletedShinyAlphaFound();
                 ResultsUtil.Log($"Match found! Enter{map}, type $continue or click the Continue button and I'll teleport you to the location of {(Species)pk.Species} in a Massive Mass Outbreak!", "");
+                Log($"Match found! Enter{map}, type $continue or click the Continue button and I'll teleport you to the location of {(Species)pk.Species} in a Massive Mass Outbreak!");
                 while (IsWaiting)
                 {
                     await Task.Delay(1_000, token).ConfigureAwait(false);
@@ -1458,6 +1456,164 @@ namespace SysBot.Pokemon
             }
         }
 
+        private static void SetFakeTable(SlotDetail[] slots, ulong key)
+        {
+            foreach (var s in slots)
+                s.SetSpecies();
+
+            SpawnGenerator.EncounterTables.Add(key, slots);
+        }
+
+        private async Task PerformMultiSpawnerScan(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                var task = Hub.Config.Arceus.MultiScanConditions.MultiSpecies switch
+                {
+                    MultiSpawners.Eevee => PerformMultiEeveeScan(token),
+                    MultiSpawners.Combee => PerformMultiCombeeScan(token),
+                    //MultiSpawners.Unown => PerformMultiUnownScan(token),
+                    _ => PerformMultiEeveeScan(token),
+                };
+                await task.ConfigureAwait(false);
+            }
+        }
+        private async Task PerformMultiEeveeScan(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                int count = 2;
+                ulong key = (ulong)(0x1337BABE12345678 + Util.Rand.Next(1, 999999999));
+                var slots = new SlotDetail[]
+                {
+                    new(100, "Bidoof", false, new [] {3, 6}, 0),
+                    new(2, "Bidoof", true , new [] {17, 19}, 3),
+                    new(20, "Eevee", false, new [] {3, 6}, 0),
+                    new(1, "Eevee", true , new [] {17, 19}, 3),
+                };
+                SetFakeTable(slots, key);
+
+                string log = string.Empty;
+                var groupID = (int)Settings.MultiScanConditions.MultiSpecies;
+                var ofs = new long[] { 0x42A6EE0, 0x330, 0x70 + groupID * 0x440 + 0x20 };
+                var multiptr = await SwitchConnection.PointerAll(ofs, token).ConfigureAwait(false);
+                var GeneratorSeed = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(multiptr, 8, token).ConfigureAwait(false), 0);
+                var group_seed = (GeneratorSeed - 0x82A2B175229D6A5B) & 0xFFFFFFFFFFFFFFFF;
+                //Log($"Hexseed: {group_seed:X16} | Seed: {group_seed}");
+
+                var details = new SpawnCount(count, count);
+                var set = new SpawnSet(key, count);
+                var spawner = SpawnInfo.GetLoop(details, set, SpawnType.Regular);
+
+                var results = Permuter.Permute(spawner, group_seed, Settings.MultiScanConditions.Advances);
+                if (!results.HasResults)
+                    log += $"\nNo results found within {Settings.MultiScanConditions.Advances} advances :(";
+                else
+                {
+                    var lines = results.GetLines();
+                    foreach (var line in lines)
+                        log += "\n" + line;
+                }
+                Log($"{log}");
+                IsWaiting = true;
+                while (IsWaiting)
+                    await Task.Delay(1_000, token).ConfigureAwait(false);
+            }
+        }
+        private async Task PerformMultiCombeeScan(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                int count = 2;
+                ulong key = (ulong)(0x1337BABECAFEDEAD + Util.Rand.Next(1, 999999999));
+                var slots = new SlotDetail[]
+                {
+                    new(100, "Combee", false, new [] {17, 20}, 0),
+                    new(2, "Combee", true , new [] {32, 35}, 3),
+                };
+                SetFakeTable(slots, key);
+
+                string log = string.Empty;
+                var groupID = (int)Settings.MultiScanConditions.MultiSpecies;
+                var ofs = new long[] { 0x42A6EE0, 0x330, 0x70 + groupID * 0x440 + 0x20 };
+                var multiptr = await SwitchConnection.PointerAll(ofs, token).ConfigureAwait(false);
+                var GeneratorSeed = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(multiptr, 8, token).ConfigureAwait(false), 0);
+                var group_seed = (GeneratorSeed - 0x82A2B175229D6A5B) & 0xFFFFFFFFFFFFFFFF;
+                //Log($"Hexseed: {group_seed:X16} | Seed: {group_seed}");
+
+                var details = new SpawnCount(count, count);
+                var set = new SpawnSet(key, count);
+                var spawner = SpawnInfo.GetLoop(details, set, SpawnType.Regular);
+
+                var results = Permuter.Permute(spawner, group_seed, Settings.MultiScanConditions.Advances);
+                if (!results.HasResults)
+                    log += $"\nNo results found within {Settings.MultiScanConditions.Advances} advances :(";
+                else
+                {
+                    var lines = results.GetLines();
+                    foreach (var line in lines)
+                        log += "\n" + line;
+                }
+                Log($"{log}");
+                IsWaiting = true;
+                while (IsWaiting)
+                    await Task.Delay(1_000, token).ConfigureAwait(false);
+            }
+        }
+
+        private async Task PerformMultiUnownScan(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                int minCount = 2;
+                int maxCount = 3;
+
+                SlotDetail[] slots = new SlotDetail[28 * 2];
+                ulong key = (ulong)(0x1489890319879407 + Util.Rand.Next(1, 999999999));
+                for (int i = 0; i < slots.Length / 2; i++)
+                {
+                    var name = $"Unown{(i == 0 ? "" : $"-{i}")}";
+                    slots[i] = new(100, name, false, new[] { 25, 25 }, 0);
+                    slots[i + 28] = new(001, name, true, new[] { 25, 25 }, 3);
+                }
+                SetFakeTable(slots, key);
+
+                for (int i = 0; i < 2; i++)
+                {
+                    string log = string.Empty;
+                    var groupID = (int)Settings.MultiScanConditions.MultiSpecies;
+                    var ofs = new long[] { 0x42A6EE0, 0x330, 0x70 + (groupID + i) * 0x440 + 0x20 };
+                    var countofs = new long[] { 0x42A6EE0, 0x330, 0x70 + (groupID + i) * 0x440 + 0x20 + 0x3F0 };
+                    var total = new long[] { 0x42A6EE0, 0x330, 0x70 + (groupID + i) * 0x440 + 0x20 + 0x3F8 };
+                    var multiptr = await SwitchConnection.PointerAll(ofs, token).ConfigureAwait(false);
+                    var GeneratorSeed = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(multiptr, 8, token).ConfigureAwait(false), 0);
+                    var countptr = await SwitchConnection.PointerAll(countofs, token).ConfigureAwait(false);
+                    var countSeed = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(countptr, 8, token).ConfigureAwait(false), 0);
+                    var countotal = await SwitchConnection.PointerAll(total, token).ConfigureAwait(false);
+                    int totalcount = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(countotal, 2, token).ConfigureAwait(false), 0);
+                    var group_seed = (GeneratorSeed - 0x82A2B175229D6A5B) & 0xFFFFFFFFFFFFFFFF;
+                    Log($"Spawner Seed: {group_seed:X16} - Offset: {countptr} CountSeed: {countSeed} Count: {totalcount}");
+                    var details = new SpawnCount(maxCount, minCount, countSeed);
+                    var set = new SpawnSet(key, totalcount);
+                    var spawner = SpawnInfo.GetLoop(details, set, SpawnType.Regular);
+
+                    var results = Permuter.Permute(spawner, group_seed, Settings.MultiScanConditions.Advances);
+                    if (!results.HasResults)
+                        log += $"\nNo results found within {Settings.MultiScanConditions.Advances} advances :(";
+                    else
+                    {
+                        var lines = results.GetLines();
+                        foreach (var line in lines)
+                            log += "\n" + $"Unown Group: {i + 1}\n" + line;
+                    }
+                    //Log($"{log}");
+                    ResultsUtil.Log($"{log}", "");
+                }
+                IsWaiting = true;
+                while (IsWaiting)
+                    await Task.Delay(1_000, token).ConfigureAwait(false);
+            }
+        }
         private async Task PerformMMOScan(CancellationToken token)
         {
             List<string> logs = new();
@@ -1591,7 +1747,7 @@ namespace SysBot.Pokemon
             if (Settings.OutbreakConditions.CheckBoxes)
             {
                 Log("Initiating box reader...");
-                boxlist = await BoxReader(token).ConfigureAwait(false);
+                boxlist = await ReadPokemonBoxes(token).ConfigureAwait(false);
             }
             int attempts = 0;
             while (!token.IsCancellationRequested)
@@ -1623,21 +1779,19 @@ namespace SysBot.Pokemon
             }
         }
 
-        private async Task<List<PA8>> BoxReader(CancellationToken token)
+        public async Task<List<PA8>> ReadPokemonBoxes(CancellationToken token)
         {
-            List<PA8> pklist = new();
-            for (int box = 0; box < 30; box++)
+            var b1s1 = new long[] { 0x42BA6B0, 0x1F0, 0x68 };
+            var boxStart = await SwitchConnection.PointerAll(b1s1, token).ConfigureAwait(false);
+            var data = await SwitchConnection.ReadBytesAbsoluteAsync(boxStart, BoxFormatSlotSize * 960, token).ConfigureAwait(false);
+
+            for (int slot = 0; slot < 960; slot++)
             {
-                for (int i = 0; i < 30; i++)
-                {
-                    var b1s1 = new long[] { 0x42BA6B0, 0x1F0, 0x68 + (i * 0x168) + (box * 0x4380) };
-                    var BoxStart = await SwitchConnection.PointerAll(b1s1, token).ConfigureAwait(false);
-                    var mon = await ReadPokemon(BoxStart, 0x168, token).ConfigureAwait(false);
-                    pklist.Add(mon);
-                }
-                Log($"Box: {box + 1} done...");
+                int slotAdjustment = slot * BoxFormatSlotSize;
+                byte[] dataSlice = data.Slice(slotAdjustment, BoxFormatSlotSize);
+                boxlist.Add(new PA8(dataSlice));
             }
-            return pklist;
+            return boxlist;
         }
     }
 }

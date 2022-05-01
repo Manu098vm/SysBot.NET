@@ -517,6 +517,10 @@ namespace SysBot.Pokemon.Discord
                         }
 
                         PA8 mon = mons[i].Item1 ?? new();
+                        int[] pkIVList = mon.IVs;
+                        PKX.ReorderSpeedLast(pkIVList);
+                        mon.IVs = pkIVList;
+
                         var url = TradeExtensions<PA8>.PokeImg(mon, mon.CanGigantamax, SysCord<T>.Runner.Hub.Config.TradeCord.UseFullSizeImages);
                         string shinyurl = "https://img.favpng.com/6/14/25/computer-icons-icon-design-photography-royalty-free-png-favpng-mtjTHeWQe8FUAUB3RdJ3B2KJG.jpg";
                         var location = Hub.Config.Arceus.AlphaScanConditions.ScanLocation;
