@@ -2,14 +2,14 @@
 {
     public enum ArceusMode
     {
-        MassiveOutbreakHunter,
-        SeedAdvancer,
-        TimeSeedAdvancer,
-        StaticAlphaScan,
-        DistortionSpammer,
-        DistortionReader,
-        PlayerCoordScan,
-        MultiSpawnPathSearch,
+        MassiveOutbreakHunter = 0,
+        SeedAdvancer = 1,
+        TimeSeedAdvancer = 2,
+        StaticAlphaScan = 3,
+        DistortionSpammer = 4,
+        DistortionReader = 5,
+        PlayerCoordScan = 6,
+        MultiSpawnPathSearch = 7,
     }
     public enum ArceusAutoFill
     {
@@ -35,16 +35,6 @@
 
     public enum ShinyRolls
     {
-        MMOPerfectCharm = 19,
-        MMOLv10Charm = 17,
-        MMOPerfectNoCharm = 16,
-        MMOLv10NoCharm = 14,
-        MMOOnly = 13,
-        OutbreakPerfectCharm = 32,
-        OutbreakLv10Charm = 30,
-        OutbreakPerfectNoCharm = 29,
-        OutbreakLv10NoCharm = 27,
-        OutbreakOnly = 26,
         PerfectCharm = 7,
         CharmLv10 = 5,
         Perfect = 4,
@@ -54,8 +44,12 @@
 
     public enum MultiSpawners
     {
-        Combee = 390,
+        CombeeRight = 390,
+        CombeeLeft = 389,
         Eevee = 49,
-        //Unown = 395,
+        Unown = 395,
+        BasculinLeft = 342,
+        BasculinMid = 344,
+        BasculinRight = 345,
     }
 }

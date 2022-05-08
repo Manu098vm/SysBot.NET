@@ -368,5 +368,36 @@ namespace SysBot.Pokemon
             }
             return maximum;
         }
+
+        public async Task<bool> CheckForCharm(CancellationToken token)
+        {
+            bool hasCharm = false;
+            var data = await SwitchConnection.PointerPeek(0x190, Offsets.InventoryKeyItems, token).ConfigureAwait(false);
+            foreach (var b in data)
+            {
+                if (b == 120)
+                {
+                    Log("Has Shiny Charm");
+                    hasCharm = true;
+                    return hasCharm;
+                }
+            }
+            return hasCharm;
+        }
+
+        public async Task<PokedexSaveData> ReadPokedex(CancellationToken token)
+        {
+            var data = await SwitchConnection.PointerPeek(0x1E460, Offsets.PokeDex, token).ConfigureAwait(false);
+            var dex = new PokedexSaveData(data);
+            return dex;
+        }
+        public (bool, bool) CheckForPerfectComplete(bool hasCharm, PokedexSaveData dex, int species)
+        {
+            bool isComp = false;
+            bool isPerfect = dex.IsPerfect(species);
+            if (hasCharm == true)
+                isComp = true;            
+            return (isPerfect, isComp);
+        }
     }
 }

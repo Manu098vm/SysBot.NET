@@ -32,5 +32,7 @@ namespace SysBot.Pokemon
         public const string WildPokemonPtrLA = "[[[[[main+42a6f00]+D0]+B8]+300]+70]+60]+98]+10]";
         public const string PlayerCoordPtrLA = "[[[[[[main+42D4720]+18]+48]+1F0]+18]+370]+90";
         public const string TimePtrLA = "[[[[main+42D4720]+18]+100]+18]+28";
+        public IReadOnlyList<long> InventoryKeyItems { get; } = new long[] { 0x42BA6B0, 0x230, 0xAF4 };
+        public IReadOnlyList<long> PokeDex { get; } = new long[] { 0x42BA6B0, 0x248, 0x58, 0x18, 0x1C };
     }
 }

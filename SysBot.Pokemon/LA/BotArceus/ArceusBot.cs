@@ -30,6 +30,7 @@ namespace SysBot.Pokemon
         private ulong OverworldOffset;
         private (string, string, string) coordinates;
         private List<PA8> boxlist = new();
+        private bool HasCharm = false;
 
         private static readonly string[] ObsidianTitle =
         {
@@ -65,7 +66,8 @@ namespace SysBot.Pokemon
             {
                 Log($"Starting main {GetType().Name} loop.");
                 Config.IterateNextRoutine();
-
+                HasCharm = await CheckForCharm(token).ConfigureAwait(false);
+                var dex = await ReadPokedex(token).ConfigureAwait(false);
                 // Clear out any residual stick weirdness.
                 await ResetStick(token).ConfigureAwait(false);
                 MainNsoBase = await SwitchConnection.GetMainNsoBaseAsync(token).ConfigureAwait(false);
@@ -74,11 +76,11 @@ namespace SysBot.Pokemon
                     ArceusMode.PlayerCoordScan => PlayerCoordScan(token),
                     ArceusMode.SeedAdvancer => SeedAdvancer(token),
                     ArceusMode.TimeSeedAdvancer => TimeSeedAdvancer(token),
-                    ArceusMode.StaticAlphaScan => ScanForAlphas(token),
+                    ArceusMode.StaticAlphaScan => ScanForAlphas(dex, token),
                     ArceusMode.DistortionSpammer => DistortionSpammer(token),
-                    ArceusMode.DistortionReader => DistortionReader(token),
-                    ArceusMode.MassiveOutbreakHunter => MassiveOutbreakHunter(token),
-                    ArceusMode.MultiSpawnPathSearch => PerformMultiSpawnerScan(token),
+                    ArceusMode.DistortionReader => DistortionReader(dex, token),
+                    ArceusMode.MassiveOutbreakHunter => MassiveOutbreakHunter(dex, token),
+                    ArceusMode.MultiSpawnPathSearch => PerformMultiSpawnerScan(dex, token),
                     _ => PlayerCoordScan(token),
                 };
                 await task.ConfigureAwait(false);
@@ -143,7 +145,6 @@ namespace SysBot.Pokemon
 
         private async Task Reposition(CancellationToken token)
         {
-            var menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(MenuOffset, 2, token).ConfigureAwait(false), 0);
             while (!token.IsCancellationRequested)
             {
                 Log("Not in camp, repositioning and trying again.");
@@ -153,7 +154,7 @@ namespace SysBot.Pokemon
 
                 await Click(A, 1_000, token).ConfigureAwait(false);
 
-                menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(MenuOffset, 2, token).ConfigureAwait(false), 0);
+                var menucheck = BitConverter.ToUInt16(await SwitchConnection.ReadBytesMainAsync(MenuOffset, 2, token).ConfigureAwait(false), 0);
                 Log($"test: {menucheck}");
                 if (menucheck == 66)
                     return;
@@ -222,7 +223,7 @@ namespace SysBot.Pokemon
             }
         }
 
-        private async Task DistortionReader(CancellationToken token)
+        private async Task DistortionReader(PokedexSaveData dex, CancellationToken token)
         {
             List<PA8> matchlist = new();
             List<string> loglist = new();
@@ -254,8 +255,8 @@ namespace SysBot.Pokemon
                         default: throw new NotImplementedException("Invalid distortion location.");
                     }
 
-                    var SpawnerOff = SwitchConnection.PointerAll(disofs, token).Result;
-                    var GeneratorSeed = SwitchConnection.ReadBytesAbsoluteAsync(SpawnerOff, 8, token).Result;
+                    var SpawnerOff = await SwitchConnection.PointerAll(disofs, token).ConfigureAwait(false);
+                    var GeneratorSeed = await SwitchConnection.ReadBytesAbsoluteAsync(SpawnerOff, 8, token).ConfigureAwait(false);
                     //Log($"GroupID: {i} | Generator Seed: {BitConverter.ToString(GeneratorSeed).Replace("-", "")}");
                     var group_seed = (BitConverter.ToUInt64(GeneratorSeed, 0) - 0x82A2B175229D6A5B) & 0xFFFFFFFFFFFFFFFF;
                     if (group_seed != 0)
@@ -264,7 +265,7 @@ namespace SysBot.Pokemon
                         if (i >= 13 && i <= 15 && Settings.DistortionConditions.DistortionLocation == ArceusMap.CrimsonMirelands)
                             encounter_slot_sum = 118;
 
-                        var (match, shiny, logs) = ReadDistortionSeed(i, group_seed, encounter_slot_sum);
+                        var (match, shiny, logs) = ReadDistortionSeed(dex, i, group_seed, encounter_slot_sum);
                         loglist.Add(logs);
                         if (shiny)
                         {
@@ -298,6 +299,10 @@ namespace SysBot.Pokemon
 
                             EmbedMons.Add((match, true));
                             Settings.AddCompletedShinyAlphaFound();
+
+                            if (Settings.DistortionConditions.TeleportToDistortionLocation)
+                                await TeleportToDistortionZone(token).ConfigureAwait(false);
+
                             await Click(HOME, 1_000, token).ConfigureAwait(false);
                             IsWaiting = true;
                             while (IsWaiting)
@@ -319,10 +324,44 @@ namespace SysBot.Pokemon
 
                 await CloseGame(Hub.Config, token).ConfigureAwait(false);
                 await StartGame(Hub.Config, token).ConfigureAwait(false);
-
             }
         }
 
+        private (string, string, string) FillDistortionCoords(int id) => Settings.DistortionConditions.DistortionLocation switch
+        {
+            ArceusMap.ObsidianFieldlands when id is <= 4 => coordinates = ("4402d333", "4206c0a0", "43296666"),
+            ArceusMap.ObsidianFieldlands when id is > 4 and <= 8 => coordinates = ("43de0ccd", "41e94aea", "43f97333"),
+            ArceusMap.ObsidianFieldlands when id is > 8 and <= 12 => coordinates = ("44206666", "4207a9b0", "4430b333"),
+            ArceusMap.ObsidianFieldlands when id is > 12 and <= 16 => coordinates = ("43154ccd", "42094701", "443e3333"),
+
+            ArceusMap.CrimsonMirelands when id is <= 4 => coordinates = ("44553333", "42167c7d", "4433e000"),
+            ArceusMap.CrimsonMirelands when id is > 4 and <= 8 => coordinates = ("43d9d99a", "4215872e", "445de666"),
+            ArceusMap.CrimsonMirelands when id is > 8 and <= 12 => coordinates = ("44374666", "4214dc82", "4449eccd"),
+            ArceusMap.CrimsonMirelands when id is > 12 and <= 16 => coordinates = ("444b8000", "42876336", "43e72666"),
+            ArceusMap.CrimsonMirelands when id is > 16 and <= 20 => coordinates = ("444b8000", "42876336", "43e72666"),
+            ArceusMap.CrimsonMirelands when id is > 20 and <= 24 => coordinates = ("438b3333", "4226454b", "44200666"),
+
+            ArceusMap.CobaltCoastlands when id is <= 4 => coordinates = ("4367b333", "41da6666", "44014ccd"),
+            ArceusMap.CobaltCoastlands when id is > 4 and <= 8 => coordinates = ("4373cccd", "41df9edd", "4439999a"),
+            ArceusMap.CobaltCoastlands when id is > 8 and <= 12 => coordinates = ("441866e1", "41eba8a7", "445d8480"),
+            ArceusMap.CobaltCoastlands when id is > 12 and <= 16 => coordinates = ("438ac000", "421cc140", "432e4ccd"),
+            ArceusMap.CobaltCoastlands when id is > 16 and <= 20 => coordinates = ("43a12666", "4291b53c", "43b02666"),
+
+            ArceusMap.CoronetHighlands when id is <= 4 => coordinates = ("44166000", "428c2f78", "442cd333"),
+            ArceusMap.CoronetHighlands when id is > 4 and <= 8 => coordinates = ("44048002", "42ac8fe6", "444cb99a"),
+            ArceusMap.CoronetHighlands when id is > 8 and <= 12 => coordinates = ("43e7aa3d", "430248a7", "43f90666"),
+            ArceusMap.CoronetHighlands when id is > 12 and <= 16 => coordinates = ("439a41ec", "430803fe", "44159ba6"),
+            ArceusMap.CoronetHighlands when id is > 16 and <= 20 => coordinates = ("43426666", "42eb01e5", "44211333"),
+
+            ArceusMap.AlabasterIcelands when id is <= 4 => coordinates = ("4427f333", "4210645d", "4405c000"),
+            ArceusMap.AlabasterIcelands when id is > 4 and <= 8 => coordinates = ("43e8599a", "420ca920", "43f7c000"),
+            ArceusMap.AlabasterIcelands when id is > 8 and <= 12 => coordinates = ("440ea000", "41fe8750", "4435c000"),
+            ArceusMap.AlabasterIcelands when id is > 12 and <= 16 => coordinates = ("43b6b333", "42073571", "4422999a"),
+            ArceusMap.AlabasterIcelands when id is > 16 and <= 20 => coordinates = ("444f999a", "41f13987", "43bf6666"),
+            ArceusMap.AlabasterIcelands when id is > 20 and <= 24 => coordinates = ("433ecccd", "4206563e", "4428199a"),
+            _ => throw new NotImplementedException("Invalid location coordinates."),
+
+        };
         private string GetDistortionSpeciesLocation(int id) => Settings.DistortionConditions.DistortionLocation switch
         {
             ArceusMap.ObsidianFieldlands when id is <= 4 => "Horseshoe Plains",
@@ -332,29 +371,29 @@ namespace SysBot.Pokemon
 
             ArceusMap.CrimsonMirelands when id is <= 4 => "Droning Meadow",
             ArceusMap.CrimsonMirelands when id is > 4 and <= 8 => "Holm of Trials",
-            ArceusMap.CrimsonMirelands when id is > 8 and <= 12 => "Unknown",
-            ArceusMap.CrimsonMirelands when id is > 12 and <= 16 => "Ursa's Ring",
-            ArceusMap.CrimsonMirelands when id is > 16 and <= 20 => "Prairie",
+            ArceusMap.CrimsonMirelands when id is > 8 and <= 12 => "North of Ursa's Ring",
+            ArceusMap.CrimsonMirelands when id is > 12 and <= 16 => "To the right of Bolderoll Slope",
+            ArceusMap.CrimsonMirelands when id is > 16 and <= 20 => "To the right of Bolderoll Slope",
             ArceusMap.CrimsonMirelands when id is > 20 and <= 24 => "Gapejaw Bog",
 
-            ArceusMap.CobaltCoastlands when id is <= 4 => "Ginko Landing",
-            ArceusMap.CobaltCoastlands when id is > 4 and <= 8 => "Aipom Hill",
-            ArceusMap.CobaltCoastlands when id is > 8 and <= 12 => "Deadwood Haunt",
-            ArceusMap.CobaltCoastlands when id is > 12 and <= 16 => "Spring Path",
-            ArceusMap.CobaltCoastlands when id is > 16 and <= 20 => "Windbreak Stand",
+            ArceusMap.CobaltCoastlands when id is <= 4 => "Below Windbreak Stand",
+            ArceusMap.CobaltCoastlands when id is > 4 and <= 8 => "Right of Crossing Slope",
+            ArceusMap.CobaltCoastlands when id is > 8 and <= 12 => "Right of Bather's Lagoon",
+            ArceusMap.CobaltCoastlands when id is > 12 and <= 16 => "Left of Islespy Shore",
+            ArceusMap.CobaltCoastlands when id is > 16 and <= 20 => "Right of Windbreak Stand",
 
-            ArceusMap.CoronetHighlands when id is <= 4 => "Sonorous Path",
+            ArceusMap.CoronetHighlands when id is <= 4 => "Between Sonorous Path and Celestica Trail",
             ArceusMap.CoronetHighlands when id is > 4 and <= 8 => "Ancient Quarry",
-            ArceusMap.CoronetHighlands when id is > 8 and <= 12 => "Celestica Ruins",
-            ArceusMap.CoronetHighlands when id is > 12 and <= 16 => "Primeval Grotto",
-            ArceusMap.CoronetHighlands when id is > 16 and <= 20 => "Boulderoll Ravine",
+            ArceusMap.CoronetHighlands when id is > 8 and <= 12 => "North of Primeval Grotto",
+            ArceusMap.CoronetHighlands when id is > 12 and <= 16 => "South of Sacred Plaza",
+            ArceusMap.CoronetHighlands when id is > 16 and <= 20 => "Between Boulderoll Ravine and Stonetooth Rows",
 
-            ArceusMap.AlabasterIcelands when id is <= 4 => "Bonechill Wastes North",
-            ArceusMap.AlabasterIcelands when id is > 4 and <= 8 => "Avalugg's Legacy",
-            ArceusMap.AlabasterIcelands when id is > 8 and <= 12 => "Bonechill Wastes South",
-            ArceusMap.AlabasterIcelands when id is > 12 and <= 16 => "Southeast of Arena",
+            ArceusMap.AlabasterIcelands when id is <= 4 => "Between and to the right of Bonechill Wastes and Avalugg's Legacy",
+            ArceusMap.AlabasterIcelands when id is > 4 and <= 8 => "Little left of Avalugg's Legacy",
+            ArceusMap.AlabasterIcelands when id is > 8 and <= 12 => "Between Bonechill Wastes and Whiteout Valley",
+            ArceusMap.AlabasterIcelands when id is > 12 and <= 16 => "To the right of Arena's Approach",
             ArceusMap.AlabasterIcelands when id is > 16 and <= 20 => "Heart's Crag",
-            ArceusMap.AlabasterIcelands when id is > 20 and <= 24 => "Arena's Approach",
+            ArceusMap.AlabasterIcelands when id is > 20 and <= 24 => "North of Avalanche Slopes",
             _ => throw new NotImplementedException("Invalid location ID."),
         };
 
@@ -418,6 +457,7 @@ namespace SysBot.Pokemon
                 Log("Whipping up a distortion...");
                 // Activates distortions
                 await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0x5280010A), MainNsoBase + ActivateDistortion, token).ConfigureAwait(false);
+                await Task.Delay(0_500, token).ConfigureAwait(false);
                 await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0x7100052A), MainNsoBase + ActivateDistortion, token).ConfigureAwait(false);
                 var delta = DateTime.Now;
                 var cd = TimeSpan.FromMinutes(Settings.DistortionConditions.WaitTimeDistortion);
@@ -429,6 +469,7 @@ namespace SysBot.Pokemon
                 }
 
                 await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0x5280010A), MainNsoBase + ActivateDistortion, token).ConfigureAwait(false);
+                await Task.Delay(0_500, token).ConfigureAwait(false);
                 await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0x7100052A), MainNsoBase + ActivateDistortion, token).ConfigureAwait(false);
                 await Task.Delay(5_000, token).ConfigureAwait(false);
             }
@@ -835,7 +876,7 @@ namespace SysBot.Pokemon
             Settings.SpecialConditions.CampZoneZ = coordinates.Item3;
         }
 
-        private async Task ScanForAlphas(CancellationToken token)
+        private async Task ScanForAlphas(PokedexSaveData dex, CancellationToken token)
         {
             Settings.AlphaScanConditions.StopOnMatch = false;
             int attempts = 1;
@@ -917,6 +958,22 @@ namespace SysBot.Pokemon
             await Task.Delay(Settings.SpecialConditions.WaitMsBetweenTeleports, token).ConfigureAwait(false);
         }
 
+        private async Task TeleportToDistortionZone(CancellationToken token)
+        {
+            var ofs = await NewParsePointer(PlayerCoordPtrLA, token).ConfigureAwait(false);
+            uint coordX1 = uint.Parse(coordinates.Item1, NumberStyles.AllowHexSpecifier);
+            byte[] X1 = BitConverter.GetBytes(coordX1);
+            uint coordY1 = uint.Parse(coordinates.Item2, NumberStyles.AllowHexSpecifier);
+            byte[] Y1 = BitConverter.GetBytes(coordY1);
+            uint coordZ1 = uint.Parse(coordinates.Item3, NumberStyles.AllowHexSpecifier);
+            byte[] Z1 = BitConverter.GetBytes(coordZ1);
+
+            X1 = X1.Concat(Y1).Concat(Z1).ToArray();
+            await SwitchConnection.WriteBytesAbsoluteAsync(X1, ofs, token).ConfigureAwait(false);
+
+            await Task.Delay(Settings.SpecialConditions.WaitMsBetweenTeleports, token).ConfigureAwait(false);
+        }
+
         private async Task SpawnerScan(CancellationToken token)
         {
             await Task.Delay(0_500, token).ConfigureAwait(false);
@@ -941,7 +998,7 @@ namespace SysBot.Pokemon
             }
         }
 
-        private (List<PA8>, List<PA8>) ReadMMOSeed(int totalspawn, ulong group_seed, int bonuscount, ulong encslot, ulong bonusencslot)
+        private (List<PA8>, List<PA8>) ReadMMOSeed(PokedexSaveData dex, int totalspawn, ulong group_seed, int bonuscount, ulong encslot, ulong bonusencslot)
         {
             List<PA8> monlist = new();
             List<PA8> bonuslist = new();
@@ -956,10 +1013,13 @@ namespace SysBot.Pokemon
                 var encounter_slot = spawner_rng.Next() / Math.Pow(2, 64) * sum.Item1;
                 var fixedseed = spawner_rng.Next();
                 mainrng.Next();
-
                 var poke = GrabMMOSpecies(encounter_slot, encslot);
                 var gt = PersonalTable.LA.GetFormEntry(poke.Item1.Species, poke.Item1.Form).Gender;
-                var gen = GenerateFromSeed(fixedseed, (int)Settings.OutbreakConditions.MMOShinyRolls, poke.Item2, gt);
+
+                var (perfect, complete) = CheckForPerfectComplete(HasCharm, dex, poke.Item1.Species);
+                var rolls = 1 + (complete ? 1 : 0) + (perfect ? 2 : 0) + (HasCharm ? 3 : 0) + (int)(SpawnType.MMO - 7);
+                Log($"Shiny Rolls {rolls}");
+                var gen = GenerateFromSeed(fixedseed, rolls, poke.Item2, gt);
                 poke.Item1.EncryptionConstant = gen.EC;
                 poke.Item1.PID = gen.PID;
                 int[] pkIVList = gen.IVs;
@@ -988,7 +1048,11 @@ namespace SysBot.Pokemon
 
                 var poke = GrabMMOSpecies(encounter_slot, encslot);
                 var gt = PersonalTable.LA.GetFormEntry(poke.Item1.Species, poke.Item1.Form).Gender;
-                var gen = GenerateFromSeed(fixed_seed, (int)Settings.OutbreakConditions.MMOShinyRolls, poke.Item2, gt);
+
+                var (perfect, complete) = CheckForPerfectComplete(HasCharm, dex, poke.Item1.Species);
+                var rolls = 1 + (complete ? 1 : 0) + (perfect ? 2 : 0) + (HasCharm ? 3 : 0) + (int)(SpawnType.MMO - 7);
+                Log($"Shiny Rolls {rolls}");
+                var gen = GenerateFromSeed(fixed_seed, rolls, poke.Item2, gt);
                 int[] pkIVList = gen.IVs;
                 PKX.ReorderSpeedLast(pkIVList);
                 poke.Item1.IVs = pkIVList;
@@ -1018,7 +1082,11 @@ namespace SysBot.Pokemon
 
                     var poke = GrabMMOSpecies(encounter_slot, bonusencslot);
                     var gt = PersonalTable.LA.GetFormEntry(poke.Item1.Species, poke.Item1.Form).Gender;
-                    var gen = GenerateFromSeed(fixedseed, (int)Settings.OutbreakConditions.MMOShinyRolls, poke.Item2, gt);
+
+                    var (perfect, complete) = CheckForPerfectComplete(HasCharm, dex, poke.Item1.Species);
+                    var rolls = 1 + (complete ? 1 : 0) + (perfect ? 2 : 0) + (HasCharm ? 3 : 0) + (int)(SpawnType.MMO - 7);
+                    Log($"Shiny Rolls {rolls}");
+                    var gen = GenerateFromSeed(fixedseed, rolls, poke.Item2, gt);
                     int[] pkIVList = gen.IVs;
                     PKX.ReorderSpeedLast(pkIVList);
                     poke.Item1.IVs = pkIVList;
@@ -1047,7 +1115,11 @@ namespace SysBot.Pokemon
 
                     var poke = GrabMMOSpecies(encounter_slot, bonusencslot);
                     var gt = PersonalTable.LA.GetFormEntry(poke.Item1.Species, poke.Item1.Form).Gender;
-                    var gen = GenerateFromSeed(fixed_seed, (int)Settings.OutbreakConditions.MMOShinyRolls, poke.Item2, gt);
+
+                    var (perfect, complete) = CheckForPerfectComplete(HasCharm, dex, poke.Item1.Species);
+                    var rolls = 1 + (complete ? 1 : 0) + (perfect ? 2 : 0) + (HasCharm ? 3 : 0) + (int)(SpawnType.MMO - 7);
+                    Log($"Shiny Rolls {rolls}");
+                    var gen = GenerateFromSeed(fixed_seed, rolls, poke.Item2, gt);
                     poke.Item1.EncryptionConstant = gen.EC;
                     poke.Item1.PID = gen.PID;
                     int[] pkIVList = gen.IVs;
@@ -1065,7 +1137,7 @@ namespace SysBot.Pokemon
             return (monlist, bonuslist);
         }
 
-        private List<PA8> ReadOutbreakSeed(Species species, int totalspawn, ulong groupseed)
+        private List<PA8> ReadOutbreakSeed(PokedexSaveData dex, Species species, int totalspawn, ulong groupseed)
         {
             List<PA8> monlist = new();
             PA8 pk = new() { Species = (int)species };
@@ -1083,7 +1155,11 @@ namespace SysBot.Pokemon
                 if (alpha)
                     givs = 3;
                 var gt = PersonalTable.LA.GetFormEntry(pk.Species, pk.Form).Gender;
-                var gen = GenerateFromSeed(fixedseed, (int)Settings.OutbreakConditions.OutbreakShinyRolls, givs, gt);
+
+                var (perfect, complete) = CheckForPerfectComplete(HasCharm, dex, pk.Species);
+                var rolls = 1 + (complete ? 1 : 0) + (perfect ? 2 : 0) + (HasCharm ? 3 : 0) + (int)(SpawnType.Outbreak - 7);
+                Log($"Shiny Rolls {rolls}");
+                var gen = GenerateFromSeed(fixedseed, rolls, givs, gt);
                 pk.Species = (int)species;
                 pk.EncryptionConstant = gen.EC;
                 pk.PID = gen.PID;
@@ -1117,7 +1193,11 @@ namespace SysBot.Pokemon
                 if (alpha)
                     givs = 3;
                 var gt = PersonalTable.LA.GetFormEntry(pk.Species, pk.Form).Gender;
-                var gen = GenerateFromSeed(fixed_seed, (int)Settings.OutbreakConditions.OutbreakShinyRolls, givs, gt);
+
+                var (perfect, complete) = CheckForPerfectComplete(HasCharm, dex, pk.Species);
+                var rolls = 1 + (complete ? 1 : 0) + (perfect ? 2 : 0) + (HasCharm ? 3 : 0) + (int)(SpawnType.Outbreak - 7);
+                Log($"Shiny Rolls {rolls}");
+                var gen = GenerateFromSeed(fixed_seed, rolls, givs, gt);
                 pk.Species = (int)species;
                 pk.EncryptionConstant = gen.EC;
                 pk.PID = gen.PID;
@@ -1138,7 +1218,7 @@ namespace SysBot.Pokemon
             return monlist;
         }
 
-        private (PA8 match, bool shiny, string log) ReadDistortionSeed(int id, ulong group_seed, int encslotsum)
+        private (PA8 match, bool shiny, string log) ReadDistortionSeed(PokedexSaveData dex, int id, ulong group_seed, int encslotsum)
         {
             string logs = string.Empty;
             var groupseed = group_seed;
@@ -1152,7 +1232,10 @@ namespace SysBot.Pokemon
             if (pk.IsAlpha)
                 givs = 3;
             var gt = PersonalTable.LA.GetFormEntry(pk.Species, pk.Form).Gender;
-            var gen = GenerateFromSeed(fixedseed, (int)Settings.DistortionConditions.DistortionShinyRolls, givs, gt);
+            var (perfect, complete) = CheckForPerfectComplete(HasCharm, dex, pk.Species);
+            var rolls = 1 + (complete ? 1 : 0) + (perfect ? 2 : 0) + (HasCharm ? 3 : 0) + (int)(SpawnType.Regular - 7);
+            Log($"Shiny Rolls {rolls}");
+            var gen = GenerateFromSeed(fixedseed, 1, givs, gt);
 
             string location = GetDistortionSpeciesLocation(id);
             if (id == 0 || id == 4 || id == 8 || id == 12 || id == 16 || id == 20)
@@ -1176,7 +1259,10 @@ namespace SysBot.Pokemon
             pk.Gender = gen.gender;
 
             if (gen.shiny)
+            {
                 CommonEdits.SetShiny(pk, Shiny.Always);
+                FillDistortionCoords(id);
+            }
 
             var print = Hub.Config.StopConditions.GetAlphaPrintName(pk);
             logs += $"\nGenerator Seed: {(group_seed + 0x82A2B175229D6A5B & 0xFFFFFFFFFFFFFFFF):X16}\nGroup: {id}{print}\nEncounter Slot: {encounter_slot}\nLocation: {location}\n";
@@ -1263,7 +1349,7 @@ namespace SysBot.Pokemon
             return newseed;
         }
 
-        private async Task PerformOutbreakScan(CancellationToken token)
+        private async Task PerformOutbreakScan(PokedexSaveData dex, CancellationToken token)
         {
             List<string> speclist = new();
             var ofs = new long[] { 0x42BA6B0, 0x2B0, 0x58, 0x18, 0x20 };
@@ -1278,7 +1364,7 @@ namespace SysBot.Pokemon
                     var outbreakseed = BitConverter.ToUInt64(info.Slice(56 + (i * 80), 8));
                     var spawncount = BitConverter.ToUInt16(info.Slice(64 + (i * 80), 2));
                     Log($"Outbreak found for: {outbreakspecies} | Total Spawn Count: {spawncount}.");
-                    var monlist = ReadOutbreakSeed(outbreakspecies, spawncount, outbreakseed);
+                    var monlist = ReadOutbreakSeed(dex, outbreakspecies, spawncount, outbreakseed);
                     foreach (PA8 pk in monlist)
                     {
                         count++;
@@ -1464,15 +1550,16 @@ namespace SysBot.Pokemon
             SpawnGenerator.EncounterTables.Add(key, slots);
         }
 
-        private async Task PerformMultiSpawnerScan(CancellationToken token)
+        private async Task PerformMultiSpawnerScan(PokedexSaveData dex, CancellationToken token)
         {
             while (!token.IsCancellationRequested)
             {
                 var task = Hub.Config.Arceus.MultiScanConditions.MultiSpecies switch
                 {
                     MultiSpawners.Eevee => PerformMultiEeveeScan(token),
-                    MultiSpawners.Combee => PerformMultiCombeeScan(token),
-                    //MultiSpawners.Unown => PerformMultiUnownScan(token),
+                    MultiSpawners.CombeeLeft or MultiSpawners.CombeeRight => PerformMultiCombeeScan(token),
+                    MultiSpawners.Unown => PerformMultiUnownScan(token),
+                    MultiSpawners.BasculinLeft or MultiSpawners.BasculinMid or MultiSpawners.BasculinRight => PerformMultiBasculinScan(token),
                     _ => PerformMultiEeveeScan(token),
                 };
                 await task.ConfigureAwait(false);
@@ -1499,7 +1586,7 @@ namespace SysBot.Pokemon
                 var multiptr = await SwitchConnection.PointerAll(ofs, token).ConfigureAwait(false);
                 var GeneratorSeed = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(multiptr, 8, token).ConfigureAwait(false), 0);
                 var group_seed = (GeneratorSeed - 0x82A2B175229D6A5B) & 0xFFFFFFFFFFFFFFFF;
-                //Log($"Hexseed: {group_seed:X16} | Seed: {group_seed}");
+                //Log($"Seed: {group_seed:X16}");
 
                 var details = new SpawnCount(count, count);
                 var set = new SpawnSet(key, count);
@@ -1539,7 +1626,48 @@ namespace SysBot.Pokemon
                 var multiptr = await SwitchConnection.PointerAll(ofs, token).ConfigureAwait(false);
                 var GeneratorSeed = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(multiptr, 8, token).ConfigureAwait(false), 0);
                 var group_seed = (GeneratorSeed - 0x82A2B175229D6A5B) & 0xFFFFFFFFFFFFFFFF;
-                //Log($"Hexseed: {group_seed:X16} | Seed: {group_seed}");
+                //Log($"Seed: {group_seed:X16}");
+
+                var details = new SpawnCount(count, count);
+                var set = new SpawnSet(key, count);
+                var spawner = SpawnInfo.GetLoop(details, set, SpawnType.Regular);
+
+                var results = Permuter.Permute(spawner, group_seed, Settings.MultiScanConditions.Advances);
+                if (!results.HasResults)
+                    log += $"\nNo results found within {Settings.MultiScanConditions.Advances} advances :(";
+                else
+                {
+                    var lines = results.GetLines();
+                    foreach (var line in lines)
+                        log += "\n" + line;
+                }
+                Log($"{log}");
+                IsWaiting = true;
+                while (IsWaiting)
+                    await Task.Delay(1_000, token).ConfigureAwait(false);
+            }
+        }
+
+        private async Task PerformMultiBasculinScan(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                int count = 2;
+                ulong key = (ulong)(0x1337B0BACAFEB00B + Util.Rand.Next(1, 999999999));
+                var slots = new SlotDetail[]
+                {
+                    new(100, "Basculin-2", false, new [] {41, 44}, 0),
+                    new(2, "Basculin-2", true , new [] {56, 59}, 3),
+                };
+                SetFakeTable(slots, key);
+
+                string log = string.Empty;
+                var groupID = (int)Settings.MultiScanConditions.MultiSpecies;
+                var ofs = new long[] { 0x42A6EE0, 0x330, 0x70 + groupID * 0x440 + 0x20 };
+                var multiptr = await SwitchConnection.PointerAll(ofs, token).ConfigureAwait(false);
+                var GeneratorSeed = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(multiptr, 8, token).ConfigureAwait(false), 0);
+                var group_seed = (GeneratorSeed - 0x82A2B175229D6A5B) & 0xFFFFFFFFFFFFFFFF;
+                //Log($"Seed: {group_seed:X16}");
 
                 var details = new SpawnCount(count, count);
                 var set = new SpawnSet(key, count);
@@ -1569,7 +1697,7 @@ namespace SysBot.Pokemon
                 int maxCount = 3;
 
                 SlotDetail[] slots = new SlotDetail[28 * 2];
-                ulong key = (ulong)(0x1489890319879407 + Util.Rand.Next(1, 999999999));
+                ulong key = 9489890319879407414;
                 for (int i = 0; i < slots.Length / 2; i++)
                 {
                     var name = $"Unown{(i == 0 ? "" : $"-{i}")}";
@@ -1592,12 +1720,12 @@ namespace SysBot.Pokemon
                     var countotal = await SwitchConnection.PointerAll(total, token).ConfigureAwait(false);
                     int totalcount = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(countotal, 2, token).ConfigureAwait(false), 0);
                     var group_seed = (GeneratorSeed - 0x82A2B175229D6A5B) & 0xFFFFFFFFFFFFFFFF;
-                    Log($"Spawner Seed: {group_seed:X16} - Offset: {countptr} CountSeed: {countSeed} Count: {totalcount}");
+                    Log($"Spawner Seed: {group_seed:X16} - CountSeed: {countSeed} Count: {totalcount}");
                     var details = new SpawnCount(maxCount, minCount, countSeed);
-                    var set = new SpawnSet(key, totalcount);
+                    var set = new SpawnSet(key, 0);
                     var spawner = SpawnInfo.GetLoop(details, set, SpawnType.Regular);
 
-                    var results = Permuter.Permute(spawner, group_seed, Settings.MultiScanConditions.Advances);
+                    var results = Permuter.Permute(spawner, group_seed, 12);
                     if (!results.HasResults)
                         log += $"\nNo results found within {Settings.MultiScanConditions.Advances} advances :(";
                     else
@@ -1606,7 +1734,6 @@ namespace SysBot.Pokemon
                         foreach (var line in lines)
                             log += "\n" + $"Unown Group: {i + 1}\n" + line;
                     }
-                    //Log($"{log}");
                     ResultsUtil.Log($"{log}", "");
                 }
                 IsWaiting = true;
@@ -1614,7 +1741,7 @@ namespace SysBot.Pokemon
                     await Task.Delay(1_000, token).ConfigureAwait(false);
             }
         }
-        private async Task PerformMMOScan(CancellationToken token)
+        private async Task PerformMMOScan(PokedexSaveData dex, CancellationToken token)
         {
             List<string> logs = new();
             List<string> mmoactive = new();
@@ -1660,7 +1787,7 @@ namespace SysBot.Pokemon
                     mmoactive.Add($"\nGroup Seed: {string.Format("0x{0:X}", group_seed)}\nMassive Mass Outbreak found for: {species}{map} | Total Spawn Count: {spawncount} | Group ID: {groupcount}");
                     List<PA8> pokelist;
                     List<PA8> bonuslist;
-                    (pokelist, bonuslist) = ReadMMOSeed(spawncount, group_seed, bonuscount, encslot, bonusencslot);
+                    (pokelist, bonuslist) = ReadMMOSeed(dex, spawncount, group_seed, bonuscount, encslot, bonusencslot);
                     for (int p = 0; p < pokelist.Count; p++)
                     {
                         var pk = pokelist[p];
@@ -1742,7 +1869,7 @@ namespace SysBot.Pokemon
             }
         }
 
-        private async Task MassiveOutbreakHunter(CancellationToken token)
+        private async Task MassiveOutbreakHunter(PokedexSaveData dex, CancellationToken token)
         {
             if (Settings.OutbreakConditions.CheckBoxes)
             {
@@ -1755,7 +1882,7 @@ namespace SysBot.Pokemon
                 if (Settings.OutbreakConditions.CheckDistortionFirst)
                 {
                     Log("Checking our distortions before scanning outbreaks!");
-                    await DistortionReader(token).ConfigureAwait(false);
+                    await DistortionReader(dex, token).ConfigureAwait(false);
                 }
                 Log($"Search #{attempts + 1}: reading map for active outbreaks...");
 
@@ -1766,9 +1893,9 @@ namespace SysBot.Pokemon
                 var type = Settings.OutbreakConditions.TypeOfScan;
                 switch (type)
                 {
-                    case OutbreakScanType.Both: await PerformOutbreakScan(token).ConfigureAwait(false); await PerformMMOScan(token).ConfigureAwait(false); break;
-                    case OutbreakScanType.OutbreakOnly: await PerformOutbreakScan(token).ConfigureAwait(false); break;
-                    case OutbreakScanType.MMOOnly: await PerformMMOScan(token).ConfigureAwait(false); break;
+                    case OutbreakScanType.Both: await PerformOutbreakScan(dex, token).ConfigureAwait(false); await PerformMMOScan(dex, token).ConfigureAwait(false); break;
+                    case OutbreakScanType.OutbreakOnly: await PerformOutbreakScan(dex, token).ConfigureAwait(false); break;
+                    case OutbreakScanType.MMOOnly: await PerformMMOScan(dex, token).ConfigureAwait(false); break;
                 }
 
                 Log("No match found, resetting.");

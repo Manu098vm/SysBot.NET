@@ -14,7 +14,7 @@ namespace SysBot.Pokemon.Discord
     {
         private static TradeQueueInfo<T> Info => SysCord<T>.Runner.Hub.Queues.Info;
         private readonly PokeTradeHub<T> Hub = SysCord<T>.Runner.Hub;
-        private readonly ExtraCommandUtil<T> Util = new();     
+        private readonly ExtraCommandUtil<T> Util = new();
         private readonly TradeCordHelper<T> Helper = new(SysCord<T>.Runner.Hub.Config.TradeCord);
 
         [Command("TradeCordList")]
@@ -85,6 +85,12 @@ namespace SysBot.Pokemon.Discord
 
             var t = Task.Run(async () => await Util.EventVoteCalc(Context, events).ConfigureAwait(false));
             var index = t.Result;
+
+            Hub.Config.TradeCord.PokeEventType = events[index];
+            Hub.Config.TradeCord.EnableEvent = true;
+            Hub.Config.TradeCord.EventEnd = DateTime.Now.AddMinutes(Hub.Config.TradeCord.TradeCordEventDuration).ToString();
+            await ReplyAsync($"{events[index]} event has begun and will last {(Hub.Config.TradeCord.TradeCordEventDuration < 2 ? "1 minute" : $"{Hub.Config.TradeCord.TradeCordEventDuration} minutes")}!");
+
             if (result.UsersToPing != null && result.UsersToPing.Length > 0)
             {
                 var users = Context.Guild.Users.ToArray();
@@ -104,7 +110,7 @@ namespace SysBot.Pokemon.Discord
                     {
                         try
                         {
-                            await UserExtensions.SendMessageAsync(user, "", false, embed : embed.Build()).ConfigureAwait(false);
+                            await UserExtensions.SendMessageAsync(user, "", false, embed: embed.Build()).ConfigureAwait(false);
                         }
                         catch
                         {
@@ -113,11 +119,6 @@ namespace SysBot.Pokemon.Discord
                     }
                 }
             }
-
-            Hub.Config.TradeCord.PokeEventType = events[index];
-            Hub.Config.TradeCord.EnableEvent = true;
-            Hub.Config.TradeCord.EventEnd = DateTime.Now.AddMinutes(Hub.Config.TradeCord.TradeCordEventDuration).ToString();
-            await ReplyAsync($"{events[index]} event has begun and will last {(Hub.Config.TradeCord.TradeCordEventDuration < 2 ? "1 minute" : $"{Hub.Config.TradeCord.TradeCordEventDuration} minutes")}!");
         }
 
         [Command("TradeCordCatch")]
@@ -165,12 +166,19 @@ namespace SysBot.Pokemon.Discord
 
             if (!result.Success)
             {
+                TradeCordCooldown(id, true);
+                var folder = "TradeCordFailedCatches";
+                if (!Directory.Exists(folder))
+                    Directory.CreateDirectory(folder);
+
                 if (result.Poke.Species != 0)
                 {
                     var la = new LegalityAnalysis(result.Poke);
                     if (!la.Valid)
                     {
-                        await Context.Channel.SendPKMAsync(result.Poke, $"{result.Message}\n{ReusableActions.GetFormattedShowdownText(result.Poke)}").ConfigureAwait(false);
+                        await Context.Channel.SendMessageAsync(result.Message).ConfigureAwait(false);
+                        var path = Path.Combine(folder, PKHeX.Core.Util.CleanFileName(result.Poke.FileName));
+                        File.WriteAllBytes(path, result.Poke.DecryptedPartyData);
                         return;
                     }
                 }
@@ -180,10 +188,13 @@ namespace SysBot.Pokemon.Discord
                     var la = new LegalityAnalysis(result.EggPoke);
                     if (!la.Valid)
                     {
-                        await Context.Channel.SendPKMAsync(result.EggPoke, $"{result.Message}\n{ReusableActions.GetFormattedShowdownText(result.EggPoke)}").ConfigureAwait(false);
+                        await Context.Channel.SendMessageAsync(result.Message).ConfigureAwait(false);
+                        var path = Path.Combine(folder, PKHeX.Core.Util.CleanFileName(result.EggPoke.FileName));
+                        File.WriteAllBytes(path, result.EggPoke.DecryptedPartyData);
                         return;
                     }
                 }
+                return;
             }
             else if (result.FailedCatch)
             {
@@ -192,7 +203,7 @@ namespace SysBot.Pokemon.Discord
                 var imgRng = rng.Next(5);
                 string[] sketchyCatches = { "https://i.imgur.com/BOb6IbW.png", "https://i.imgur.com/oSUQhYv.png", "https://i.imgur.com/81hlmGV.png", "https://i.imgur.com/7LBHLmf.png", "https://i.imgur.com/NEWEVtm.png" };
                 var ball = (Ball)rng.Next(2, 26);
-                var speciesRand = TradeCordHelper<T>.Dex[rng.Next(TradeCordHelper<T>.Dex.Length)];
+                var speciesRand = TradeCordHelper<T>.Dex.Keys.ToArray()[rng.Next(TradeCordHelper<T>.Dex.Count)];
                 var descF = $"You threw {(ball == Ball.Ultra ? "an" : "a")} {ball} Ball at a wild {(spookyRng >= 90 ? "...whatever that thing is" : SpeciesName.GetSpeciesNameGeneration(speciesRand, 2, 8))}...";
                 msg = $"{(spookyRng >= 90 ? "One wiggle... Two... It breaks free and stares at you, smiling. You run for dear life." : "...but it managed to escape!")}";
 
@@ -791,7 +802,7 @@ namespace SysBot.Pokemon.Discord
                 Author = author,
             }.WithFooter(x => { x.Text = flavorText; x.IconUrl = "https://i.imgur.com/nXNBrlr.png"; });
 
-            await Context.Channel.SendMessageAsync(null, false, embed : embed.Build()).ConfigureAwait(false);
+            await Context.Channel.SendMessageAsync(null, false, embed: embed.Build()).ConfigureAwait(false);
         }
 
         [Command("TradeCordGiveItem")]
@@ -1021,13 +1032,19 @@ namespace SysBot.Pokemon.Discord
             await Util.EmbedUtil(Context, result.EmbedName, result.Message).ConfigureAwait(false);
         }
 
-        private void TradeCordCooldown(ulong id)
+        private void TradeCordCooldown(ulong id, bool clear = false)
         {
             if (Info.Hub.Config.TradeCord.TradeCordCooldown > 0)
             {
                 if (!TradeCordHelper<T>.TradeCordCooldownDict.ContainsKey(id))
                     TradeCordHelper<T>.TradeCordCooldownDict.Add(id, DateTime.Now);
-                else TradeCordHelper<T>.TradeCordCooldownDict[id] = DateTime.Now;
+
+                if (clear)
+                {
+                    TradeCordHelper<T>.TradeCordCooldownDict.Remove(id);
+                    return;
+                }
+                TradeCordHelper<T>.TradeCordCooldownDict[id] = DateTime.Now;
             }
         }
 

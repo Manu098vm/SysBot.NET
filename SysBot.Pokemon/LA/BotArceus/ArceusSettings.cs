@@ -62,12 +62,6 @@ namespace SysBot.Pokemon
             [Category(Arceus), Description("EXPERIMENTAL, does not work 100% of the time. When enabled, the bot will read every box to see if the encounter exists. It checks for Species, Shiny, and IsAlpha.")]
             public bool CheckBoxes { get; set; } = false;
 
-            [Category(Arceus), Description("Enter number of shiny rolls for MMOs.")]
-            public ShinyRolls MMOShinyRolls { get; set; } = ShinyRolls.MMOPerfectCharm;
-
-            [Category(Arceus), Description("Enter number of shiny rolls for regular outbreaks if you are scanning Both types.")]
-            public ShinyRolls OutbreakShinyRolls { get; set; } = ShinyRolls.OutbreakPerfectCharm;
-
             [Category(Arceus), Description("Duration in Ms for how long to hold B when returning to town for Outbreak Hunter.")]
             public int HoldBMs { get; set; } = 5000;
         }
@@ -77,9 +71,6 @@ namespace SysBot.Pokemon
         {
             public override string ToString() => "Distortion Conditions";
 
-            [Category(Arceus), Description("Enter number of shiny rolls for Distortion Reader.")]
-            public ShinyRolls DistortionShinyRolls { get; set; } = ShinyRolls.PerfectCharm;
-
             [Category(Arceus), Description("Select the Location of the map you are hunting distortions for.")]
             public ArceusMap DistortionLocation { get; set; } = ArceusMap.ObsidianFieldlands;
 
@@ -88,6 +79,9 @@ namespace SysBot.Pokemon
 
             [Category(Arceus), Description("When enabled, the bot will only stop on Alpha Shinies in Distortions.")]
             public bool DistortionAlphaOnly { get; set; } = false;
+
+            [Category(Arceus), Description("When enabled, the bot will teleport to the location of the match before pressing HOME.")]
+            public bool TeleportToDistortionLocation { get; set; } = false;
         }
 
         [Category(Arceus), TypeConverter(typeof(CategoryConverter<MultiScanFiltersCategory>))]
