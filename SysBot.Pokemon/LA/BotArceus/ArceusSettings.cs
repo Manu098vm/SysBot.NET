@@ -78,7 +78,10 @@ namespace SysBot.Pokemon
             public int WaitTimeDistortion { get; set; } = 1;
 
             [Category(Arceus), Description("When enabled, the bot will only stop on Alpha Shinies in Distortions.")]
-            public bool DistortionAlphaOnly { get; set; } = false;
+            public bool ShinyAlphaOnly { get; set; } = false;
+
+            [Category(Arceus), Description("When enabled, the bot will stop when an Alpha is found in Distortions.")]
+            public bool AnyAlpha { get; set; } = false;
 
             [Category(Arceus), Description("When enabled, the bot will teleport to the location of the match before pressing HOME.")]
             public bool TeleportToDistortionLocation { get; set; } = false;

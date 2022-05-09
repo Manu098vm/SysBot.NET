@@ -525,7 +525,7 @@ namespace SysBot.Pokemon.Discord
                         string shinyurl = "https://img.favpng.com/6/14/25/computer-icons-icon-design-photography-royalty-free-png-favpng-mtjTHeWQe8FUAUB3RdJ3B2KJG.jpg";
                         var location = Hub.Config.Arceus.AlphaScanConditions.ScanLocation;
                         string msg = mons[i].Item2 ? "Match found!" : "Unwanted match...";
-                        if (Hub.Config.Arceus.DistortionConditions.DistortionAlphaOnly && !mon.IsAlpha && Hub.Config.Arceus.BotType == ArceusMode.DistortionReader)
+                        if (Hub.Config.Arceus.DistortionConditions.ShinyAlphaOnly && !mon.IsAlpha && Hub.Config.Arceus.BotType == ArceusMode.DistortionReader)
                             msg = "Not an Alpha...";
 
                         string stats;
@@ -547,6 +547,7 @@ namespace SysBot.Pokemon.Discord
                             {
                                 ArceusMode.DistortionReader => "Found in a space-time distortion.",
                                 ArceusMode.MassiveOutbreakHunter when Hub.Config.Arceus.OutbreakConditions.TypeOfScan == OutbreakScanType.OutbreakOnly => "Found in a mass outbreak.",
+                                ArceusMode.MassiveOutbreakHunter when (Species)mon.Species is Species.Shieldon or Species.Bastiodon or Species.Cranidos or Species.Rampardos or Species.Scizor or Species.Sneasel or Species.Weavile => "Found in a space-time distortion.",
                                 _ => "Found in a massive mass outbreak.",
                             }
                         };

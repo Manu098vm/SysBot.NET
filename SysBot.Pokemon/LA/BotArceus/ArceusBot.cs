@@ -267,9 +267,10 @@ namespace SysBot.Pokemon
 
                         var (match, shiny, logs) = ReadDistortionSeed(dex, i, group_seed, encounter_slot_sum);
                         loglist.Add(logs);
-                        if (shiny)
+                        string[] monlist = Settings.SpeciesToHunt.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+                        if (shiny || Settings.DistortionConditions.AnyAlpha && match.IsAlpha)
                         {
-                            string[] monlist = Settings.SpeciesToHunt.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
                             if (monlist.Length != 0)
                             {
                                 bool huntedspecies = monlist.Contains($"{(Species)match.Species}");
@@ -281,13 +282,34 @@ namespace SysBot.Pokemon
                                 }
                             }
                             matchlist.Add(match);
+
+                            if (Settings.DistortionConditions.AnyAlpha && match.IsAlpha)
+                            {
+                                Log($"Found an Alpha {(Species)match.Species}. Storing its coordinates...\nPress continue if a desired encounter to teleport to, otherwise toss to toss.");
+                                FillDistortionCoords(i);
+                                IsWaiting = true;
+                                IsWaitingConfirmation = true;
+                                await Click(HOME, 1_000, token).ConfigureAwait(false);
+
+                                while (IsWaiting && IsWaitingConfirmation)
+                                {
+                                    if (IsWaiting && !IsWaitingConfirmation || !IsWaiting && IsWaitingConfirmation)
+                                        break;
+                                    await Task.Delay(1_000, token).ConfigureAwait(false);
+                                }
+                                await Click(HOME, 1_000, token).ConfigureAwait(false);
+
+                                if (Settings.DistortionConditions.TeleportToDistortionLocation && !IsWaitingConfirmation)
+                                    await TeleportToDistortionZone(token).ConfigureAwait(false);
+
+                            }
                         }
                     }
                     foreach (PA8 match in matchlist)
                     {
                         if (match.IsShiny)
                         {
-                            if (Settings.DistortionConditions.DistortionAlphaOnly)
+                            if (Settings.DistortionConditions.ShinyAlphaOnly)
                             {
                                 if (!match.IsAlpha)
                                 {
@@ -1018,7 +1040,7 @@ namespace SysBot.Pokemon
 
                 var (perfect, complete) = CheckForPerfectComplete(HasCharm, dex, poke.Item1.Species);
                 var rolls = 1 + (complete ? 1 : 0) + (perfect ? 2 : 0) + (HasCharm ? 3 : 0) + (int)(SpawnType.MMO - 7);
-                Log($"Shiny Rolls {rolls}");
+
                 var gen = GenerateFromSeed(fixedseed, rolls, poke.Item2, gt);
                 poke.Item1.EncryptionConstant = gen.EC;
                 poke.Item1.PID = gen.PID;
@@ -1051,7 +1073,7 @@ namespace SysBot.Pokemon
 
                 var (perfect, complete) = CheckForPerfectComplete(HasCharm, dex, poke.Item1.Species);
                 var rolls = 1 + (complete ? 1 : 0) + (perfect ? 2 : 0) + (HasCharm ? 3 : 0) + (int)(SpawnType.MMO - 7);
-                Log($"Shiny Rolls {rolls}");
+
                 var gen = GenerateFromSeed(fixed_seed, rolls, poke.Item2, gt);
                 int[] pkIVList = gen.IVs;
                 PKX.ReorderSpeedLast(pkIVList);
@@ -1085,7 +1107,7 @@ namespace SysBot.Pokemon
 
                     var (perfect, complete) = CheckForPerfectComplete(HasCharm, dex, poke.Item1.Species);
                     var rolls = 1 + (complete ? 1 : 0) + (perfect ? 2 : 0) + (HasCharm ? 3 : 0) + (int)(SpawnType.MMO - 7);
-                    Log($"Shiny Rolls {rolls}");
+
                     var gen = GenerateFromSeed(fixedseed, rolls, poke.Item2, gt);
                     int[] pkIVList = gen.IVs;
                     PKX.ReorderSpeedLast(pkIVList);
@@ -1118,7 +1140,7 @@ namespace SysBot.Pokemon
 
                     var (perfect, complete) = CheckForPerfectComplete(HasCharm, dex, poke.Item1.Species);
                     var rolls = 1 + (complete ? 1 : 0) + (perfect ? 2 : 0) + (HasCharm ? 3 : 0) + (int)(SpawnType.MMO - 7);
-                    Log($"Shiny Rolls {rolls}");
+
                     var gen = GenerateFromSeed(fixed_seed, rolls, poke.Item2, gt);
                     poke.Item1.EncryptionConstant = gen.EC;
                     poke.Item1.PID = gen.PID;
@@ -1158,7 +1180,7 @@ namespace SysBot.Pokemon
 
                 var (perfect, complete) = CheckForPerfectComplete(HasCharm, dex, pk.Species);
                 var rolls = 1 + (complete ? 1 : 0) + (perfect ? 2 : 0) + (HasCharm ? 3 : 0) + (int)(SpawnType.Outbreak - 7);
-                Log($"Shiny Rolls {rolls}");
+
                 var gen = GenerateFromSeed(fixedseed, rolls, givs, gt);
                 pk.Species = (int)species;
                 pk.EncryptionConstant = gen.EC;
@@ -1196,7 +1218,7 @@ namespace SysBot.Pokemon
 
                 var (perfect, complete) = CheckForPerfectComplete(HasCharm, dex, pk.Species);
                 var rolls = 1 + (complete ? 1 : 0) + (perfect ? 2 : 0) + (HasCharm ? 3 : 0) + (int)(SpawnType.Outbreak - 7);
-                Log($"Shiny Rolls {rolls}");
+
                 var gen = GenerateFromSeed(fixed_seed, rolls, givs, gt);
                 pk.Species = (int)species;
                 pk.EncryptionConstant = gen.EC;
@@ -1230,12 +1252,16 @@ namespace SysBot.Pokemon
             var givs = 0;
             var pk = GetDistortionSpecies(encounter_slot);
             if (pk.IsAlpha)
+            {
                 givs = 3;
+                if (Settings.DistortionConditions.AnyAlpha)
+                    FillDistortionCoords(id);
+            }
             var gt = PersonalTable.LA.GetFormEntry(pk.Species, pk.Form).Gender;
             var (perfect, complete) = CheckForPerfectComplete(HasCharm, dex, pk.Species);
             var rolls = 1 + (complete ? 1 : 0) + (perfect ? 2 : 0) + (HasCharm ? 3 : 0) + (int)(SpawnType.Regular - 7);
-            Log($"Shiny Rolls {rolls}");
-            var gen = GenerateFromSeed(fixedseed, 1, givs, gt);
+
+            var gen = GenerateFromSeed(fixedseed, rolls, givs, gt);
 
             string location = GetDistortionSpeciesLocation(id);
             if (id == 0 || id == 4 || id == 8 || id == 12 || id == 16 || id == 20)
@@ -1263,6 +1289,9 @@ namespace SysBot.Pokemon
                 CommonEdits.SetShiny(pk, Shiny.Always);
                 FillDistortionCoords(id);
             }
+
+            if (!pk.IsShiny && pk.IsAlpha)
+                Log($"Alpha {(Species)pk.Species} GroupID: {id} found at Location: {location}");
 
             var print = Hub.Config.StopConditions.GetAlphaPrintName(pk);
             logs += $"\nGenerator Seed: {(group_seed + 0x82A2B175229D6A5B & 0xFFFFFFFFFFFFFFFF):X16}\nGroup: {id}{print}\nEncounter Slot: {encounter_slot}\nLocation: {location}\n";
@@ -1352,6 +1381,7 @@ namespace SysBot.Pokemon
         private async Task PerformOutbreakScan(PokedexSaveData dex, CancellationToken token)
         {
             List<string> speclist = new();
+            List<string> result = new();
             var ofs = new long[] { 0x42BA6B0, 0x2B0, 0x58, 0x18, 0x20 };
             var outbreakptr = await SwitchConnection.PointerAll(ofs, token).ConfigureAwait(false);
             var info = await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr, 0x190, token).ConfigureAwait(false);
@@ -1363,7 +1393,7 @@ namespace SysBot.Pokemon
                 {
                     var outbreakseed = BitConverter.ToUInt64(info.Slice(56 + (i * 80), 8));
                     var spawncount = BitConverter.ToUInt16(info.Slice(64 + (i * 80), 2));
-                    Log($"Outbreak found for: {outbreakspecies} | Total Spawn Count: {spawncount}.");
+                    result.Add($"Outbreak found for: {outbreakspecies} | Total Spawn Count: {spawncount}.");
                     var monlist = ReadOutbreakSeed(dex, outbreakspecies, spawncount, outbreakseed);
                     foreach (PA8 pk in monlist)
                     {
@@ -1379,6 +1409,8 @@ namespace SysBot.Pokemon
                     }
                 }
             }
+            var rez = string.Join("", result);
+            Log(rez);
             var res = string.Join("", speclist);
             ResultsUtil.Log(res, "[OutbreakScan]");
 
@@ -1751,7 +1783,7 @@ namespace SysBot.Pokemon
 
             for (int mapcount = 0; mapcount < 5; mapcount++)
             {
-                ResultsUtil.Log($"Checking map #{mapcount}...", "");
+                ResultsUtil.Log($"Checking map #{mapcount + 1}...", "");
                 ofs = new long[] { 0x42BA6B0, 0x2B0, 0x58, 0x18, 0x1B0 + (mapcount * 0xB80) };
                 outbreakptr = await SwitchConnection.PointerAll(ofs, token).ConfigureAwait(false);
                 var active = BitConverter.ToUInt16(await SwitchConnection.ReadBytesAbsoluteAsync(outbreakptr, 2, token).ConfigureAwait(false), 0);
@@ -1884,7 +1916,7 @@ namespace SysBot.Pokemon
                     Log("Checking our distortions before scanning outbreaks!");
                     await DistortionReader(dex, token).ConfigureAwait(false);
                 }
-                Log($"Search #{attempts + 1}: reading map for active outbreaks...");
+                Log($"Search #{attempts + 1}: Reading map for active outbreaks...");
 
                 await Click(Y, 1_000, token).ConfigureAwait(false);
                 while (!await IsOnOverworldTitle(token).ConfigureAwait(false))
