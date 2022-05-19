@@ -153,7 +153,7 @@ namespace SysBot.Pokemon.Discord
             var template = AutoLegalityWrapper.GetTemplate(set);
             var sav = AutoLegalityWrapper.GetTrainerInfo<T>();
             var pkm = sav.GetLegal(template, out var result);
-            pkm = PKMConverter.ConvertToType(pkm, typeof(T), out _) ?? pkm;
+            pkm = EntityConverter.ConvertToType(pkm, typeof(T), out _) ?? pkm;
             if (pkm.HeldItem == 0 && !Info.Hub.Config.Trade.Memes)
             {
                 await ReplyAsync($"{Context.User.Username}, the item you entered wasn't recognized.").ConfigureAwait(false);
@@ -471,7 +471,7 @@ namespace SysBot.Pokemon.Discord
         [Command("arceusEmbed")]
         [Alias("ae")]
         [Summary("Initialize posting of ArceusBot embeds to specified Discord channels.")]
-        [RequireSudo]
+        [RequireOwner]
         public async Task InitializArceusEmbeds()
         {
             if (ArceusSettings.ArceusEmbedChannels == string.Empty)
@@ -517,10 +517,6 @@ namespace SysBot.Pokemon.Discord
                         }
 
                         PA8 mon = mons[i].Item1 ?? new();
-                        int[] pkIVList = mon.IVs;
-                        PKX.ReorderSpeedLast(pkIVList);
-                        mon.IVs = pkIVList;
-
                         var url = TradeExtensions<PA8>.PokeImg(mon, mon.CanGigantamax, SysCord<T>.Runner.Hub.Config.TradeCord.UseFullSizeImages);
                         string shinyurl = "https://img.favpng.com/6/14/25/computer-icons-icon-design-photography-royalty-free-png-favpng-mtjTHeWQe8FUAUB3RdJ3B2KJG.jpg";
                         var location = Hub.Config.Arceus.AlphaScanConditions.ScanLocation;
@@ -529,7 +525,7 @@ namespace SysBot.Pokemon.Discord
                             msg = "Not an Alpha...";
 
                         string stats;
-                        if (Hub.Config.Arceus.SpeciesToHunt.Length == 0)
+                        if (Hub.Config.Arceus.SpeciesToHunt.Length == 0 || mon.IVTotal != 0)
                             stats = $"{(mon.ShinyXor == 0 ? "■ - " : mon.ShinyXor <= 16 ? "★ - " : "")}{SpeciesName.GetSpeciesNameGeneration(mon.Species, 2, 8)}{TradeExtensions<T>.FormOutput(mon.Species, mon.Form, out _)}\nIVs: {string.Join("/", mon.IVs)}";
                         else
                         {
@@ -547,7 +543,9 @@ namespace SysBot.Pokemon.Discord
                             {
                                 ArceusMode.DistortionReader => "Found in a space-time distortion.",
                                 ArceusMode.MassiveOutbreakHunter when Hub.Config.Arceus.OutbreakConditions.TypeOfScan == OutbreakScanType.OutbreakOnly => "Found in a mass outbreak.",
-                                ArceusMode.MassiveOutbreakHunter when (Species)mon.Species is Species.Shieldon or Species.Bastiodon or Species.Cranidos or Species.Rampardos or Species.Scizor or Species.Sneasel or Species.Weavile => "Found in a space-time distortion.",
+                                ArceusMode.MassiveOutbreakHunter when (Species)mon.Species is Species.Shieldon or Species.Bastiodon or Species.Cranidos or Species.Rampardos or Species.Scizor or Species.Sneasel or
+                                Species.Weavile or Species.Magnemite or Species.Magneton or Species.Magnezone or Species.Sylveon or Species.Leafeon or Species.Glaceon or Species.Flareon or Species.Jolteon or Species.Vaporeon
+                                or Species.Umbreon or Species.Espeon => "Found in a space-time distortion.",
                                 _ => "Found in a massive mass outbreak.",
                             }
                         };

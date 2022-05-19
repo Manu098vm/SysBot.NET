@@ -244,14 +244,15 @@ namespace SysBot.Pokemon
                 for (int i = 0; i < count; i++)
                 {
                     int encounter_slot_sum;
+                    int common_sum;
                     long[] disofs;
                     switch (Settings.DistortionConditions.DistortionLocation)
                     {
-                        case ArceusMap.ObsidianFieldlands: disofs = new long[] { 0x42CC4D8, 0xC0, 0x1C0, 0x990 + i * 0x8, 0x18, 0x430, 0xC0 }; encounter_slot_sum = 112; break;
-                        case ArceusMap.CrimsonMirelands: disofs = new long[] { 0x42CC4D8, 0xC0, 0x1C0, 0xC70 + i * 0x8, 0x18, 0x430, 0xC0 }; encounter_slot_sum = 276; break;
-                        case ArceusMap.CobaltCoastlands: disofs = new long[] { 0x42CC4D8, 0xC0, 0x1C0, 0xCC0 + i * 0x8, 0x18, 0x430, 0xC0 }; encounter_slot_sum = 163; break;
-                        case ArceusMap.CoronetHighlands: disofs = new long[] { 0x42CC4D8, 0xC0, 0x1C0, 0x818 + i * 0x8, 0x18, 0x430, 0xC0 }; encounter_slot_sum = 382; break;
-                        case ArceusMap.AlabasterIcelands: disofs = new long[] { 0x42CC4D8, 0xC0, 0x1C0, 0x948 + i * 0x8, 0x18, 0x430, 0xC0 }; encounter_slot_sum = 259; break;
+                        case ArceusMap.ObsidianFieldlands: disofs = new long[] { 0x42CC4D8, 0xC0, 0x1C0, 0x990 + i * 0x8, 0x18, 0x430, 0xC0 }; encounter_slot_sum = 112; common_sum = 546; break;
+                        case ArceusMap.CrimsonMirelands: disofs = new long[] { 0x42CC4D8, 0xC0, 0x1C0, 0xC78 + i * 0x8, 0x18, 0x430, 0xC0 }; encounter_slot_sum = 276; common_sum = 480; break;
+                        case ArceusMap.CobaltCoastlands: disofs = new long[] { 0x42CC4D8, 0xC0, 0x1C0, 0xCC0 + i * 0x8, 0x18, 0x430, 0xC0 }; encounter_slot_sum = 163; common_sum = 529; break;
+                        case ArceusMap.CoronetHighlands: disofs = new long[] { 0x42CC4D8, 0xC0, 0x1C0, 0x818 + i * 0x8, 0x18, 0x430, 0xC0 }; encounter_slot_sum = 382; common_sum = 382; break;
+                        case ArceusMap.AlabasterIcelands: disofs = new long[] { 0x42CC4D8, 0xC0, 0x1C0, 0x948 + i * 0x8, 0x18, 0x430, 0xC0 }; encounter_slot_sum = 259; common_sum = 675; break;
                         default: throw new NotImplementedException("Invalid distortion location.");
                     }
 
@@ -265,7 +266,7 @@ namespace SysBot.Pokemon
                         if (i >= 13 && i <= 15 && Settings.DistortionConditions.DistortionLocation == ArceusMap.CrimsonMirelands)
                             encounter_slot_sum = 118;
 
-                        var (match, shiny, logs) = ReadDistortionSeed(dex, i, group_seed, encounter_slot_sum);
+                        var (match, shiny, logs) = ReadDistortionSeed(dex, i, group_seed, encounter_slot_sum, common_sum);
                         loglist.Add(logs);
                         string[] monlist = Settings.SpeciesToHunt.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
@@ -285,7 +286,11 @@ namespace SysBot.Pokemon
 
                             if (Settings.DistortionConditions.AnyAlpha && match.IsAlpha)
                             {
-                                Log($"Found an Alpha {(Species)match.Species}. Storing its coordinates...\nPress continue if a desired encounter to teleport to, otherwise toss to toss.");
+                                // Activates invcincible trainer cheat so we don't faint from teleporting or a Pokemon attacking and infinite PP
+                                await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + InvincibleTrainer1, token).ConfigureAwait(false);
+                                await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + InvincibleTrainer2, token).ConfigureAwait(false);
+
+                                Log($"Found an Alpha {(Species)match.Species}. Storing its coordinates...\nPress continue if a desired encounter to teleport to, otherwise toss to toss.\nReference the image guide if needed: https://imgur.com/a/OyBIIbR");
                                 FillDistortionCoords(i);
                                 IsWaiting = true;
                                 IsWaitingConfirmation = true;
@@ -320,6 +325,7 @@ namespace SysBot.Pokemon
                             Log(loglist.Last());
 
                             EmbedMons.Add((match, true));
+                            Log($"\nReference the image guide if needed: https://imgur.com/a/OyBIIbR");
                             Settings.AddCompletedShinyAlphaFound();
 
                             if (Settings.DistortionConditions.TeleportToDistortionLocation)
@@ -417,6 +423,119 @@ namespace SysBot.Pokemon
             ArceusMap.AlabasterIcelands when id is > 16 and <= 20 => "Heart's Crag",
             ArceusMap.AlabasterIcelands when id is > 20 and <= 24 => "North of Avalanche Slopes",
             _ => throw new NotImplementedException("Invalid location ID."),
+        };
+
+        private PA8 GetCommonDistortionSpecies(double encslot) => Settings.DistortionConditions.DistortionLocation switch
+        {
+            ArceusMap.ObsidianFieldlands when encslot is < 75 => new() { Species = (int)Species.Onix },
+            ArceusMap.ObsidianFieldlands when encslot is > 75 and < 76 => new() { Species = (int)Species.Onix, IsAlpha = true },
+            ArceusMap.ObsidianFieldlands when encslot is > 76 and < 86 => new() { Species = (int)Species.Steelix },
+            ArceusMap.ObsidianFieldlands when encslot is > 86 and < 87 => new() { Species = (int)Species.Steelix, IsAlpha = true },
+            ArceusMap.ObsidianFieldlands when encslot is > 87 and < 187 => new() { Species = (int)Species.Haunter },
+            ArceusMap.ObsidianFieldlands when encslot is > 187 and < 188 => new() { Species = (int)Species.Haunter, IsAlpha = true },
+            ArceusMap.ObsidianFieldlands when encslot is > 188 and < 198 => new() { Species = (int)Species.Gengar },
+            ArceusMap.ObsidianFieldlands when encslot is > 198 and < 199 => new() { Species = (int)Species.Gengar, IsAlpha = true },
+            ArceusMap.ObsidianFieldlands when encslot is > 199 and < 299 => new() { Species = (int)Species.Lickitung },
+            ArceusMap.ObsidianFieldlands when encslot is > 299 and < 300 => new() { Species = (int)Species.Lickitung, IsAlpha = true },
+            ArceusMap.ObsidianFieldlands when encslot is > 300 and < 350 => new() { Species = (int)Species.Lickilicky },
+            ArceusMap.ObsidianFieldlands when encslot is > 350 and < 351 => new() { Species = (int)Species.Lickilicky, IsAlpha = true },
+            ArceusMap.ObsidianFieldlands when encslot is > 351 and < 451 => new() { Species = (int)Species.Ursaring },
+            ArceusMap.ObsidianFieldlands when encslot is > 451 and < 452 => new() { Species = (int)Species.Ursaring, IsAlpha = true },
+            ArceusMap.ObsidianFieldlands when encslot is > 452 and < 472 => new() { Species = (int)Species.Toxicroak },
+            ArceusMap.ObsidianFieldlands when encslot is > 472 and < 473 => new() { Species = (int)Species.Toxicroak, IsAlpha = true },
+            ArceusMap.ObsidianFieldlands when encslot is > 473 and < 523 => new() { Species = (int)Species.Eevee },
+            ArceusMap.ObsidianFieldlands when encslot is > 523 and < 524 => new() { Species = (int)Species.Eevee, IsAlpha = true },
+            ArceusMap.ObsidianFieldlands when encslot is > 524 and < 534 => new() { Species = (int)Species.Leafeon },
+            ArceusMap.ObsidianFieldlands when encslot is > 534 and < 535 => new() { Species = (int)Species.Leafeon, IsAlpha = true },
+            ArceusMap.ObsidianFieldlands when encslot is > 535 and < 545 => new() { Species = (int)Species.Sylveon },
+            ArceusMap.ObsidianFieldlands when encslot is >= 545 => new() { Species = (int)Species.Sylveon, IsAlpha = true },
+
+            ArceusMap.CrimsonMirelands when encslot is < 100 => new() { Species = (int)Species.Floatzel },
+            ArceusMap.CrimsonMirelands when encslot is > 100 and < 101 => new() { Species = (int)Species.Floatzel, IsAlpha = true },
+            ArceusMap.CrimsonMirelands when encslot is > 101 and < 111 => new() { Species = (int)Species.Snorlax },
+            ArceusMap.CrimsonMirelands when encslot is > 111 and < 112 => new() { Species = (int)Species.Snorlax, IsAlpha = true },
+            ArceusMap.CrimsonMirelands when encslot is > 112 and < 212 => new() { Species = (int)Species.Drifblim },
+            ArceusMap.CrimsonMirelands when encslot is > 212 and < 213 => new() { Species = (int)Species.Drifblim, IsAlpha = true },
+            ArceusMap.CrimsonMirelands when encslot is > 213 and < 233 => new() { Species = (int)Species.Lopunny },
+            ArceusMap.CrimsonMirelands when encslot is > 233 and < 234 => new() { Species = (int)Species.Lopunny, IsAlpha = true },
+            ArceusMap.CrimsonMirelands when encslot is > 234 and < 334 => new() { Species = (int)Species.Luxio },
+            ArceusMap.CrimsonMirelands when encslot is > 334 and < 335 => new() { Species = (int)Species.Luxio, IsAlpha = true },
+            ArceusMap.CrimsonMirelands when encslot is > 335 and < 375 => new() { Species = (int)Species.Luxray },
+            ArceusMap.CrimsonMirelands when encslot is > 375 and < 376 => new() { Species = (int)Species.Luxray, IsAlpha = true },
+            ArceusMap.CrimsonMirelands when encslot is > 376 and < 406 => new() { Species = (int)Species.Heracross },
+            ArceusMap.CrimsonMirelands when encslot is > 406 and < 407 => new() { Species = (int)Species.Heracross, IsAlpha = true },
+            ArceusMap.CrimsonMirelands when encslot is > 407 and < 457 => new() { Species = (int)Species.Eevee },
+            ArceusMap.CrimsonMirelands when encslot is > 457 and < 458 => new() { Species = (int)Species.Eevee, IsAlpha = true },
+            ArceusMap.CrimsonMirelands when encslot is > 458 and < 468 => new() { Species = (int)Species.Umbreon },
+            ArceusMap.CrimsonMirelands when encslot is > 468 and < 469 => new() { Species = (int)Species.Umbreon, IsAlpha = true },
+            ArceusMap.CrimsonMirelands when encslot is > 469 and < 479 => new() { Species = (int)Species.Flareon },
+            ArceusMap.CrimsonMirelands when encslot is >= 479 => new() { Species = (int)Species.Flareon, IsAlpha = true },
+
+            ArceusMap.CobaltCoastlands when encslot is < 100 => new() { Species = (int)Species.Kadabra },
+            ArceusMap.CobaltCoastlands when encslot is > 100 and < 101 => new() { Species = (int)Species.Kadabra, IsAlpha = true },
+            ArceusMap.CobaltCoastlands when encslot is > 101 and < 111 => new() { Species = (int)Species.Alakazam },
+            ArceusMap.CobaltCoastlands when encslot is > 111 and < 112 => new() { Species = (int)Species.Alakazam, IsAlpha = true },
+            ArceusMap.CobaltCoastlands when encslot is > 112 and < 212 => new() { Species = (int)Species.Rhydon },
+            ArceusMap.CobaltCoastlands when encslot is > 212 and < 213 => new() { Species = (int)Species.Rhydon, IsAlpha = true },
+            ArceusMap.CobaltCoastlands when encslot is > 213 and < 223 => new() { Species = (int)Species.Rhyperior },
+            ArceusMap.CobaltCoastlands when encslot is > 223 and < 224 => new() { Species = (int)Species.Rhyperior, IsAlpha = true },
+            ArceusMap.CobaltCoastlands when encslot is > 224 and < 324 => new() { Species = (int)Species.Skuntank },
+            ArceusMap.CobaltCoastlands when encslot is > 324 and < 325 => new() { Species = (int)Species.Skuntank, IsAlpha = true },
+            ArceusMap.CobaltCoastlands when encslot is > 325 and < 425 => new() { Species = (int)Species.Carnivine },
+            ArceusMap.CobaltCoastlands when encslot is > 425 and < 426 => new() { Species = (int)Species.Carnivine, IsAlpha = true },
+            ArceusMap.CobaltCoastlands when encslot is > 426 and < 526 => new() { Species = (int)Species.MrMime },
+            ArceusMap.CobaltCoastlands when encslot is > 526 and < 527 => new() { Species = (int)Species.MrMime, IsAlpha = true },
+            ArceusMap.CobaltCoastlands when encslot is > 527 and < 557 => new() { Species = (int)Species.Eevee },
+            ArceusMap.CobaltCoastlands when encslot is > 557 and < 558 => new() { Species = (int)Species.Eevee, IsAlpha = true },
+            ArceusMap.CobaltCoastlands when encslot is > 558 and < 568 => new() { Species = (int)Species.Vaporeon },
+            ArceusMap.CobaltCoastlands when encslot is > 568 and < 569 => new() { Species = (int)Species.Vaporeon, IsAlpha = true },
+            ArceusMap.CobaltCoastlands when encslot is > 569 and < 579 => new() { Species = (int)Species.Flareon },
+            ArceusMap.CobaltCoastlands when encslot is >= 579 => new() { Species = (int)Species.Flareon, IsAlpha = true },
+
+            ArceusMap.CoronetHighlands when encslot is < 100 => new() { Species = (int)Species.Magmar },
+            ArceusMap.CoronetHighlands when encslot is > 100 and < 101 => new() { Species = (int)Species.Magmar, IsAlpha = true },
+            ArceusMap.CoronetHighlands when encslot is > 101 and < 201 => new() { Species = (int)Species.Dusclops },
+            ArceusMap.CoronetHighlands when encslot is > 201 and < 202 => new() { Species = (int)Species.Dusclops, IsAlpha = true },
+            ArceusMap.CoronetHighlands when encslot is > 202 and < 212 => new() { Species = (int)Species.Dusknoir },
+            ArceusMap.CoronetHighlands when encslot is > 212 and < 213 => new() { Species = (int)Species.Dusknoir, IsAlpha = true },
+            ArceusMap.CoronetHighlands when encslot is > 213 and < 313 => new() { Species = (int)Species.Octillery },
+            ArceusMap.CoronetHighlands when encslot is > 313 and < 314 => new() { Species = (int)Species.Octillery, IsAlpha = true },
+            ArceusMap.CoronetHighlands when encslot is > 314 and < 414 => new() { Species = (int)Species.Drapion },
+            ArceusMap.CoronetHighlands when encslot is > 414 and < 415 => new() { Species = (int)Species.Drapion, IsAlpha = true },
+            ArceusMap.CoronetHighlands when encslot is > 415 and < 455 => new() { Species = (int)Species.Ambipom },
+            ArceusMap.CoronetHighlands when encslot is > 455 and < 456 => new() { Species = (int)Species.Ambipom, IsAlpha = true },
+            ArceusMap.CoronetHighlands when encslot is > 456 and < 506 => new() { Species = (int)Species.Eevee },
+            ArceusMap.CoronetHighlands when encslot is > 506 and < 507 => new() { Species = (int)Species.Eevee, IsAlpha = true },
+            ArceusMap.CoronetHighlands when encslot is > 507 and < 517 => new() { Species = (int)Species.Jolteon },
+            ArceusMap.CoronetHighlands when encslot is > 517 and < 518 => new() { Species = (int)Species.Jolteon, IsAlpha = true },
+            ArceusMap.CoronetHighlands when encslot is > 518 and < 528 => new() { Species = (int)Species.Sylveon },
+            ArceusMap.CoronetHighlands when encslot is >= 528 => new() { Species = (int)Species.Sylveon, IsAlpha = true },
+
+            ArceusMap.AlabasterIcelands when encslot is < 100 => new() { Species = (int)Species.Electabuzz },
+            ArceusMap.AlabasterIcelands when encslot is > 100 and < 102 => new() { Species = (int)Species.Electabuzz, IsAlpha = true },
+            ArceusMap.AlabasterIcelands when encslot is > 102 and < 112 => new() { Species = (int)Species.Electivire },
+            ArceusMap.AlabasterIcelands when encslot is > 112 and < 113 => new() { Species = (int)Species.Electivire, IsAlpha = true },
+            ArceusMap.AlabasterIcelands when encslot is > 113 and < 173 => new() { Species = (int)Species.Pikachu },
+            ArceusMap.AlabasterIcelands when encslot is > 173 and < 175 => new() { Species = (int)Species.Pikachu, IsAlpha = true },
+            ArceusMap.AlabasterIcelands when encslot is > 175 and < 195 => new() { Species = (int)Species.Raichu },
+            ArceusMap.AlabasterIcelands when encslot is > 195 and < 196 => new() { Species = (int)Species.Raichu, IsAlpha = true },
+            ArceusMap.AlabasterIcelands when encslot is > 196 and < 296 => new() { Species = (int)Species.Sealeo },
+            ArceusMap.AlabasterIcelands when encslot is > 296 and < 298 => new() { Species = (int)Species.Sealeo, IsAlpha = true },
+            ArceusMap.AlabasterIcelands when encslot is > 298 and < 378 => new() { Species = (int)Species.Walrein },
+            ArceusMap.AlabasterIcelands when encslot is > 378 and < 379 => new() { Species = (int)Species.Walrein, IsAlpha = true },
+            ArceusMap.AlabasterIcelands when encslot is > 379 and < 459 => new() { Species = (int)Species.Rapidash },
+            ArceusMap.AlabasterIcelands when encslot is > 459 and < 460 => new() { Species = (int)Species.Rapidash, IsAlpha = true },
+            ArceusMap.AlabasterIcelands when encslot is > 460 and < 500 => new() { Species = (int)Species.Tangrowth },
+            ArceusMap.AlabasterIcelands when encslot is > 500 and < 501 => new() { Species = (int)Species.Tangrowth, IsAlpha = true },
+            ArceusMap.AlabasterIcelands when encslot is > 501 and < 601 => new() { Species = (int)Species.Scyther },
+            ArceusMap.AlabasterIcelands when encslot is > 601 and < 602 => new() { Species = (int)Species.Scyther, IsAlpha = true },
+            ArceusMap.AlabasterIcelands when encslot is > 602 and < 652 => new() { Species = (int)Species.Eevee },
+            ArceusMap.AlabasterIcelands when encslot is > 652 and < 653 => new() { Species = (int)Species.Eevee, IsAlpha = true },
+            ArceusMap.AlabasterIcelands when encslot is > 653 and < 663 => new() { Species = (int)Species.Glaceon },
+            ArceusMap.AlabasterIcelands when encslot is > 663 and < 664 => new() { Species = (int)Species.Glaceon, IsAlpha = true },
+            ArceusMap.AlabasterIcelands when encslot is > 664 and < 674 => new() { Species = (int)Species.Espeon },
+            ArceusMap.AlabasterIcelands when encslot is >= 674 => new() { Species = (int)Species.Espeon, IsAlpha = true },
+            _ => throw new NotImplementedException("Not a valid encounter slot."),
         };
 
         private PA8 GetDistortionSpecies(double encslot) => Settings.DistortionConditions.DistortionLocation switch
@@ -1240,17 +1359,28 @@ namespace SysBot.Pokemon
             return monlist;
         }
 
-        private (PA8 match, bool shiny, string log) ReadDistortionSeed(PokedexSaveData dex, int id, ulong group_seed, int encslotsum)
+        private (PA8 match, bool shiny, string log) ReadDistortionSeed(PokedexSaveData dex, int id, ulong group_seed, int encslotsum, int common_sum)
         {
             string logs = string.Empty;
+            PA8 pk = new();
+            var sum_to_use = 0;
+            if (id == 0 || id == 4 || id == 8 || id == 12 || id == 16 || id == 20)
+                sum_to_use = common_sum;
+            else if (id != 0 && id != 4 && id != 8 && id != 12 && id != 16 && id != 20)
+                sum_to_use = encslotsum;
+
             var groupseed = group_seed;
             var mainrng = new Xoroshiro128Plus(groupseed);
             var generator_seed = mainrng.Next();
             var rng = new Xoroshiro128Plus(generator_seed);
-            var encounter_slot = rng.Next() / Math.Pow(2, 64) * encslotsum;
+            var encounter_slot = rng.Next() / Math.Pow(2, 64) * sum_to_use;
             var fixedseed = rng.Next();
             var givs = 0;
-            var pk = GetDistortionSpecies(encounter_slot);
+            if (id == 0 || id == 4 || id == 8 || id == 12 || id == 16 || id == 20 || id == 24)
+                pk = GetCommonDistortionSpecies(encounter_slot);
+            else if (id != 0 && id != 4 && id != 8 && id != 12 && id != 16 && id != 20 && id != 24)
+                pk = GetDistortionSpecies(encounter_slot);
+
             if (pk.IsAlpha)
             {
                 givs = 3;
@@ -1264,12 +1394,6 @@ namespace SysBot.Pokemon
             var gen = GenerateFromSeed(fixedseed, rolls, givs, gt);
 
             string location = GetDistortionSpeciesLocation(id);
-            if (id == 0 || id == 4 || id == 8 || id == 12 || id == 16 || id == 20)
-            {
-                logs += $"Ignoring Common Spawner from GroupID: {id}.";
-                return (pk, false, logs);
-            }
-
             if (id >= 9 && id <= 12 && Settings.DistortionConditions.DistortionLocation == ArceusMap.CrimsonMirelands)
             {
                 logs += $"Ignoring Spawner from GroupID: {id} as location currently unknown.";
@@ -1590,8 +1714,10 @@ namespace SysBot.Pokemon
                 {
                     MultiSpawners.Eevee => PerformMultiEeveeScan(token),
                     MultiSpawners.CombeeLeft or MultiSpawners.CombeeRight => PerformMultiCombeeScan(token),
-                    MultiSpawners.Unown => PerformMultiUnownScan(token),
+                    //MultiSpawners.Unown => PerformMultiUnownScan(token),
                     MultiSpawners.BasculinLeft or MultiSpawners.BasculinMid or MultiSpawners.BasculinRight => PerformMultiBasculinScan(token),
+                    MultiSpawners.HipposRight or MultiSpawners.HipposLeft => PerformMultiHippoScan(token),
+                    MultiSpawners.Magikarp => PerformMultiMagikarpScan(token),
                     _ => PerformMultiEeveeScan(token),
                 };
                 await task.ConfigureAwait(false);
@@ -1690,6 +1816,92 @@ namespace SysBot.Pokemon
                 {
                     new(100, "Basculin-2", false, new [] {41, 44}, 0),
                     new(2, "Basculin-2", true , new [] {56, 59}, 3),
+                };
+                SetFakeTable(slots, key);
+
+                string log = string.Empty;
+                var groupID = (int)Settings.MultiScanConditions.MultiSpecies;
+                var ofs = new long[] { 0x42A6EE0, 0x330, 0x70 + groupID * 0x440 + 0x20 };
+                var multiptr = await SwitchConnection.PointerAll(ofs, token).ConfigureAwait(false);
+                var GeneratorSeed = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(multiptr, 8, token).ConfigureAwait(false), 0);
+                var group_seed = (GeneratorSeed - 0x82A2B175229D6A5B) & 0xFFFFFFFFFFFFFFFF;
+                //Log($"Seed: {group_seed:X16}");
+
+                var details = new SpawnCount(count, count);
+                var set = new SpawnSet(key, count);
+                var spawner = SpawnInfo.GetLoop(details, set, SpawnType.Regular);
+
+                var results = Permuter.Permute(spawner, group_seed, Settings.MultiScanConditions.Advances);
+                if (!results.HasResults)
+                    log += $"\nNo results found within {Settings.MultiScanConditions.Advances} advances :(";
+                else
+                {
+                    var lines = results.GetLines();
+                    foreach (var line in lines)
+                        log += "\n" + line;
+                }
+                Log($"{log}");
+                IsWaiting = true;
+                while (IsWaiting)
+                    await Task.Delay(1_000, token).ConfigureAwait(false);
+            }
+        }
+
+        private async Task PerformMultiHippoScan(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                int count = 3;
+                ulong key = (ulong)(0x1221B3A312345678 + Util.Rand.Next(1, 999999999));
+                var slots = new SlotDetail[]
+                {
+                    new(30, "Hippopotas", false, new [] {30, 33}, 0),
+                    new(2, "Hippopotas", true , new [] {45, 48}, 3),
+                    new(100, "Hippowdon", false, new [] {43, 46}, 0),
+                    new(1, "Hippowdon", true , new [] {58, 61}, 3),
+                };
+                SetFakeTable(slots, key);
+
+                string log = string.Empty;
+                var groupID = (int)Settings.MultiScanConditions.MultiSpecies;
+                var ofs = new long[] { 0x42A6EE0, 0x330, 0x70 + groupID * 0x440 + 0x20 };
+                var multiptr = await SwitchConnection.PointerAll(ofs, token).ConfigureAwait(false);
+                var GeneratorSeed = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(multiptr, 8, token).ConfigureAwait(false), 0);
+                var group_seed = (GeneratorSeed - 0x82A2B175229D6A5B) & 0xFFFFFFFFFFFFFFFF;
+                //Log($"Seed: {group_seed:X16}");
+
+                var details = new SpawnCount(count, count);
+                var set = new SpawnSet(key, count);
+                var spawner = SpawnInfo.GetLoop(details, set, SpawnType.Regular);
+
+                var results = Permuter.Permute(spawner, group_seed, Settings.MultiScanConditions.Advances);
+                if (!results.HasResults)
+                    log += $"\nNo results found within {Settings.MultiScanConditions.Advances} advances :(";
+                else
+                {
+                    var lines = results.GetLines();
+                    foreach (var line in lines)
+                        log += "\n" + line;
+                }
+                Log($"{log}");
+                IsWaiting = true;
+                while (IsWaiting)
+                    await Task.Delay(1_000, token).ConfigureAwait(false);
+            }
+        }
+
+        private async Task PerformMultiMagikarpScan(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                int count = 2;
+                ulong key = (ulong)(0x1221B1B112345678 + Util.Rand.Next(1, 999999999));
+                var slots = new SlotDetail[]
+                {
+                    new(100, "Magikarp", false, new [] {16, 19}, 0),
+                    new(2, "Magikarp", true , new [] {31, 34}, 3),
+                    new(30, "Gyarados", false, new [] {53, 56}, 0),
+                    new(1, "Gyarados", true , new [] {68, 71}, 3),
                 };
                 SetFakeTable(slots, key);
 

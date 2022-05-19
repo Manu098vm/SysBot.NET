@@ -69,7 +69,7 @@ namespace SysBot.Pokemon.Discord
 
                 var la = new LegalityAnalysis(pkm);
                 var spec = GameInfo.Strings.Species[template.Species];
-                pkm = PKMConverter.ConvertToType(pkm, typeof(T), out _) ?? pkm;
+                pkm = EntityConverter.ConvertToType(pkm, typeof(T), out _) ?? pkm;
                 bool memes = Info.Hub.Config.Trade.Memes && await TradeAdditionsModule<T>.TrollAsync(Context, pkm is not T || !la.Valid, pkm).ConfigureAwait(false);
                 if (memes)
                     return;
@@ -195,7 +195,7 @@ namespace SysBot.Pokemon.Discord
             {
                 null => null,
                 T pk => pk,
-                _ => PKMConverter.ConvertToType(dl.Data, typeof(T), out _) as T,
+                _ => EntityConverter.ConvertToType(dl.Data, typeof(T), out _) as T,
             };
         }
 

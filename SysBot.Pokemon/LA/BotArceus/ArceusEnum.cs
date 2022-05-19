@@ -47,9 +47,12 @@
         CombeeRight = 390,
         CombeeLeft = 389,
         Eevee = 49,
-        Unown = 395,
+        //Unown = 395,
         BasculinLeft = 342,
         BasculinMid = 344,
         BasculinRight = 345,
+        HipposRight = 160,
+        HipposLeft = 166,
+        Magikarp = 284,
     }
 }
