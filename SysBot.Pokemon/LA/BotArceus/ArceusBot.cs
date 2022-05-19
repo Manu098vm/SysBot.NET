@@ -291,6 +291,7 @@ namespace SysBot.Pokemon
                                 await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + InvincibleTrainer2, token).ConfigureAwait(false);
 
                                 Log($"Found an Alpha {(Species)match.Species}. Storing its coordinates...\nPress continue if a desired encounter to teleport to, otherwise toss to toss.\nReference the image guide if needed: https://imgur.com/a/OyBIIbR");
+                                EmbedMons.Add((match, true));
                                 FillDistortionCoords(i);
                                 IsWaiting = true;
                                 IsWaitingConfirmation = true;
