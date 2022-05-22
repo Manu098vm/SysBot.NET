@@ -1026,7 +1026,8 @@ namespace SysBot.Pokemon
                 await Click(B, 0_500, token).ConfigureAwait(false);
             Log("Searching for an Alpha shiny!");
             GetDefaultCoords();
-            await TeleportToCampZone(token);
+            if (!Settings.AlphaScanConditions.RunToProfessor)
+                await TeleportToCampZone(token);
             while (!token.IsCancellationRequested)
             {
                 Log($"Search #{attempts}");
@@ -1036,18 +1037,59 @@ namespace SysBot.Pokemon
                     Log($"{Hub.Config.StopConditions.MatchFoundEchoMention} a match has been found!");
                     return;
                 }
-                await TeleportToCampZone(token);
-                await SetStick(LEFT, -30_000, 0, 1_000, token).ConfigureAwait(false); // reset face forward
-                await ResetStick(token).ConfigureAwait(false); // reset
-                await Click(A, 1_000, token).ConfigureAwait(false);
-                await Click(A, 1_000, token).ConfigureAwait(false);
-                await Click(A, 10_000, token).ConfigureAwait(false);
-                await TeleportToSpawnZone(token);
-                await SetStick(LEFT, 0, -30_000, 1_000, token).ConfigureAwait(false); // reset face downward
-                await ResetStick(token).ConfigureAwait(false); // reset
-                for (int i = 0; i < 2; i++)
+                if (!Settings.AlphaScanConditions.RunToProfessor)
+                {
+                    await TeleportToCampZone(token);
+                    await SetStick(LEFT, -30_000, 0, 1_000, token).ConfigureAwait(false); // reset face forward
+                    await ResetStick(token).ConfigureAwait(false); // reset
                     await Click(A, 1_000, token).ConfigureAwait(false);
-                await Click(A, 10_000, token).ConfigureAwait(false);
+                    await Click(A, 1_000, token).ConfigureAwait(false);
+                    await Click(A, 10_000, token).ConfigureAwait(false);
+                    await TeleportToSpawnZone(token);
+                    await SetStick(LEFT, 0, -30_000, 1_000, token).ConfigureAwait(false); // reset face downward
+                    await ResetStick(token).ConfigureAwait(false); // reset
+                    for (int i = 0; i < 2; i++)
+                        await Click(A, 1_000, token).ConfigureAwait(false);
+                    await Click(A, 10_000, token).ConfigureAwait(false);
+                }
+                else if (Settings.AlphaScanConditions.RunToProfessor)
+                {
+                    var mode = Settings.AlphaScanConditions.ScanLocation;
+                    switch (mode)
+                    {
+                        case ArceusMap.ObsidianFieldlands: await SetStick(LEFT, 30_000, 32767, 1_000, token).ConfigureAwait(false); break;
+                        case ArceusMap.CobaltCoastlands or ArceusMap.CrimsonMirelands:
+                            await SetStick(RIGHT, 20_000, 5000, 1_000, token).ConfigureAwait(false);
+                            await SetStick(RIGHT, 0, 0, 0_500, token).ConfigureAwait(false);
+                            await Task.Delay(1_000, token).ConfigureAwait(false);
+                            await SetStick(LEFT, 0, 32767, 1_000, token).ConfigureAwait(false); break;
+                        case ArceusMap.CoronetHighlands:
+                            await SetStick(RIGHT, 19_000, 5000, 1_000, token).ConfigureAwait(false);
+                            await SetStick(RIGHT, 0, 0, 0_500, token).ConfigureAwait(false);
+                            await Task.Delay(1_000, token).ConfigureAwait(false);
+                            await SetStick(LEFT, 0, 32767, 1_200, token).ConfigureAwait(false); break;
+                        case ArceusMap.AlabasterIcelands:
+                            await SetStick(RIGHT, 19_000, 5000, 1_000, token).ConfigureAwait(false);
+                            await SetStick(RIGHT, 0, 0, 0_500, token).ConfigureAwait(false);
+                            await Task.Delay(1_000, token).ConfigureAwait(false);
+                            await SetStick(LEFT, 0, 32767, 0_800, token).ConfigureAwait(false); break;
+                    }
+                    await ResetStick(token).ConfigureAwait(false); // reset
+
+                    for (int i = 0; i < 3; i++)
+                        await Click(A, 1_000, token).ConfigureAwait(false);
+                    await Click(DDOWN, 1_000, token).ConfigureAwait(false);
+
+                    while (!await IsOnOverworldTitle(token).ConfigureAwait(false))
+                        await Click(A, 1_000, token).ConfigureAwait(false);
+
+                    await SetStick(LEFT, 0, -30_000, 1_000, token).ConfigureAwait(false); // reset face downward
+                    await ResetStick(token).ConfigureAwait(false); // reset
+
+                    await Click(Y, 1_800, token).ConfigureAwait(false);
+                    while (!await IsOnOverworldTitle(token).ConfigureAwait(false))
+                        await Click(A, 1_000, token).ConfigureAwait(false);
+                }
                 attempts++;
             }
         }

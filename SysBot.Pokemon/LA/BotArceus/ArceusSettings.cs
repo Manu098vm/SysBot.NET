@@ -113,6 +113,9 @@ namespace SysBot.Pokemon
             [Category(Arceus), Description("Enter number of shiny rolls for Static Alphas.")]
             public ShinyRolls StaticAlphaShinyRolls { get; set; } = ShinyRolls.PerfectCharm;
 
+            [Category(Arceus), Description("Toggle true if you want to run to the professor instead of teleport.")]
+            public bool RunToProfessor { get; set; } = true;
+
             [Category(Arceus), Description("Enter number of advances to search.")]
             public int MaxAdvancesToSearch { get; set; } = 50;
 
