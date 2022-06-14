@@ -11,6 +11,7 @@ namespace SysBot.Pokemon
                 or PokeRoutineType.LinkTrade
                 or PokeRoutineType.Clone
                 or PokeRoutineType.Dump
+                or PokeRoutineType.EtumrepDump
                 => new PokeTradeBotLA(Hub, cfg),
 
             PokeRoutineType.ArceusBot => new ArceusBot(cfg, Hub),
@@ -25,6 +26,7 @@ namespace SysBot.Pokemon
                 or PokeRoutineType.LinkTrade
                 or PokeRoutineType.Clone
                 or PokeRoutineType.Dump
+                or PokeRoutineType.EtumrepDump
                 => true,
 
             PokeRoutineType.ArceusBot => true,

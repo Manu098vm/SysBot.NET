@@ -1,4 +1,5 @@
 ﻿using Discord;
+using Discord.Rest;
 using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,6 +23,7 @@ namespace SysBot.Pokemon.Discord
     public sealed class SysCord<T> where T : PKM, new()
     {
         public static PokeBotRunner<T> Runner { get; private set; } = default!;
+        public static RestApplication App { get; private set; } = default!;
 
         private readonly DiscordSocketClient _client;
         private readonly DiscordManager Manager;
@@ -129,6 +131,7 @@ namespace SysBot.Pokemon.Discord
 
             var app = await _client.GetApplicationInfoAsync().ConfigureAwait(false);
             Manager.Owner = app.Owner.Id;
+            App = app;
 
             // Wait infinitely so your bot actually stays connected.
             await MonitorStatusAsync(token).ConfigureAwait(false);
@@ -167,6 +170,8 @@ namespace SysBot.Pokemon.Discord
             _client.MessageReceived += HandleMessageAsync;
             _client.ReactionAdded += ExtraCommandUtil<T>.HandleReactionAsync;
             _client.UserBanned += ExtraCommandUtil<T>.TCUserBanned;
+            _client.ButtonExecuted += ExtraCommandUtil<T>.ButtonExecuted;
+            _client.ModalSubmitted += ExtraCommandUtil<T>.ModalSubmitted;
         }
 
         private async Task HandleMessageAsync(SocketMessage arg)
@@ -220,6 +225,12 @@ namespace SysBot.Pokemon.Discord
             }
             if (!mgr.CanUseCommandChannel(msg.Channel.Id) && msg.Author.Id != mgr.Owner)
             {
+                if (msg.Content.Contains("next") || msg.Content.Contains("ps") || msg.Content.Contains("permuteseed") || msg.Content.Contains("spawnerseed") || msg.Content.Contains("spawnsample") || msg.Content.Contains("multieevee") || msg.Content.Contains("multicombee") || msg.Content.Contains("multihippo") || msg.Content.Contains("multikarp") || msg.Content.Contains("multisample") || msg.Content.Contains("multibascu"))
+                {
+                    await _commands.ExecuteAsync(context, pos, _services).ConfigureAwait(false);
+                    return true;
+                }
+
                 if (Hub.Config.Discord.ReplyCannotUseCommandInChannel)
                     await msg.Channel.SendMessageAsync("You can't use that command here.").ConfigureAwait(false);
                 return true;

@@ -54,5 +54,6 @@
         HipposRight = 160,
         HipposLeft = 166,
         Magikarp = 284,
+        Buneary = 183,
     }
 }

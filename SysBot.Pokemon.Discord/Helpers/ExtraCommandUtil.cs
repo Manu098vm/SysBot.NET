@@ -12,6 +12,8 @@ namespace SysBot.Pokemon.Discord
 {
     public class ExtraCommandUtil<T> where T : PKM, new()
     {
+        private static TradeQueueInfo<T> Info => SysCord<T>.Runner.Hub.Queues.Info;
+        private static readonly PokeTradeHubConfig Config = Info.Hub.Config;
         private static readonly Dictionary<ulong, ReactMessageContents> ReactMessageDict = new();
         private static bool DictWipeRunning = false;
 
@@ -62,7 +64,7 @@ namespace SysBot.Pokemon.Discord
             }
         }
 
-        private async Task DictWipeMonitor()
+        private static async Task DictWipeMonitor()
         {
             DictWipeRunning = true;
             while (true)
@@ -86,18 +88,18 @@ namespace SysBot.Pokemon.Discord
             var instance = SysCord<T>.Runner.Hub.Config;
             var helper = new TradeCordHelper<T>(instance.TradeCord);
             var ctx = new TradeCordHelper<T>.TC_CommandContext() { Context = TCCommandContext.DeleteUser, ID = user.Id, Username = user.Username };
-            var result =  await helper.ProcessTradeCord(ctx, new string[] { user.Id.ToString() }).ConfigureAwait(false);
+            var result = await helper.ProcessTradeCord(ctx, new string[] { user.Id.ToString() }).ConfigureAwait(false);
             if (result.Success)
             {
                 var channels = instance.Discord.EchoChannels.List;
                 for (int i = 0; i < channels.Count; i++)
                 {
-                    ISocketMessageChannel channel = (ISocketMessageChannel)guild.Channels.FirstOrDefault(x => x.Id == channels[i].ID);
+                    ISocketMessageChannel? channel = (ISocketMessageChannel?)guild.Channels.FirstOrDefault(x => x.Id == channels[i].ID);
                     if (channel == default)
                         continue;
 
                     await channel.SendMessageAsync($"**[TradeCord]** Automatically deleted TradeCord data for: \n**{user.Username}{user.Discriminator}** ({user.Id}) in: **{guild.Name}**.\n Reason: Banned.").ConfigureAwait(false);
-                }    
+                }
                 Base.LogUtil.LogInfo($"Automatically deleted TradeCord data for: {user.Username}{user.Discriminator} ({user.Id}) in: {guild.Name}.", "TradeCord: ");
             }
         }
@@ -263,11 +265,31 @@ namespace SysBot.Pokemon.Discord
             await ctx.Message.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
         }
 
+        public static async Task ButtonExecuted(SocketMessageComponent component)
+        {
+            var id = component.Data.CustomId;
+            if (id.Contains("etumrep") && Config.EtumrepDump.IP != string.Empty)
+            {
+                await component.DeferAsync().ConfigureAwait(false);
+                await EtumrepUtil.HandleEtumrepRequestAsync(component, id).ConfigureAwait(false);
+            }
+            else if (id.Contains("permute"))
+                await PermuteUtil.HandlePermuteRequestAsync(component, id).ConfigureAwait(false);
+        }
+
+        public static async Task ModalSubmitted(SocketModal modal)
+        {
+            await modal.DeferAsync().ConfigureAwait(false);
+            var id = modal.Data.CustomId;
+            if (id.Contains("permute_json"))
+                await PermuteUtil.DoPermutationsAsync(modal).ConfigureAwait(false);
+        }
+
         private static List<string> SpliceAtWord(string entry, int start, int length)
         {
             int counter = 0;
             List<string> list = new();
-            var temp = entry.Contains(",") ? entry.Split(',').Skip(start) : entry.Contains("|") ? entry.Split('|').Skip(start) : entry.Split('\n').Skip(start);
+            var temp = entry.Contains(',') ? entry.Split(',').Skip(start) : entry.Contains('|') ? entry.Split('|').Skip(start) : entry.Split('\n').Skip(start);
 
             if (entry.Length < length)
             {
@@ -298,7 +320,7 @@ namespace SysBot.Pokemon.Discord
                         break;
 
                     index += splice.Count;
-                    pageContent.Add(string.Join(entry.Contains(",") ? ", " : entry.Contains("|") ? " | " : "\n", splice));
+                    pageContent.Add(string.Join(entry.Contains(',') ? ", " : entry.Contains('|') ? " | " : "\n", splice));
                 }
             }
             else pageContent.Add(entry == "" ? "No results found." : entry);

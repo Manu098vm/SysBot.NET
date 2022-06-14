@@ -5,6 +5,7 @@
 		<LangVersion>10</LangVersion>
 		<Nullable>enable</Nullable>
 		<Platforms>AnyCPU</Platforms>
+		<ProduceReferenceAssembly>True</ProduceReferenceAssembly>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -17,4 +18,9 @@
 		<ProjectReference Include="..\SysBot.Pokemon\SysBot.Pokemon.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<Reference Include="PermuteMMO.Lib">
+			<HintPath>deps\PermuteMMO.Lib.dll</HintPath>
+		</Reference>
+	</ItemGroup>
 </Project>

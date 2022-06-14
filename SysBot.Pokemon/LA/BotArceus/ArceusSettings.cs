@@ -62,8 +62,8 @@ namespace SysBot.Pokemon
             [Category(Arceus), Description("EXPERIMENTAL, does not work 100% of the time. When enabled, the bot will read every box to see if the encounter exists. It checks for Species, Shiny, and IsAlpha.")]
             public bool CheckBoxes { get; set; } = false;
 
-            [Category(Arceus), Description("Duration in Ms for how long to hold B when returning to town for Outbreak Hunter.")]
-            public int HoldBMs { get; set; } = 5000;
+            [Category(Arceus), Description("Toggle true if you just want to stop the bot when a desired species is found in a MMO or MO.")]
+            public bool StopIfSpeciesFound { get; set; } = true;
         }
 
         [Category(Arceus), TypeConverter(typeof(CategoryConverter<DistortionFiltersCategory>))]
@@ -104,17 +104,11 @@ namespace SysBot.Pokemon
         {
             public override string ToString() => "AlphaScan Conditions";
 
-            [Category(Arceus), Description("Select the Location of the map you are hunting for. Ignore this setting if you are running MMOHunter")]
-            public ArceusMap ScanLocation { get; set; } = ArceusMap.ObsidianFieldlands;
-
             [Category(Arceus), Description("Select the Location to Autofill Coords upon running PlayerCoordScan.")]
             public ArceusAutoFill AutoFillCoords { get; set; } = ArceusAutoFill.CampZone;
 
             [Category(Arceus), Description("Enter number of shiny rolls for Static Alphas.")]
             public ShinyRolls StaticAlphaShinyRolls { get; set; } = ShinyRolls.PerfectCharm;
-
-            [Category(Arceus), Description("Toggle true if you want to run to the professor instead of teleport.")]
-            public bool RunToProfessor { get; set; } = true;
 
             [Category(Arceus), Description("Enter number of advances to search.")]
             public int MaxAdvancesToSearch { get; set; } = 50;
@@ -135,6 +129,9 @@ namespace SysBot.Pokemon
             public bool IsSpawnInWater { get; set; } = false;
 
             [Category(Arceus), Description("When enabled, the bot will stop the routine when match found.")]
+            public bool HealInCamp { get; set; } = false;
+
+            [Category(Arceus), Description("When enabled, the bot will stop the routine when match found.")]
             public bool StopOnMatch { get; set; } = false;
         }
 
@@ -142,6 +139,12 @@ namespace SysBot.Pokemon
         public class SpecialFiltersCategory
         {
             public override string ToString() => "Special Conditions";
+
+            [Category(Arceus), Description("Toggle true if you want to run to the professor instead of teleport.")]
+            public bool RunToProfessor { get; set; } = true;
+
+            [Category(Arceus), Description("Select the Location of the map you are hunting for. Ignore this setting if you are running MMOHunter")]
+            public ArceusMap ScanLocation { get; set; } = ArceusMap.ObsidianFieldlands;
 
             [Category(Arceus), Description("Wait time between teleporting and scanning.")]
             public int WaitMsBetweenTeleports { get; set; } = 1000;
