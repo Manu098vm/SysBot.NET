@@ -1657,12 +1657,14 @@ namespace SysBot.Pokemon
                 foreach (Species s in specieslist)
                 {
                     if (list.Contains(s.ToString()))
+                    {
+                        Log($"Desired species has a permutation!\n{report2}");
                         afk = true;
+                    }
                 }
                 if (afk)
                 {
                     Settings.AddCompletedShinyAlphaFound();
-                    Log($"Desired species has a permutation!\n{report2}");
                     IsWaiting = true;
                     while (IsWaiting)
                         await Task.Delay(1_000, token).ConfigureAwait(false);
