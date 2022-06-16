@@ -351,56 +351,8 @@ namespace SysBot.Pokemon
                 if (Settings.OutbreakConditions.CheckDistortionFirst && Settings.BotType == ArceusMode.MassiveOutbreakHunter)
                     return;
 
-                if (!Settings.SpecialConditions.RunToProfessor)
-                {
-                    await CloseGame(Hub.Config, token).ConfigureAwait(false);
-                    await StartGame(Hub.Config, token).ConfigureAwait(false);
-                }
-                else if (Settings.SpecialConditions.RunToProfessor)
-                {
-                    var mode = Settings.SpecialConditions.ScanLocation;
-                    switch (mode)
-                    {
-                        case ArceusMap.ObsidianFieldlands: await SetStick(LEFT, 30_000, 32767, 1_000, token).ConfigureAwait(false); break;
-                        case ArceusMap.CrimsonMirelands:
-                            await SetStick(RIGHT, 19_500, 5000, 1_000, token).ConfigureAwait(false);
-                            await SetStick(RIGHT, 0, 0, 0_500, token).ConfigureAwait(false);
-                            await Task.Delay(1_000, token).ConfigureAwait(false);
-                            await SetStick(LEFT, 0, 4000, 0, token).ConfigureAwait(false);
-                            await ResetStick(token).ConfigureAwait(false); // reset
-                            await Click(Y, 1_500, token).ConfigureAwait(false); break;
-                        case ArceusMap.CobaltCoastlands:
-                            await SetStick(RIGHT, 20_000, 5000, 1_000, token).ConfigureAwait(false);
-                            await SetStick(RIGHT, 0, 0, 0_500, token).ConfigureAwait(false);
-                            await Task.Delay(1_000, token).ConfigureAwait(false);
-                            await SetStick(LEFT, 0, 32767, 1_000, token).ConfigureAwait(false); break;
-                        case ArceusMap.CoronetHighlands:
-                            await SetStick(RIGHT, 19_000, 5000, 1_000, token).ConfigureAwait(false);
-                            await SetStick(RIGHT, 0, 0, 0_500, token).ConfigureAwait(false);
-                            await Task.Delay(1_000, token).ConfigureAwait(false);
-                            await SetStick(LEFT, 0, 32767, 1_200, token).ConfigureAwait(false); break;
-                        case ArceusMap.AlabasterIcelands:
-                            await SetStick(RIGHT, 19_000, 5000, 1_000, token).ConfigureAwait(false);
-                            await SetStick(RIGHT, 0, 0, 0_500, token).ConfigureAwait(false);
-                            await Task.Delay(1_000, token).ConfigureAwait(false);
-                            await SetStick(LEFT, 0, 32767, 0_800, token).ConfigureAwait(false); break;
-                    }
-                    await ResetStick(token).ConfigureAwait(false); // reset
-
-                    for (int i = 0; i < 3; i++)
-                        await Click(A, 1_000, token).ConfigureAwait(false);
-                    await Click(DDOWN, 1_000, token).ConfigureAwait(false);
-
-                    while (!await IsOnOverworldTitle(token).ConfigureAwait(false))
-                        await Click(A, 1_000, token).ConfigureAwait(false);
-
-                    await SetStick(LEFT, 0, -30_000, 1_000, token).ConfigureAwait(false); // reset face downward
-                    await ResetStick(token).ConfigureAwait(false); // reset
-
-                    await Click(Y, 1_800, token).ConfigureAwait(false);
-                    while (!await IsOnOverworldTitle(token).ConfigureAwait(false))
-                        await Click(A, 1_000, token).ConfigureAwait(false);
-                }
+                await CloseGame(Hub.Config, token).ConfigureAwait(false);
+                await StartGame(Hub.Config, token).ConfigureAwait(false);
             }
         }
 
@@ -2280,49 +2232,7 @@ namespace SysBot.Pokemon
                     await DistortionReader(dex, token).ConfigureAwait(false);
                 }
                 Log($"Search #{attempts + 1}: Reading map for active outbreaks...");
-                if (!Settings.SpecialConditions.RunToProfessor)
-                {
-                    GetDefaultCoords();
-                    await TeleportToCampZone(token);
-                    await SetStick(LEFT, -30_000, 0, 1_000, token).ConfigureAwait(false); // reset face forward
-                    await ResetStick(token).ConfigureAwait(false); // reset
-                }
-                // if (!Settings.SpecialConditions.RunToProfessor)
-                //await Click(Y, 1_000, token).ConfigureAwait(false);
-                else if (Settings.SpecialConditions.RunToProfessor)
-                {
-                    var mode = Settings.SpecialConditions.ScanLocation;
-                    switch (mode)
-                    {
-                        case ArceusMap.ObsidianFieldlands: await SetStick(LEFT, 30_000, 32767, 1_000, token).ConfigureAwait(false); break;
-                        case ArceusMap.CrimsonMirelands:
-                            await SetStick(RIGHT, 19_500, 5000, 1_000, token).ConfigureAwait(false);
-                            await SetStick(RIGHT, 0, 0, 0_500, token).ConfigureAwait(false);
-                            await Task.Delay(1_000, token).ConfigureAwait(false);
-                            await SetStick(LEFT, 0, 4000, 0, token).ConfigureAwait(false);
-                            await ResetStick(token).ConfigureAwait(false); // reset
-                            await Click(Y, 1_500, token).ConfigureAwait(false); break;
-                        case ArceusMap.CobaltCoastlands:
-                            await SetStick(RIGHT, 20_000, 5000, 1_000, token).ConfigureAwait(false);
-                            await SetStick(RIGHT, 0, 0, 0_500, token).ConfigureAwait(false);
-                            await Task.Delay(1_000, token).ConfigureAwait(false);
-                            await SetStick(LEFT, 0, 32767, 1_000, token).ConfigureAwait(false); break;
-                        case ArceusMap.CoronetHighlands:
-                            await SetStick(RIGHT, 19_000, 5000, 1_000, token).ConfigureAwait(false);
-                            await SetStick(RIGHT, 0, 0, 0_500, token).ConfigureAwait(false);
-                            await Task.Delay(1_000, token).ConfigureAwait(false);
-                            await SetStick(LEFT, 0, 32767, 1_200, token).ConfigureAwait(false); break;
-                        case ArceusMap.AlabasterIcelands:
-                            await SetStick(RIGHT, 19_000, 5000, 1_000, token).ConfigureAwait(false);
-                            await SetStick(RIGHT, 0, 0, 0_500, token).ConfigureAwait(false);
-                            await Task.Delay(1_000, token).ConfigureAwait(false);
-                            await SetStick(LEFT, 0, 32767, 0_800, token).ConfigureAwait(false); break;
-                    }
-                    await ResetStick(token).ConfigureAwait(false); // reset
-                    for (int i = 0; i < 3; i++)
-                        await Click(A, 1_000, token).ConfigureAwait(false);
-                    await Click(DDOWN, 1_000, token).ConfigureAwait(false);
-                }
+                await Click(Y, 1_000, token).ConfigureAwait(false);
                 while (!await IsOnOverworldTitle(token).ConfigureAwait(false))
                     await Click(A, 1_000, token).ConfigureAwait(false);
 
@@ -2335,19 +2245,9 @@ namespace SysBot.Pokemon
                 }
 
                 Log("No match found, resetting.");
-                if (!Settings.SpecialConditions.RunToProfessor || Settings.OutbreakConditions.CheckDistortionFirst)
-                {
-                    await CloseGame(Hub.Config, token).ConfigureAwait(false);
-                await StartGame(Hub.Config, token).ConfigureAwait(false);
-                }
-                else if (Settings.SpecialConditions.RunToProfessor && !Settings.OutbreakConditions.CheckDistortionFirst)
-                {
-                    await SetStick(LEFT, 0, -32768, 1_000, token).ConfigureAwait(false); // reset face downward
-                    await ResetStick(token).ConfigureAwait(false); // reset
-                    await Click(Y, 1_800, token).ConfigureAwait(false);
-                    while (!await IsOnOverworldTitle(token).ConfigureAwait(false))
-                        await Click(A, 1_000, token).ConfigureAwait(false);
-                }
+                await Click(B, 1_000, token).ConfigureAwait(false);
+                await CloseGame(Hub.Config, token).ConfigureAwait(false);
+                await StartGame(Hub.Config, token).ConfigureAwait(false);                
                 attempts++;
             }
         }
