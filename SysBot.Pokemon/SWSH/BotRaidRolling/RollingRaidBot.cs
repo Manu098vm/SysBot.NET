@@ -246,6 +246,9 @@ namespace SysBot.Pokemon
                 EmbedQueue.Enqueue((info.RaidPk, info.EmbedString, info.EmbedName));
             }
 
+            if (Settings.Uncatchable)
+                await Click(A, 2_000, token).ConfigureAwait(false);
+
             // Invite others and wait
             await Click(A, 7_000 + Hub.Config.Timings.ExtraTimeOpenRaid, token).ConfigureAwait(false);
 

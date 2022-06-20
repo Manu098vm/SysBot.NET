@@ -34,6 +34,9 @@ namespace SysBot.Pokemon
         [Category(FeatureToggle), Description("Enter the guaranteed flawless IV count to fine-tune what you want to lock on. \"-1\" means anything is fine.")]
         public int GuaranteedIVLock { get; set; } = -1;
 
+        [Category(FeatureToggle), Description("If the hosted event is an uncatchable encounter, extra A press after entering Link Code.")]
+        public bool Uncatchable { get; set; } = false;
+
         [Category(FeatureToggle), Description("If using USB-Botbase, quit out the raid by toggling airplane mode.")]
         public bool AirplaneQuitout { get; set; } = false;
 

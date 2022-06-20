@@ -1331,7 +1331,7 @@ namespace SysBot.Pokemon
         private List<PA8> ReadOutbreakSeed(PokedexSaveData dex, Species species, int totalspawn, ulong groupseed)
         {
             List<PA8> monlist = new();
-            PA8 pk = new();
+            PA8 pk = new() { Species = (int)species };
             int givs = 0;
             var mainrng = new Xoroshiro128Plus(groupseed);
             for (int i = 0; i < 4; i++)
@@ -1362,10 +1362,11 @@ namespace SysBot.Pokemon
                 pk.IsAlpha = alpha;
 
                 if (gen.shiny)
-                    CommonEdits.SetShiny(pk, Shiny.Always);
+                    CheckEmbed(pk, "", "", CancellationToken.None).ConfigureAwait(false);
 
                 monlist.Add(pk);
                 givs = 0;
+                pk = new PA8();
             }
 
             groupseed = mainrng.Next();
@@ -1400,10 +1401,11 @@ namespace SysBot.Pokemon
                 pk.Gender = gen.gender;
 
                 if (gen.shiny)
-                    CommonEdits.SetShiny(pk, Shiny.Always);
+                    CheckEmbed(pk, "", "", CancellationToken.None).ConfigureAwait(false);
 
                 monlist.Add(pk);
                 givs = 0;
+                pk = new PA8();
             }
 
             return monlist;
@@ -2234,7 +2236,7 @@ namespace SysBot.Pokemon
                 Log($"Search #{attempts + 1}: Reading map for active outbreaks...");
                 await Click(Y, 1_000, token).ConfigureAwait(false);
                 while (!await IsOnOverworldTitle(token).ConfigureAwait(false))
-                    await Click(A, 1_000, token).ConfigureAwait(false);
+                    await Click(A, 0_800, token).ConfigureAwait(false);
 
                 var type = Settings.OutbreakConditions.TypeOfScan;
                 switch (type)
