@@ -14,7 +14,7 @@ namespace SysBot.Pokemon
 
         public BoolBot(PokeBotState cfg, PokeTradeHub<PK8> hub) : base(cfg, hub)
         {
-            Settings = Hub.Config.Bool;
+            Settings = Hub.Config.BoolSWSH;
         }
 
         protected override async Task EncounterLoop(SAV8SWSH sav, CancellationToken token)

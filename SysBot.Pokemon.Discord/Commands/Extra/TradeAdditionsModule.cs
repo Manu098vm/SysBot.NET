@@ -17,9 +17,9 @@ namespace SysBot.Pokemon.Discord
         private static TradeQueueInfo<T> Info => SysCord<T>.Runner.Hub.Queues.Info;
         private readonly PokeTradeHub<T> Hub = SysCord<T>.Runner.Hub;
         private readonly ExtraCommandUtil<T> Util = new();
-        private readonly LairBotSettings LairSettings = SysCord<T>.Runner.Hub.Config.Lair;
-        private readonly RollingRaidSettings RollingRaidSettings = SysCord<T>.Runner.Hub.Config.RollingRaid;
-        private readonly ArceusBotSettings ArceusSettings = SysCord<T>.Runner.Hub.Config.Arceus;
+        private readonly LairBotSettings LairSettings = SysCord<T>.Runner.Hub.Config.LairSWSH;
+        private readonly RollingRaidSettings RollingRaidSettings = SysCord<T>.Runner.Hub.Config.RollingRaidSWSH;
+        private readonly ArceusBotSettings ArceusSettings = SysCord<T>.Runner.Hub.Config.ArceusLA;
 
         [Command("giveawayqueue")]
         [Alias("gaq")]
@@ -508,13 +508,13 @@ namespace SysBot.Pokemon.Discord
                         PA8 mon = mons[i].Item1 ?? new();
                         var url = TradeExtensions<PA8>.PokeImg(mon, mon.CanGigantamax, SysCord<T>.Runner.Hub.Config.TradeCord.UseFullSizeImages);
                         string shinyurl = "https://img.favpng.com/6/14/25/computer-icons-icon-design-photography-royalty-free-png-favpng-mtjTHeWQe8FUAUB3RdJ3B2KJG.jpg";
-                        var location = Hub.Config.Arceus.SpecialConditions.ScanLocation;
+                        var location = Hub.Config.ArceusLA.SpecialConditions.ScanLocation;
                         string msg = mons[i].Item2 ? "Match found!" : "Unwanted match...";
-                        if (Hub.Config.Arceus.DistortionConditions.ShinyAlphaOnly && !mon.IsAlpha && Hub.Config.Arceus.BotType == ArceusMode.DistortionReader)
+                        if (Hub.Config.ArceusLA.DistortionConditions.ShinyAlphaOnly && !mon.IsAlpha && Hub.Config.ArceusLA.BotType == ArceusMode.DistortionReader)
                             msg = "Not an Alpha...";
 
                         string stats;
-                        if (Hub.Config.Arceus.SpeciesToHunt.Length == 0 || mon.IVTotal != 0)
+                        if (Hub.Config.ArceusLA.SpeciesToHunt.Length == 0 || mon.IVTotal != 0)
                             stats = $"{(mon.ShinyXor == 0 ? "■ - " : mon.ShinyXor <= 16 ? "★ - " : "")}{SpeciesName.GetSpeciesNameGeneration(mon.Species, 2, 8)}{TradeExtensions<T>.FormOutput(mon.Species, mon.Form, out _)}\nIVs: {string.Join("/", mon.IVs)}";
                         else
                         {
@@ -528,10 +528,10 @@ namespace SysBot.Pokemon.Discord
                         var author = new EmbedAuthorBuilder { IconUrl = shinyurl, Name = msg };
                         var footer = new EmbedFooterBuilder
                         {
-                            Text = Hub.Config.Arceus.BotType switch
+                            Text = Hub.Config.ArceusLA.BotType switch
                             {
                                 ArceusMode.DistortionReader => "Found in a space-time distortion.",
-                                ArceusMode.MassiveOutbreakHunter when Hub.Config.Arceus.OutbreakConditions.TypeOfScan == OutbreakScanType.OutbreakOnly => "Found in a mass outbreak.",
+                                ArceusMode.MassiveOutbreakHunter when Hub.Config.ArceusLA.OutbreakConditions.TypeOfScan == OutbreakScanType.OutbreakOnly => "Found in a mass outbreak.",
                                 ArceusMode.MassiveOutbreakHunter when (Species)mon.Species is Species.Shieldon or Species.Bastiodon or Species.Cranidos or Species.Rampardos or Species.Scizor or Species.Sneasel or
                                 Species.Weavile or Species.Magnemite or Species.Magneton or Species.Magnezone or Species.Sylveon or Species.Leafeon or Species.Glaceon or Species.Flareon or Species.Jolteon or Species.Vaporeon
                                 or Species.Umbreon or Species.Espeon => "Found in a space-time distortion.",

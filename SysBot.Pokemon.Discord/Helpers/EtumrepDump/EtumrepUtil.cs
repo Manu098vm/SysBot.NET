@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using System.Net.Http;
 using System.Net.Sockets;
 using System.Net.Security;
 using System.IO;
@@ -7,7 +8,6 @@ using System.Text;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using System.Collections.Concurrent;
 using Discord;
 using Discord.WebSocket;
 using Newtonsoft.Json;
@@ -21,11 +21,7 @@ namespace SysBot.Pokemon.Discord
         private static TradeQueueInfo<PA8> Info => SysCord<PA8>.Runner.Hub.Queues.Info;
         private static readonly PokeTradeHubConfig Config = Info.Hub.Config;
 
-        private static ConcurrentQueue<EtumrepUser> UserQueue { get; set; } = new();
-        private static bool IsRunning { get; set; }
-        private static string IP { get => Config.EtumrepDump.IP; }
-        private static int Port { get => Config.EtumrepDump.Port; }
-        private static string Token { get => Config.EtumrepDump.Token; }
+        private static int ServerCount { get => Config.EtumrepDump.Servers.Count; }
 
         internal class EtumrepUser
         {
@@ -37,8 +33,6 @@ namespace SysBot.Pokemon.Discord
                 BotName = $"{component.Message.Author.Username}#{component.Message.Author.Discriminator}";
                 SeedCheckerName = $"{component.User.Username}#{component.User.Discriminator}";
                 SeedCheckerID = component.User.Id;
-                Stream.ReadTimeout = 2_000;
-                Stream.WriteTimeout = 2_000;
             }
 
             public TcpClient Client { get; }
@@ -48,15 +42,17 @@ namespace SysBot.Pokemon.Discord
             public string SeedCheckerName { get; }
             public ulong SeedCheckerID { get; }
             public bool IsAuthenticated { get; set; }
+            public byte[] Data { get; set; } = Array.Empty<byte>();
         }
 
         internal class UserAuth
         {
             public string HostName { get; set; } = string.Empty;
-            public string HostID { get; set; } = string.Empty;
+            public ulong HostID { get; set; }
+            public string HostPassword { get; set; } = string.Empty;
             public string Token { get; set; } = string.Empty;
             public string SeedCheckerName { get; set; } = string.Empty;
-            public string SeedCheckerID { get; set; } = string.Empty;
+            public ulong SeedCheckerID { get; set; }
         }
 
         public static async Task SendEtumrepEmbedAsync(SocketUser user, IReadOnlyList<PA8> pkms)
@@ -73,13 +69,14 @@ namespace SysBot.Pokemon.Discord
             var embed = new EmbedBuilder { Color = Color.Blue };
             var dmCh = await user.CreateDMChannelAsync().ConfigureAwait(false);
 
-            if (IP != string.Empty && Token != string.Empty)
+            bool exists = Config.EtumrepDump.Servers.Count > 0 && Config.EtumrepDump.Servers.FirstOrDefault(x => x.IP != string.Empty && x.Token != string.Empty) is not null;
+            if (exists)
             {
                 var buttonYes = new ButtonBuilder() { CustomId = "etumrep_yes", Label = "Yes", Style = ButtonStyle.Primary };
                 var buttonNo = new ButtonBuilder() { CustomId = "etumrep_no", Label = "No", Style = ButtonStyle.Secondary };
                 var components = new ComponentBuilder().WithButton(buttonYes).WithButton(buttonNo);
 
-                embed.Description = "Here are all the Pokémon you dumped!\nWould you now like to run EtumrepMMO?";
+                embed.Description = "Here are all the Pokémon you dumped!\nWould you like to calculate your seed using EtumrepMMO?";
                 embed.WithAuthor(x => { x.Name = "EtumrepMMO Service"; });
 
                 await dmCh.SendFilesAsync(list, null, false, embed: embed.Build(), null, null, null, components: components.Build()).ConfigureAwait(false);
@@ -95,45 +92,52 @@ namespace SysBot.Pokemon.Discord
         {
             if (id is "etumrep_yes")
             {
-                var msg = "Attempting to communicate with the EtumrepMMO server, please wait...";
-                await UpdateEtumrepEmbed(component.Message, msg, Color.Green).ConfigureAwait(false);
-                LogUtil.LogInfo(msg, "[EtumrepMMO Handler]");
-
-                var user = await AuthenticateConnection(component).ConfigureAwait(false);
-                if (user is null)
+                for (int i = 0; i < ServerCount; i++)
                 {
-                    msg = "Unable to connect to the server. Server might be offline.";
-                    await UpdateEtumrepEmbed(component.Message, msg, Color.Red).ConfigureAwait(false);
+                    var server = Config.EtumrepDump.Servers[i];
+                    if (server.IP == string.Empty || server.Token == string.Empty)
+                        continue;
+
+                    var msg = $"Attempting to connect to {server.Name}, please wait...";
+                    await UpdateEtumrepEmbed(component.Message, msg, Color.Green).ConfigureAwait(false);
                     LogUtil.LogInfo(msg, "[EtumrepMMO Handler]");
-                    return;
+
+                    var user = await AuthenticateConnection(server.IP, server.Port, component).ConfigureAwait(false);
+                    if (user is null)
+                    {
+                        msg = $"Unable to connect to {server.Name}. Server might be offline.";
+                        await UpdateEtumrepEmbed(component.Message, msg, Color.Red).ConfigureAwait(false);
+                        LogUtil.LogInfo(msg, "[EtumrepMMO Handler]");
+                        continue;
+                    }
+
+                    if (!user.IsAuthenticated)
+                    {
+                        DisposeStream(user);
+                        msg = $"{server.Name} rejected the connection.";
+                        await UpdateEtumrepEmbed(component.Message, msg, Color.Red).ConfigureAwait(false);
+                        LogUtil.LogInfo($"{user.BotName}: {msg}", "[EtumrepMMO Handler]");
+                        continue;
+                    }
+
+                    var authenticated = await Authenticate(user, server).ConfigureAwait(false);
+                    if (!authenticated)
+                    {
+                        DisposeStream(user);
+                        continue;
+                    }
+
+                    var canQueue = await GetServerConfirmation(user, $"{server.Name} is at full capacity.").ConfigureAwait(false);
+                    if (!canQueue)
+                    {
+                        DisposeStream(user);
+                        continue;
+                    }
+
+                    await PrepareData(user).ConfigureAwait(false);
+                    await EtumrepRequest(user).ConfigureAwait(false);
+                    break;
                 }
-
-                if (!user.IsAuthenticated)
-                {
-                    DisposeStream(user);
-                    msg = "Server rejected the authorization.";
-                    await UpdateEtumrepEmbed(component.Message, msg, Color.Red).ConfigureAwait(false);
-                    LogUtil.LogInfo($"{user.BotName}: {msg}", "[EtumrepMMO Handler]");
-                    return;
-                }
-
-                var authenticated = await Authenticate(user).ConfigureAwait(false);
-                if (!authenticated)
-                {
-                    DisposeStream(user);
-                    msg = "Bot owner is not authorized to use the EtumrepMMO server.";
-                    await UpdateEtumrepEmbed(component.Message, msg, Color.Red).ConfigureAwait(false);
-                    LogUtil.LogInfo($"{user.BotName}: {msg}", "[EtumrepMMO Handler]");
-                    return;
-                }
-
-                msg = "Successfully authenticated with the server, entering the queue...";
-                await UpdateEtumrepEmbed(component.Message, msg, Color.Green).ConfigureAwait(false);
-                LogUtil.LogInfo($"{user.BotName}: Successfully authenticated with the server, enqueueing {user.SeedCheckerName} ({user.SeedCheckerID})...", "[EtumrepMMO Handler]");
-                UserQueue.Enqueue(user);
-
-                if (!IsRunning)
-                    _ = Task.Run(async () => await EtumrepQueue().ConfigureAwait(false));
             }
             else if (id is "etumrep_no")
             {
@@ -141,25 +145,27 @@ namespace SysBot.Pokemon.Discord
                 await UpdateEtumrepEmbed(component.Message, msg, Color.DarkBlue).ConfigureAwait(false);
 
                 var username = $"{component.User.Username}#{component.User.Discriminator} ({component.User.Id})";
-                LogUtil.LogInfo($"{username} did not wish to run EtumrepMMO.", "[EtumrepMMO Handler]");
+                LogUtil.LogInfo($"{username} did not wish to calculate their seed using EtumrepMMO.", "[EtumrepMMO Handler]");
             }
         }
 
-        private static async Task<EtumrepUser?> AuthenticateConnection(SocketMessageComponent component)
+        private static async Task<EtumrepUser?> AuthenticateConnection(string addr, int port, SocketMessageComponent component)
         {
             IPAddress ip = default!;
             var author = component.Message.Author;
-            _ = IPAddress.TryParse(IP, out IPAddress? address);
+            bool success = IPAddress.TryParse(addr, out IPAddress? address);
 
-            if (address is not null)
+            if (success && address is not null)
                 ip = address;
             else
             {
                 try
                 {
-                    var dns = await Dns.GetHostEntryAsync(IP).ConfigureAwait(false);
-                    var addr = dns.AddressList.FirstOrDefault(x => x.ToString().Split('.').Length >= 4)!;
-                    ip = IPAddress.Parse(addr.ToString());
+                    var dns = await Dns.GetHostEntryAsync(addr).ConfigureAwait(false);
+                    var IPAdr = dns.AddressList.FirstOrDefault(x => x.ToString().Split('.').Length >= 4);
+                    if (IPAdr is not null)
+                        ip = IPAdr;
+                    else return null;
                 }
                 catch (Exception ex)
                 {
@@ -168,12 +174,8 @@ namespace SysBot.Pokemon.Discord
                 }
             }
 
-            var ep = new IPEndPoint(ip, Port);
-            var client = new TcpClient
-            {
-                SendTimeout = 2_000,
-                ReceiveTimeout = 2_000,
-            };
+            var ep = new IPEndPoint(ip, port);
+            var client = new TcpClient();
 
             try
             {
@@ -184,134 +186,138 @@ namespace SysBot.Pokemon.Discord
                 LogUtil.LogInfo($"{author.Username}#{author.Discriminator}: Failed to connect to server. Dequeueing {component.User.Username}#{component.User.Discriminator}...\n{ex.Message}", "[Connection Authentication]");
                 return null;
             }
-            client.LingerState = new(true, 0);
 
-            var clientStream = client.GetStream();
-            var authStream = new NegotiateStream(clientStream, false);
-            var user = new EtumrepUser(client, authStream, component);
-
+            EtumrepUser? user = null;
             try
             {
+                var clientStream = client.GetStream();
+
+                // Wait for up to 10 minutes to receive result to not overcomplicate with back and forth pings? 
+                clientStream.Socket.ReceiveTimeout = 600_000;
+                clientStream.Socket.SendTimeout = 600_000;
+
+                var authStream = new NegotiateStream(clientStream, false);
+                user = new EtumrepUser(client, authStream, component);
                 var credentials = new NetworkCredential();
+
                 await authStream.AuthenticateAsClientAsync(credentials, "").ConfigureAwait(false);
                 user.IsAuthenticated = true;
+
                 LogUtil.LogInfo($"{user.BotName}: Initial server authentication complete. Continuing to authenticate {user.SeedCheckerName}...", "[Connection Authentication]");
                 return user;
             }
             catch (Exception ex)
             {
-                LogUtil.LogInfo($"{user.BotName}: Failed to authenticate with server. Dequeueing {user.SeedCheckerName}...\n{ex.Message}", "[Connection Authentication]");
+                LogUtil.LogInfo($"{user?.BotName}: Failed to authenticate with server. Dequeueing {user?.SeedCheckerName}...\n{ex.Message}", "[Connection Authentication]");
                 return user;
             }
         }
 
-        private static async Task<bool> Authenticate(EtumrepUser user)
+        private static async Task<bool> Authenticate(EtumrepUser user, EtumrepDumpSettings.EtumrepServer server)
         {
-            if (!user.Stream.CanWrite)
-            {
-                LogUtil.LogInfo($"{user.BotName}: Cannot write to server. Dequeueing {user.SeedCheckerName}...", "[Server Authentication]");
-                return false;
-            }
-
             var auth = new UserAuth()
             {
-                HostID = SysCord<PA8>.App.Owner.Id.ToString(),
+                HostID = SysCord<PA8>.App.Owner.Id,
                 HostName = $"{SysCord<PA8>.App.Owner.Username}#{SysCord<PA8>.App.Owner.Discriminator}",
-                SeedCheckerID = user.SeedCheckerID.ToString(),
-                SeedCheckerName = user.SeedCheckerName,
-                Token = Token,
+                HostPassword = server.LimitInputLength(server.Password, false),
+                SeedCheckerID = user.SeedCheckerID,
+                SeedCheckerName = server.LimitInputLength(user.SeedCheckerName, true),
+                Token = server.LimitInputLength(server.Token, false),
             };
 
-            var authStr = JsonConvert.SerializeObject(auth);
-            var authBytes = Encoding.Unicode.GetBytes(authStr);
-            await user.Stream.WriteAsync(authBytes).ConfigureAwait(false);
-
-            var conf = new byte[1];
             try
             {
-                await user.Stream.ReadAsync(conf.AsMemory(0, 1)).ConfigureAwait(false);
+                var authStr = JsonConvert.SerializeObject(auth);
+                var authBytes = Encoding.Unicode.GetBytes(authStr);
+                await user.Stream.WriteAsync(authBytes).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
-                LogUtil.LogInfo($"{user.BotName}: Authentication rejected by the server. Dequeueing {user.SeedCheckerName}...\n{ex.Message}", "[Server Authentication]");
+                LogUtil.LogInfo($"{user.BotName}: Error while sending user authentication to server. Dequeueing {user.SeedCheckerName}...\n{ex.Message}", "[Server Authentication]");
                 return false;
             }
-            return BitConverter.ToBoolean(conf, 0);
+
+            bool success = await GetServerConfirmation(user, "Server rejected the user authentication.").ConfigureAwait(false);
+            return success;
         }
 
-        private static async Task EtumrepQueue()
+        private static async Task PrepareData(EtumrepUser user)
         {
-            IsRunning = true;
-            while (!UserQueue.IsEmpty)
+            var msg = "Successfully authenticated with the server, downloading files...";
+            await UpdateEtumrepEmbed(user.Component.Message, msg, Color.Green).ConfigureAwait(false);
+            LogUtil.LogInfo($"{user.BotName}: Successfully authenticated with the server, downloading data from {user.SeedCheckerName} ({user.SeedCheckerID})...", "[EtumrepMMO Handler]");
+
+            var att = user.Component.Message.Attachments.ToArray();
+            byte[] data = new byte[376 * att.Length];
+            var client = new HttpClient();
+
+            for (int i = 0; i < att.Length; i++)
             {
-                bool ready = UserQueue.TryDequeue(out var user);
-                if (ready && user is not null)
-                {
-                    var att = user.Component.Message.Attachments.ToArray();
-                    byte[] data = new byte[376 * att.Length];
-                    for (int i = 0; i < att.Length; i++)
-                    {
-                        var download = await NetUtil.DownloadFromUrlAsync(att[i].Url).ConfigureAwait(false);
-                        download.CopyTo(data, 376 * i);
-                    }
-
-                    var msg = $"Sending data to server, beginning seed calculation. Please wait...";
-                    await UpdateEtumrepEmbed(user.Component.Message, msg, Color.DarkGreen).ConfigureAwait(false);
-                    LogUtil.LogInfo($"{user.BotName}: Sending data from {user.SeedCheckerName} to server for seed calculation.", "[EtumrepMMO Queue]");
-
-                    try
-                    {
-                        await user.Stream.WriteAsync(data).ConfigureAwait(false);
-                    }
-                    catch (Exception ex)
-                    {
-                        DisposeStream(user);
-                        var msgE = $"Data communication with the server failed.\n{ex.Message}";
-                        await UpdateEtumrepEmbed(user.Component.Message, msgE, Color.Red).ConfigureAwait(false);
-                        LogUtil.LogInfo($"{user.BotName}: {msgE}", "[EtumrepMMO Queue]");
-                        continue;
-                    }
-
-                    byte[] buffer = new byte[8];
-                    try
-                    {
-                        await user.Stream.ReadAsync(buffer).ConfigureAwait(false);
-                    }
-                    catch (Exception ex)
-                    {
-                        DisposeStream(user);
-                        var msgE = $"Failed to retrieve the result from the server.\n{ex.Message}";
-                        await UpdateEtumrepEmbed(user.Component.Message, msgE, Color.Red).ConfigureAwait(false);
-                        LogUtil.LogInfo($"{user.BotName}: {msgE}", "[EtumrepMMO Queue]");
-                        continue;
-                    }
-
-                    DisposeStream(user);
-                    var seed = BitConverter.ToUInt64(buffer, 0);
-
-                    if (seed == 0)
-                    {
-                        msg = "Failed to calculate seed. Please make sure shown Pokémon are the first four spawns, and have come from an MO or MMO.";
-                        await UpdateEtumrepEmbed(user.Component.Message, msg, Color.Gold).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        var components = new ComponentBuilder();
-                        var buttonYes = new ButtonBuilder() { CustomId = $"permute_yes;{seed}", Label = "Yes", Style = ButtonStyle.Primary };
-                        components.WithButton(buttonYes);
-
-                        var buttonNo = new ButtonBuilder() { CustomId = "permute_no", Label = "No", Style = ButtonStyle.Secondary };
-                        components.WithButton(buttonNo);
-
-                        var seedMsg = $"Your seed is `{seed}`";
-                        msg = $"Result received! {seedMsg}\nWould you now like to run PermuteMMO?";
-                        await UpdateEtumrepEmbed(user.Component.Message, msg, Color.Gold, components.Build(), seedMsg).ConfigureAwait(false);
-                    }
-
-                    LogUtil.LogInfo($"{user.BotName}: Seed calculation for {user.SeedCheckerName} completed successfully.", "[EtumrepMMO Queue]");
-                }
+                var download = await client.GetByteArrayAsync(att[i].Url).ConfigureAwait(false);
+                download.CopyTo(data, 376 * i);
             }
-            IsRunning = false;
+
+            user.Data = data;
+        }
+
+        private static async Task EtumrepRequest(EtumrepUser user)
+        {
+
+            var msg = "Sending data to server, beginning seed calculation. Please wait...";
+            await UpdateEtumrepEmbed(user.Component.Message, msg, Color.DarkGreen).ConfigureAwait(false);
+            LogUtil.LogInfo($"{user.BotName}: Sending data from {user.SeedCheckerName} to server for seed calculation.", "[EtumrepMMO Queue]");
+
+            try
+            {
+                await user.Stream.WriteAsync(user.Data).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                DisposeStream(user);
+                var msgE = $"Data communication with the server failed.\n{ex.Message}";
+                await UpdateEtumrepEmbed(user.Component.Message, msgE, Color.Red).ConfigureAwait(false);
+                LogUtil.LogInfo($"{user.BotName}: {msgE}", "[EtumrepMMO Queue]");
+                return;
+            }
+
+            byte[] buffer = new byte[8];
+            try
+            {
+                await user.Stream.ReadAsync(buffer).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                DisposeStream(user);
+                var msgE = $"Failed to retrieve the result from the server.\n{ex.Message}";
+                await UpdateEtumrepEmbed(user.Component.Message, msgE, Color.Red).ConfigureAwait(false);
+                LogUtil.LogInfo($"{user.BotName}: {msgE}", "[EtumrepMMO Queue]");
+                return;
+            }
+
+            DisposeStream(user);
+            var seed = BitConverter.ToUInt64(buffer, 0);
+
+            if (seed is 0)
+            {
+                msg = "Failed to calculate seed. Please make sure shown Pokémon are the first four spawns, and have come from an MO or MMO.";
+                await UpdateEtumrepEmbed(user.Component.Message, msg, Color.Gold).ConfigureAwait(false);
+                LogUtil.LogInfo($"{user.BotName}: Seed calculation for {user.SeedCheckerName} returned no valid results.", "[EtumrepMMO Queue]");
+            }
+            else
+            {
+                var components = new ComponentBuilder();
+                var buttonYes = new ButtonBuilder() { CustomId = $"permute_yes;{seed}", Label = "Yes", Style = ButtonStyle.Primary };
+                components.WithButton(buttonYes);
+
+                var buttonNo = new ButtonBuilder() { CustomId = "permute_no", Label = "No", Style = ButtonStyle.Secondary };
+                components.WithButton(buttonNo);
+
+                var seedMsg = $"Your seed is `{seed}`";
+                LogUtil.LogInfo($"{user.SeedCheckerName}'s seed is `{seed}`", "[EtumrepMMO Queue]");
+                msg = $"Result received! {seedMsg}\nWould you like to calculate your shiny paths using PermuteMMO?";
+                await UpdateEtumrepEmbed(user.Component.Message, msg, Color.Gold, components.Build(), seedMsg).ConfigureAwait(false);
+                LogUtil.LogInfo($"{user.BotName}: Seed calculation for {user.SeedCheckerName} completed successfully.", "[EtumrepMMO Queue]");
+            }
         }
 
         private static async Task UpdateEtumrepEmbed(SocketUserMessage message, string desc, Color color, MessageComponent? components = null, string? seed = null)
@@ -330,10 +336,43 @@ namespace SysBot.Pokemon.Discord
             }).ConfigureAwait(false);
         }
 
+        private static async Task<bool> GetServerConfirmation(EtumrepUser user, string reasonIfFailed)
+        {
+            var conf = new byte[1];
+            try
+            {
+                // Wait for confirmation to proceed.
+                await user.Stream.ReadAsync(conf.AsMemory(0, 1)).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                LogUtil.LogInfo($"{user.BotName}: Error while waiting for server confirmation. Dequeueing {user.SeedCheckerName}...\n{ex.Message}", "[Server Confirmation]");
+                await UpdateEtumrepEmbed(user.Component.Message, reasonIfFailed, Color.Red).ConfigureAwait(false);
+                return false;
+            }
+
+            bool success = BitConverter.ToBoolean(conf, 0);
+            if (!success)
+            {
+                await UpdateEtumrepEmbed(user.Component.Message, reasonIfFailed, Color.Red).ConfigureAwait(false);
+                LogUtil.LogInfo($"{user.BotName}: {reasonIfFailed}", "[Server Confirmation]");
+            }
+
+            return success;
+        }
+
         private static void DisposeStream(EtumrepUser user)
         {
-            user.Client.Dispose();
-            user.Stream.Dispose();
+            try
+            {
+                user.Client.Close();
+                user.Stream.Dispose();
+            }
+            catch (Exception ex)
+            {
+                string msg = $"Error occurred while disposing the connection stream.\n{ex.Message}";
+                LogUtil.LogInfo(msg, "[DisposeStream]");
+            }
         }
     }
 }

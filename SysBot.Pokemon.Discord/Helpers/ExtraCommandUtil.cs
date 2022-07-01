@@ -265,24 +265,34 @@ namespace SysBot.Pokemon.Discord
             await ctx.Message.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
         }
 
-        public static async Task ButtonExecuted(SocketMessageComponent component)
+        public static Task ButtonExecuted(SocketMessageComponent component)
         {
-            var id = component.Data.CustomId;
-            if (id.Contains("etumrep") && Config.EtumrepDump.IP != string.Empty)
+            _ = Task.Run(async () =>
             {
-                await component.DeferAsync().ConfigureAwait(false);
-                await EtumrepUtil.HandleEtumrepRequestAsync(component, id).ConfigureAwait(false);
-            }
-            else if (id.Contains("permute"))
-                await PermuteUtil.HandlePermuteRequestAsync(component, id).ConfigureAwait(false);
+                var id = component.Data.CustomId;
+                if (id.Contains("etumrep"))
+                {
+                    await component.DeferAsync().ConfigureAwait(false);
+                    await EtumrepUtil.HandleEtumrepRequestAsync(component, id).ConfigureAwait(false);
+                }
+                else if (id.Contains("permute"))
+                    await PermuteUtil.HandlePermuteRequestAsync(component, id).ConfigureAwait(false);
+            });
+
+            return Task.CompletedTask;
         }
 
-        public static async Task ModalSubmitted(SocketModal modal)
+        public static Task ModalSubmitted(SocketModal modal)
         {
-            await modal.DeferAsync().ConfigureAwait(false);
-            var id = modal.Data.CustomId;
-            if (id.Contains("permute_json"))
-                await PermuteUtil.DoPermutationsAsync(modal).ConfigureAwait(false);
+            _ = Task.Run(async () =>
+            {
+                await modal.DeferAsync().ConfigureAwait(false);
+                var id = modal.Data.CustomId;
+                if (id.Contains("permute_json"))
+                    await PermuteUtil.DoPermutationsAsync(modal).ConfigureAwait(false);
+            });
+
+            return Task.CompletedTask;
         }
 
         private static List<string> SpliceAtWord(string entry, int start, int length)

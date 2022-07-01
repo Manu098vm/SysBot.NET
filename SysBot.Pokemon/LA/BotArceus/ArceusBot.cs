@@ -22,7 +22,7 @@ namespace SysBot.Pokemon
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         {
             Hub = hub;
-            Settings = Hub.Config.Arceus;
+            Settings = Hub.Config.ArceusLA;
             DumpSetting = Hub.Config.Folder;
         }
 
@@ -71,7 +71,7 @@ namespace SysBot.Pokemon
                 // Clear out any residual stick weirdness.
                 await ResetStick(token).ConfigureAwait(false);
                 MainNsoBase = await SwitchConnection.GetMainNsoBaseAsync(token).ConfigureAwait(false);
-                var task = Hub.Config.Arceus.BotType switch
+                var task = Hub.Config.ArceusLA.BotType switch
                 {
                     ArceusMode.PlayerCoordScan => PlayerCoordScan(token),
                     ArceusMode.SeedAdvancer => SeedAdvancer(token),
@@ -1214,7 +1214,8 @@ namespace SysBot.Pokemon
                 poke.Item1.EncryptionConstant = gen.EC;
                 poke.Item1.PID = gen.PID;
                 int[] pkIVList = gen.IVs;
-                PKX.ReorderSpeedLast(pkIVList);
+                poke.Item1.GetIVs(pkIVList);
+                (pkIVList[5], pkIVList[3], pkIVList[4]) = (pkIVList[3], pkIVList[4], pkIVList[5]);
                 poke.Item1.IVs = pkIVList;
                 poke.Item1.Nature = (int)gen.Item8;
                 poke.Item1.Gender = gen.gender;
@@ -1245,7 +1246,8 @@ namespace SysBot.Pokemon
 
                 var gen = GenerateFromSeed(fixed_seed, rolls, poke.Item2, gt);
                 int[] pkIVList = gen.IVs;
-                PKX.ReorderSpeedLast(pkIVList);
+                poke.Item1.GetIVs(pkIVList);
+                (pkIVList[5], pkIVList[3], pkIVList[4]) = (pkIVList[3], pkIVList[4], pkIVList[5]);
                 poke.Item1.IVs = pkIVList;
                 poke.Item1.EncryptionConstant = gen.EC;
                 poke.Item1.PID = gen.PID;
@@ -1279,7 +1281,8 @@ namespace SysBot.Pokemon
 
                     var gen = GenerateFromSeed(fixedseed, rolls, poke.Item2, gt);
                     int[] pkIVList = gen.IVs;
-                    PKX.ReorderSpeedLast(pkIVList);
+                    poke.Item1.GetIVs(pkIVList);
+                    (pkIVList[5], pkIVList[3], pkIVList[4]) = (pkIVList[3], pkIVList[4], pkIVList[5]);
                     poke.Item1.IVs = pkIVList;
                     poke.Item1.EncryptionConstant = gen.EC;
                     poke.Item1.PID = gen.PID;
@@ -1314,7 +1317,8 @@ namespace SysBot.Pokemon
                     poke.Item1.EncryptionConstant = gen.EC;
                     poke.Item1.PID = gen.PID;
                     int[] pkIVList = gen.IVs;
-                    PKX.ReorderSpeedLast(pkIVList);
+                    poke.Item1.GetIVs(pkIVList);
+                    (pkIVList[5], pkIVList[3], pkIVList[4]) = (pkIVList[3], pkIVList[4], pkIVList[5]);
                     poke.Item1.IVs = pkIVList;
                     poke.Item1.Nature = (int)gen.Item8;
                     poke.Item1.Gender = gen.gender;
@@ -1355,7 +1359,8 @@ namespace SysBot.Pokemon
                 pk.EncryptionConstant = gen.EC;
                 pk.PID = gen.PID;
                 int[] pkIVList = gen.IVs;
-                PKX.ReorderSpeedLast(pkIVList);
+                pk.GetIVs(pkIVList);
+                (pkIVList[5], pkIVList[3], pkIVList[4]) = (pkIVList[3], pkIVList[4], pkIVList[5]);
                 pk.IVs = pkIVList;
                 pk.Nature = (int)gen.Item8;
                 pk.Gender = gen.gender;
@@ -1394,7 +1399,8 @@ namespace SysBot.Pokemon
                 pk.EncryptionConstant = gen.EC;
                 pk.PID = gen.PID;
                 int[] pkIVList = gen.IVs;
-                PKX.ReorderSpeedLast(pkIVList);
+                pk.GetIVs(pkIVList);
+                (pkIVList[5], pkIVList[3], pkIVList[4]) = (pkIVList[3], pkIVList[4], pkIVList[5]);
                 pk.IVs = pkIVList;
                 pk.Nature = (int)gen.Item8;
                 pk.IsAlpha = alpha;
@@ -1455,7 +1461,8 @@ namespace SysBot.Pokemon
             pk.EncryptionConstant = gen.EC;
             pk.PID = gen.PID;
             int[] pkIVList = gen.IVs;
-            PKX.ReorderSpeedLast(pkIVList);
+            pk.GetIVs(pkIVList);
+            (pkIVList[5], pkIVList[3], pkIVList[4]) = (pkIVList[3], pkIVList[4], pkIVList[5]);
             pk.IVs = pkIVList;
             pk.Nature = (int)gen.Item8;
             pk.Gender = gen.gender;
@@ -1671,7 +1678,7 @@ namespace SysBot.Pokemon
         {
             string[] list = Settings.SpeciesToHunt.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
             bool huntedspecies = list.Contains($"{(Species)pk.Species}");
-            if (string.IsNullOrEmpty(map) && Hub.Config.Arceus.OutbreakConditions.TypeOfScan == OutbreakScanType.OutbreakOnly)
+            if (string.IsNullOrEmpty(map) && Hub.Config.ArceusLA.OutbreakConditions.TypeOfScan == OutbreakScanType.OutbreakOnly)
             {
                 ResultsUtil.Log($"Outbreak for {(Species)pk.Species} has been found! Stopping routine execution!", "");
                 IsWaiting = true;
@@ -1771,7 +1778,7 @@ namespace SysBot.Pokemon
         {
             while (!token.IsCancellationRequested)
             {
-                var task = Hub.Config.Arceus.MultiScanConditions.MultiSpecies switch
+                var task = Hub.Config.ArceusLA.MultiScanConditions.MultiSpecies switch
                 {
                     MultiSpawners.Eevee => PerformMultiEeveeScan(token),
                     MultiSpawners.CombeeLeft or MultiSpawners.CombeeRight => PerformMultiCombeeScan(token),

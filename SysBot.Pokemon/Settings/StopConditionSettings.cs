@@ -85,8 +85,10 @@ namespace SysBot.Pokemon
                     return false;
             }
 
-            int[] pkIVList = pk.IVs;
-            PKX.ReorderSpeedLast(pkIVList);
+            // Reorder the speed to be last.
+            Span<int> pkIVList = stackalloc int[6];
+            pk.GetIVs(pkIVList);
+            (pkIVList[5], pkIVList[3], pkIVList[4]) = (pkIVList[3], pkIVList[4], pkIVList[5]);
 
             for (int i = 0; i < 6; i++)
             {
@@ -96,10 +98,10 @@ namespace SysBot.Pokemon
             return true;
         }
 
-        public static void InitializeTargetIVs(PokeTradeHub<PK8> hub, out int[] min, out int[] max)
+        public static void InitializeTargetIVs(PokeTradeHubConfig config, out int[] min, out int[] max)
         {
-            min = ReadTargetIVs(hub.Config.StopConditions, true);
-            max = ReadTargetIVs(hub.Config.StopConditions, false);
+            min = ReadTargetIVs(config.StopConditions, true);
+            max = ReadTargetIVs(config.StopConditions, false);
         }
 
         private static int[] ReadTargetIVs(StopConditionSettings settings, bool min)

@@ -69,10 +69,6 @@ namespace SysBot.Pokemon
         public const uint SurpriseTradeLockSlot = 0x450676fc;
         public const uint SurpriseTradeLockBox = 0x450676f8;
 
-        /* Wild Area Daycare */
-        public const uint DayCare_Wildarea_Step_Counter = 0x4511FC54;
-        public const uint DayCare_Wildarea_Egg_Is_Ready = 0x4511FC60;
-
         /* Route 5 Daycare */
         public const uint DayCare_Route5_Step_Counter = 0x4511F99C;
         public const uint DayCare_Route5_Egg_Is_Ready = 0x4511F9A8;
@@ -125,19 +121,12 @@ namespace SysBot.Pokemon
         // Original screen detection offset.
         public const uint CurrentScreenOffset = 0x6B30FA00;
 
-        // Value goes between either of these; not game or area specific.
-        public const uint CurrentScreen_Overworld1 = 0xFFFF5127;
-        public const uint CurrentScreen_Overworld2 = 0xFFFFFFFF;
-
+        // We use this offset to check if we're in the box. It can be either value for different users.
         public const uint CurrentScreen_Box1 = 0xFF00D59B;
         public const uint CurrentScreen_Box2 = 0xFF000000;
-        public const uint CurrentScreen_Box_WaitingForOffer = 0xC800B483;
-        public const uint CurrentScreen_Box_ConfirmOffer = 0xFF00B483;
 
         public const uint CurrentScreen_Softban = 0xFF000000;
 
-        //public const uint CurrentScreen_YMenu = 0xFFFF7983;
-        public const uint CurrentScreen_RaidParty = 0xFF1461DB;
         #endregion
 
         public static uint GetTrainerNameOffset(TradeMethod tradeMethod) => tradeMethod switch
@@ -145,20 +134,6 @@ namespace SysBot.Pokemon
             TradeMethod.LinkTrade => LinkTradePartnerNameOffset,
             TradeMethod.SurpriseTrade => SurpriseTradePartnerNameOffset,
             _ => throw new ArgumentException(nameof(tradeMethod)),
-        };
-
-        public static uint GetDaycareStepCounterOffset(SwordShieldDaycare daycare) => daycare switch
-        {
-            SwordShieldDaycare.WildArea => DayCare_Wildarea_Step_Counter,
-            SwordShieldDaycare.Route5 => DayCare_Route5_Step_Counter,
-            _ => throw new ArgumentException(nameof(daycare)),
-        };
-
-        public static uint GetDaycareEggIsReadyOffset(SwordShieldDaycare daycare) => daycare switch
-        {
-            SwordShieldDaycare.WildArea => DayCare_Wildarea_Egg_Is_Ready,
-            SwordShieldDaycare.Route5 => DayCare_Route5_Egg_Is_Ready,
-            _ => throw new ArgumentException(nameof(daycare)),
         };
 
         public static uint GetTrainerTIDSIDOffset(TradeMethod tradeMethod) => tradeMethod switch

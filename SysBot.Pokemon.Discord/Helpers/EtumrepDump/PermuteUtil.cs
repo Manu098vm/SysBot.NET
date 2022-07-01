@@ -16,7 +16,7 @@ namespace SysBot.Pokemon.Discord
         {
             if (id.Contains("permute_yes"))
             {
-                var msg = $"{component.User.Username}#{component.User.Discriminator} ({component.User.Id}) wants to run PermuteMMO. Waiting for JSON input...";
+                var msg = $"{component.User.Username}#{component.User.Discriminator} ({component.User.Id}) wants to use PermuteMMO. Waiting for JSON input...";
                 LogUtil.LogInfo(msg, "[PermuteMMO Request]");
 
                 var emb = component.Message.Embeds.First();
@@ -48,7 +48,7 @@ namespace SysBot.Pokemon.Discord
                 await UpdatePermuteEmbed(component.Message, msg, Color.LightOrange).ConfigureAwait(false);
 
                 var username = $"{component.User.Username}#{component.User.Discriminator} ({component.User.Id})";
-                LogUtil.LogInfo($"{username} did not wish to run PermuteMMO.", "[PermuteMMO Request]");
+                LogUtil.LogInfo($"{username} did not wish to use PermuteMMO.", "[PermuteMMO Request]");
             }
         }
 
@@ -62,7 +62,16 @@ namespace SysBot.Pokemon.Discord
             var msg = $"{name} has submitted their JSON. Running PermuteMMO...";
             LogUtil.LogInfo(msg, "[PermuteMMO]");
 
-            var info = JsonConvert.DeserializeObject<UserEnteredSpawnInfo>(json);
+            UserEnteredSpawnInfo? info;
+            try
+            {
+                info = JsonConvert.DeserializeObject<UserEnteredSpawnInfo>(json);
+            }
+            catch
+            {
+                info = null;
+            }
+
             if (info is null)
             {
                 msg = "Provided JSON is invalid.";
@@ -77,9 +86,20 @@ namespace SysBot.Pokemon.Discord
             var meta = Permuter.Permute(spawner, seed);
             if (!meta.HasResults)
             {
-                msg = "No results found for the information provided.";
+                msg = "No shiny path results found.";
                 LogUtil.LogInfo($"{name}: {msg}", "[PermuteMMO]");
-                await ModalEmbedFollowup(modal, msg, Color.Red);
+
+                var embedNoRes = new EmbedBuilder
+                {
+                    Color = Color.Red,
+                    Description = msg,
+                }.WithAuthor(x => { x.Name = "PermuteMMO Service"; });
+
+                await modal.ModifyOriginalResponseAsync(x =>
+                {
+                    x.Embed = embedNoRes.Build();
+                    x.Components = new ComponentBuilder().Build();
+                }).ConfigureAwait(false);
                 return;
             }
 
@@ -89,13 +109,20 @@ namespace SysBot.Pokemon.Discord
             var embed = new EmbedBuilder
             {
                 Color = Color.Gold,
-                Description = "**Here are your PermuteMMO results!**",
+                Description = "**Here are your shiny path results!**",
             }.WithAuthor(x => { x.Name = "PermuteMMO Service"; });
 
             var res = string.Join("\n", meta.GetLines());
             var bytes = Encoding.UTF8.GetBytes(res);
             var ms = new MemoryStream(bytes);
-            await modal.FollowupWithFileAsync(ms, $"PermuteMMO_{seed}.txt", null, null, false, false, null, null, embed: embed.Build()).ConfigureAwait(false);
+            var att = new FileAttachment[] { new FileAttachment(ms, $"PermuteMMO_{seed}.txt") };
+
+            await modal.ModifyOriginalResponseAsync(x =>
+            {
+                x.Attachments = att;
+                x.Embed = embed.Build();
+                x.Components = new ComponentBuilder().Build();
+            }).ConfigureAwait(false);
         }
 
         private static async Task UpdatePermuteEmbed(SocketUserMessage message, string desc, Color color, MessageComponent? components = null, MessageFlags flag = MessageFlags.None, string? authorName = null)
