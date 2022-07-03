@@ -1214,7 +1214,7 @@ namespace SysBot.Pokemon
                 poke.Item1.EncryptionConstant = gen.EC;
                 poke.Item1.PID = gen.PID;
                 int[] pkIVList = gen.IVs;
-                poke.Item1.GetIVs(pkIVList);
+                poke.Item1.SetIVs(pkIVList);
                 (pkIVList[5], pkIVList[3], pkIVList[4]) = (pkIVList[3], pkIVList[4], pkIVList[5]);
                 poke.Item1.IVs = pkIVList;
                 poke.Item1.Nature = (int)gen.Item8;
@@ -1246,7 +1246,7 @@ namespace SysBot.Pokemon
 
                 var gen = GenerateFromSeed(fixed_seed, rolls, poke.Item2, gt);
                 int[] pkIVList = gen.IVs;
-                poke.Item1.GetIVs(pkIVList);
+                poke.Item1.SetIVs(pkIVList);
                 (pkIVList[5], pkIVList[3], pkIVList[4]) = (pkIVList[3], pkIVList[4], pkIVList[5]);
                 poke.Item1.IVs = pkIVList;
                 poke.Item1.EncryptionConstant = gen.EC;
@@ -1281,7 +1281,7 @@ namespace SysBot.Pokemon
 
                     var gen = GenerateFromSeed(fixedseed, rolls, poke.Item2, gt);
                     int[] pkIVList = gen.IVs;
-                    poke.Item1.GetIVs(pkIVList);
+                    poke.Item1.SetIVs(pkIVList);
                     (pkIVList[5], pkIVList[3], pkIVList[4]) = (pkIVList[3], pkIVList[4], pkIVList[5]);
                     poke.Item1.IVs = pkIVList;
                     poke.Item1.EncryptionConstant = gen.EC;
@@ -1317,7 +1317,7 @@ namespace SysBot.Pokemon
                     poke.Item1.EncryptionConstant = gen.EC;
                     poke.Item1.PID = gen.PID;
                     int[] pkIVList = gen.IVs;
-                    poke.Item1.GetIVs(pkIVList);
+                    poke.Item1.SetIVs(pkIVList);
                     (pkIVList[5], pkIVList[3], pkIVList[4]) = (pkIVList[3], pkIVList[4], pkIVList[5]);
                     poke.Item1.IVs = pkIVList;
                     poke.Item1.Nature = (int)gen.Item8;
@@ -1359,7 +1359,7 @@ namespace SysBot.Pokemon
                 pk.EncryptionConstant = gen.EC;
                 pk.PID = gen.PID;
                 int[] pkIVList = gen.IVs;
-                pk.GetIVs(pkIVList);
+                pk.SetIVs(pkIVList);
                 (pkIVList[5], pkIVList[3], pkIVList[4]) = (pkIVList[3], pkIVList[4], pkIVList[5]);
                 pk.IVs = pkIVList;
                 pk.Nature = (int)gen.Item8;
@@ -1399,7 +1399,7 @@ namespace SysBot.Pokemon
                 pk.EncryptionConstant = gen.EC;
                 pk.PID = gen.PID;
                 int[] pkIVList = gen.IVs;
-                pk.GetIVs(pkIVList);
+                pk.SetIVs(pkIVList);
                 (pkIVList[5], pkIVList[3], pkIVList[4]) = (pkIVList[3], pkIVList[4], pkIVList[5]);
                 pk.IVs = pkIVList;
                 pk.Nature = (int)gen.Item8;
