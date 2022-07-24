@@ -79,11 +79,28 @@ namespace SysBot.Pokemon
                 RaidInfo.TrainerInfo = await IdentifyTrainer(token).ConfigureAwait(false);
                 await InitializeHardware(Settings, token).ConfigureAwait(false);
 
-                Log("Reading den data.");
-                if (await ReadDenData(token).ConfigureAwait(false))
+                if (Settings.RolloverPreventionTest)
                 {
-                    Log("Starting main RollingRaidBot loop.");
-                    await InnerLoop(token).ConfigureAwait(false);
+                    Log("Testing rollover prevention... Bot should detect watts, fix the rollover, then stop the routine.");
+                    if (await ReadDenData(true, token).ConfigureAwait(false))
+                    {
+                        await DaySkip(token).ConfigureAwait(false);
+                        bool failed = await CheckIfDayRolled(true, token).ConfigureAwait(false);
+                        await ResetTime(token).ConfigureAwait(false);
+
+                        if (failed)
+                            Log("Failed to correct rollover; please adjust your timings and delays, then try again.");
+                        else Log("Rollover prevention successful! Disable the test routine, then run the bot!");
+                    }
+                }
+                else
+                {
+                    Log("Reading den data.");
+                    if (await ReadDenData(false, token).ConfigureAwait(false))
+                    {
+                        Log("Starting main RollingRaidBot loop.");
+                        await InnerLoop(token).ConfigureAwait(false);
+                    }
                 }
             }
             catch (Exception e)
@@ -106,7 +123,7 @@ namespace SysBot.Pokemon
                 addFriends = false;
                 deleteFriends = false;
 
-                if (await CheckIfDayRolled(token).ConfigureAwait(false))
+                if (await CheckIfDayRolled(false, token).ConfigureAwait(false))
                     return;
 
                 // If they set this to 0, they want to add and remove friends before hosting any raids.
@@ -179,7 +196,7 @@ namespace SysBot.Pokemon
             bool rehost = await HostRaidAsync(code, token).ConfigureAwait(false);
             while (rehost)
             {
-                if (await CheckIfDayRolled(token).ConfigureAwait(false))
+                if (await CheckIfDayRolled(false, token).ConfigureAwait(false))
                     return false;
 
                 rehost = await HostRaidAsync(code, token).ConfigureAwait(false);
@@ -245,9 +262,6 @@ namespace SysBot.Pokemon
                 info.EmbedName = string.IsNullOrEmpty(Settings.RaidDescription) ? $"{RaidInfo.TrainerInfo.OT}'s Raid" : raiddescmsg;
                 EmbedQueue.Enqueue((info.RaidPk, info.EmbedString, info.EmbedName));
             }
-
-            if (Settings.Uncatchable)
-                await Click(A, 2_000, token).ConfigureAwait(false);
 
             // Invite others and wait
             await Click(A, 7_000 + Hub.Config.Timings.ExtraTimeOpenRaid, token).ConfigureAwait(false);
@@ -382,7 +396,6 @@ namespace SysBot.Pokemon
                 playerNameOfs = await ParsePointer("[[[[main+28F4060]+190]+60]+140]+98", token).ConfigureAwait(false) - 0xD0; // Thank you for sharing the pointer, Anubis! <3
                 pkOfs = await ParsePointer("[[[main+28ED790]+E8]+70]+DF8", token).ConfigureAwait(false);
             }
-            pkOfs = await ParsePointer("[[[main+28ED790]+E8]+70]+DF8", token).ConfigureAwait(false);
 
             var ofs = RaidP0PokemonOffset + (0x30 * player);
             var data = await Connection.ReadBytesAsync(ofs, 4, token).ConfigureAwait(false);
@@ -399,56 +412,56 @@ namespace SysBot.Pokemon
                         LobbyPlayers[player].Name = Encoding.Unicode.GetString(nameData).Replace("�", "");
                     }
                 }
+            }
 
-                if (joined && Settings.RaidSasser && LobbyPlayers[player].Name != string.Empty && LobbyPlayers[player].Poke is null)
+            if (joined && Settings.RaidSasser && LobbyPlayers[player].Name != string.Empty && LobbyPlayers[player].Poke is null)
+            {
+                var pkData = await SwitchConnection.ReadBytesAbsoluteAsync(pkOfs + (player * 0xD90), 0x158, token).ConfigureAwait(false);
+                LobbyPlayers[player].Poke = (PK8?)EntityFormat.GetFromBytes(pkData);
+
+                var pk = LobbyPlayers[player].Poke;
+                if (pk is not null && pk.Language != (int)LanguageID.Hacked)
                 {
-                    var pkData = await SwitchConnection.ReadBytesAbsoluteAsync(pkOfs + (player * 0xD90), 0x158, token).ConfigureAwait(false);
-                    LobbyPlayers[player].Poke = (PK8?)EntityFormat.GetFromBytes(pkData);
+                    var la = new LegalityAnalysis(pk);
+                    var shinySymbol = pk.IsShiny && (pk.ShinyXor is 0 || pk.FatefulEncounter) ? "■" : pk.IsShiny ? "★" : "";
+                    var form = TradeExtensions<PK8>.FormOutput(pk.Species, pk.Form, out _);
+                    var speciesForm = SpeciesName.GetSpeciesNameGeneration(pk.Species, 2, 8) + form;
+                    var genderStr = $"{(pk.Gender == 0 ? " (M)" : pk.Gender == 1 ? " (F)" : "")}";
+                    var nick = $"{(pk.IsNicknamed ? $" named {pk.Nickname}" : "")}";
+                    string laMsg = !la.Valid ? $"\nHere's what's wrong with it!\n```{la.Report()}```" : "";
 
-                    var pk = LobbyPlayers[player].Poke;
-                    if (pk is not null && pk.Language != (int)LanguageID.Hacked)
-                    {
-                        var la = new LegalityAnalysis(pk);
-                        var shinySymbol = pk.IsShiny && (pk.ShinyXor is 0 || pk.FatefulEncounter) ? "■" : pk.IsShiny ? "★" : "";
-                        var form = TradeExtensions<PK8>.FormOutput(pk.Species, pk.Form, out _);
-                        var speciesForm = SpeciesName.GetSpeciesNameGeneration(pk.Species, 2, 8) + form;
-                        var genderStr = $"{(pk.Gender == 0 ? " (M)" : pk.Gender == 1 ? " (F)" : "")}";
-                        var nick = $"{(pk.IsNicknamed ? $" named {pk.Nickname}" : "")}";
-                        string laMsg = !la.Valid ? $"\nHere's what's wrong with it!\n```{la.Report()}```" : "";
-
-                        bool isAd = TradeExtensions<PK8>.HasAdName(pk, out string ad);
-                        string adMsg = isAd ? $" Ew, it has an ad-name ({ad})!" : "";
-                        EchoUtil.Echo($"{LobbyPlayers[player].Name} (Player {player + 1}) joined the lobby with{(!la.Valid ? " their madd hacc" : "")} {shinySymbol}{speciesForm}{genderStr}{nick}!{adMsg}{laMsg}");
-                    }
+                    bool isAd = TradeExtensions<PK8>.HasAdName(pk, out string ad);
+                    string adMsg = isAd ? $" Ew, it has an ad-name ({ad})!" : "";
+                    EchoUtil.Echo($"{LobbyPlayers[player].Name} (Player {player + 1}) joined the lobby with{(!la.Valid ? " their madd hacc" : "")} {shinySymbol}{speciesForm}{genderStr}{nick}!{adMsg}{laMsg}");
                 }
+            }
 
-                // Check if the player has locked in.
-                ofs = RaidP0PokemonOffset + (0x30 * player);
-                data = await Connection.ReadBytesAsync(ofs + RaidLockedInIncr, 1, token).ConfigureAwait(false);
-                if (data[0] == 0 && player != 0)
-                    return;
+            // Check if the player has locked in.
+            ofs = RaidP0PokemonOffset + (0x30 * player);
+            data = await Connection.ReadBytesAsync(ofs + RaidLockedInIncr, 1, token).ConfigureAwait(false);
+            if (data[0] == 0 && player != 0)
+                return;
 
-                PlayerReady[player] = true;
-                LobbyPlayers[player].Ready = true;
+            PlayerReady[player] = true;
+            LobbyPlayers[player].Ready = true;
 
-                // If we get to here, they're locked in and should have a Pokémon selected.
-                if (Settings.EchoPartyReady)
-                {
-                    data = await Connection.ReadBytesAsync(ofs, 2, token).ConfigureAwait(false);
-                    var dexno = BitConverter.ToUInt16(data, 0);
+            // If we get to here, they're locked in and should have a Pokémon selected.
+            if (Settings.EchoPartyReady)
+            {
+                data = await Connection.ReadBytesAsync(ofs, 2, token).ConfigureAwait(false);
+                var dexno = BitConverter.ToUInt16(data, 0);
 
-                    data = await Connection.ReadBytesAsync(ofs + RaidAltFormInc, 1, token).ConfigureAwait(false);
-                    var altformstr = data[0] == 0 ? "" : TradeExtensions<PK8>.FormOutput(dexno, data[0], out _);
+                data = await Connection.ReadBytesAsync(ofs + RaidAltFormInc, 1, token).ConfigureAwait(false);
+                var altformstr = data[0] == 0 ? "" : TradeExtensions<PK8>.FormOutput(dexno, data[0], out _);
 
-                    data = await Connection.ReadBytesAsync(ofs + RaidShinyIncr, 1, token).ConfigureAwait(false);
-                    var shiny = data[0] == 1 ? "★" : "";
+                data = await Connection.ReadBytesAsync(ofs + RaidShinyIncr, 1, token).ConfigureAwait(false);
+                var shiny = data[0] == 1 ? "★" : "";
 
-                    data = await Connection.ReadBytesAsync(ofs + RaidGenderIncr, 1, token).ConfigureAwait(false);
-                    var gender = data[0] == 0 ? " (M)" : (data[0] == 1 ? " (F)" : "");
+                data = await Connection.ReadBytesAsync(ofs + RaidGenderIncr, 1, token).ConfigureAwait(false);
+                var gender = data[0] == 0 ? " (M)" : (data[0] == 1 ? " (F)" : "");
 
-                    var isEmpty = LobbyPlayers[player].Name == string.Empty;
-                    EchoUtil.Echo($"{(isEmpty ? "" : $"{LobbyPlayers[player].Name} ")}(Player {player + 1}) is ready with {shiny}{(Species)dexno}{altformstr}{gender}!");
-                }
+                var isEmpty = LobbyPlayers[player].Name == string.Empty;
+                EchoUtil.Echo($"{(isEmpty ? "" : $"{LobbyPlayers[player].Name} ")}(Player {player + 1}) is ready with {shiny}{(Species)dexno}{altformstr}{gender}!");
             }
         }
 
@@ -672,9 +685,9 @@ namespace SysBot.Pokemon
             }
         }
 
-        private async Task<bool> CheckIfDayRolled(CancellationToken token)
+        private async Task<bool> CheckIfDayRolled(bool test, CancellationToken token)
         {
-            if (!Settings.RolloverPrevention || encounterCount is 0)
+            if (!test && (!Settings.RolloverPrevention || encounterCount is 0))
                 return false;
 
             await Task.Delay(2_000, token).ConfigureAwait(false);
@@ -719,7 +732,7 @@ namespace SysBot.Pokemon
             await Click(DRIGHT, 0_150, token).ConfigureAwait(false);
             await Click(A, 1_250, token).ConfigureAwait(false); // Enter settings
 
-            await PressAndHold(DDOWN, 2_000, 0, token).ConfigureAwait(false);
+            await PressAndHold(DDOWN, 2_000, 0_250, token).ConfigureAwait(false); // Scroll to system settings
             await Click(A, 1_250, token).ConfigureAwait(false);
 
             await PressAndHold(DDOWN, 0_700 + Hub.Config.Timings.ExtraTimeScrollDownAR, 0_250, token).ConfigureAwait(false); // Scroll to date/time settings
@@ -802,14 +815,14 @@ namespace SysBot.Pokemon
             return unexpectedBattle;
         }
 
-        private async Task<bool> ReadDenData(CancellationToken token)
+        private async Task<bool> ReadDenData(bool test, CancellationToken token)
         {
             denOfs = DenUtil.GetDenOffset(Settings.DenID, Settings.DenType, out uint denID);
             RaidInfo.DenID = denID;
 
             var denData = await Connection.ReadBytesAsync(denOfs, 0x18, token).ConfigureAwait(false);
             RaidInfo.Den = new RaidSpawnDetail(denData, 0);
-            if (!RaidInfo.Den.WattsHarvested)
+            if (!test && !RaidInfo.Den.WattsHarvested)
             {
                 Log("For correct operation, start the bot with Watts cleared. If Watts are cleared and you see this message, make sure you've entered the correct den ID. Stopping routine...");
                 return false;

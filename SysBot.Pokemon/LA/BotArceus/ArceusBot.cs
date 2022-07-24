@@ -541,12 +541,12 @@ namespace SysBot.Pokemon
 
         private PA8 GetDistortionSpecies(double encslot) => Settings.DistortionConditions.DistortionLocation switch
         {
-            ArceusMap.ObsidianFieldlands when encslot is < 100 => new() { Species = (int)Species.Sneasel },
+            ArceusMap.ObsidianFieldlands when encslot is <= 100 => new() { Species = (int)Species.Sneasel },
             ArceusMap.ObsidianFieldlands when encslot is > 100 and < 101 => new() { Species = (int)Species.Sneasel, IsAlpha = true },
             ArceusMap.ObsidianFieldlands when encslot is > 101 and < 111 => new() { Species = (int)Species.Weavile },
             ArceusMap.ObsidianFieldlands when encslot is > 111 and < 112 => new() { Species = (int)Species.Weavile, IsAlpha = true },
 
-            ArceusMap.CrimsonMirelands when encslot is < 100 => new() { Species = (int)Species.Porygon },
+            ArceusMap.CrimsonMirelands when encslot is <= 100 => new() { Species = (int)Species.Porygon },
             ArceusMap.CrimsonMirelands when encslot is > 100 and < 101 => new() { Species = (int)Species.Porygon, IsAlpha = true },
             ArceusMap.CrimsonMirelands when encslot is > 101 and < 111 => new() { Species = (int)Species.Porygon2 },
             ArceusMap.CrimsonMirelands when encslot is > 111 and < 112 => new() { Species = (int)Species.Porygon2, IsAlpha = true },
@@ -559,14 +559,14 @@ namespace SysBot.Pokemon
             ArceusMap.CrimsonMirelands when encslot is > 270 and < 275 => new() { Species = (int)Species.Typhlosion },
             ArceusMap.CrimsonMirelands when encslot is >= 275 => new() { Species = (int)Species.Typhlosion, IsAlpha = true },
 
-            ArceusMap.CobaltCoastlands when encslot is < 100 => new() { Species = (int)Species.Magnemite },
+            ArceusMap.CobaltCoastlands when encslot is <= 100 => new() { Species = (int)Species.Magnemite },
             ArceusMap.CobaltCoastlands when encslot is > 100 and < 101 => new() { Species = (int)Species.Magnemite, IsAlpha = true },
             ArceusMap.CobaltCoastlands when encslot is > 101 and < 151 => new() { Species = (int)Species.Magneton },
             ArceusMap.CobaltCoastlands when encslot is > 151 and < 152 => new() { Species = (int)Species.Magneton, IsAlpha = true },
             ArceusMap.CobaltCoastlands when encslot is > 152 and < 162 => new() { Species = (int)Species.Magnezone },
             ArceusMap.CobaltCoastlands when encslot is >= 162 => new() { Species = (int)Species.Magnezone, IsAlpha = true },
 
-            ArceusMap.CoronetHighlands when encslot is < 100 => new() { Species = (int)Species.Cranidos },
+            ArceusMap.CoronetHighlands when encslot is <= 100 => new() { Species = (int)Species.Cranidos },
             ArceusMap.CoronetHighlands when encslot is > 100 and < 101 => new() { Species = (int)Species.Cranidos, IsAlpha = true },
             ArceusMap.CoronetHighlands when encslot is > 101 and < 111 => new() { Species = (int)Species.Rampardos },
             ArceusMap.CoronetHighlands when encslot is > 111 and < 112 => new() { Species = (int)Species.Rampardos, IsAlpha = true },
@@ -581,7 +581,7 @@ namespace SysBot.Pokemon
             ArceusMap.CoronetHighlands when encslot is > 376 and < 381 => new() { Species = (int)Species.Decidueye },
             ArceusMap.CoronetHighlands when encslot is > 381 and < 382 => new() { Species = (int)Species.Decidueye, IsAlpha = true },
 
-            ArceusMap.AlabasterIcelands when encslot is < 100 => new() { Species = (int)Species.Scizor },
+            ArceusMap.AlabasterIcelands when encslot is <= 100 => new() { Species = (int)Species.Scizor },
             ArceusMap.AlabasterIcelands when encslot is > 100 and < 101 => new() { Species = (int)Species.Scizor, IsAlpha = true },
             ArceusMap.AlabasterIcelands when encslot is > 101 and < 201 => new() { Species = (int)Species.Oshawott },
             ArceusMap.AlabasterIcelands when encslot is > 201 and < 202 => new() { Species = (int)Species.Oshawott, IsAlpha = true },
@@ -1461,7 +1461,7 @@ namespace SysBot.Pokemon
             pk.EncryptionConstant = gen.EC;
             pk.PID = gen.PID;
             int[] pkIVList = gen.IVs;
-            pk.GetIVs(pkIVList);
+            pk.SetIVs(pkIVList);
             (pkIVList[5], pkIVList[3], pkIVList[4]) = (pkIVList[3], pkIVList[4], pkIVList[5]);
             pk.IVs = pkIVList;
             pk.Nature = (int)gen.Item8;
