@@ -113,8 +113,16 @@ namespace SysBot.Pokemon
             // Connect to Y-Comm
             await EnsureConnectedToYComm(Hub.Config, token).ConfigureAwait(false);
 
+            if (Settings.DenIsWatchtower)
+            {
+                while (!await LairStatusCheck(0xFF1461DB, 0x6B30FAC0, token).ConfigureAwait(false))
+                    await Click(A, 1_500, token).ConfigureAwait(false);
+            }
             // Press A and stall out a bit for the loading
-            await Click(A, 5_000 + Hub.Config.Timings.ExtraTimeLoadRaid, token).ConfigureAwait(false);
+            if (!Settings.DenIsWatchtower)
+                await Click(A, 5_000 + Hub.Config.Timings.ExtraTimeLoadRaid, token).ConfigureAwait(false);
+
+            await Task.Delay(2_000, token).ConfigureAwait(false);
 
             if (raidBossSpecies == -1)
             {
@@ -122,6 +130,43 @@ namespace SysBot.Pokemon
                 raidBossSpecies = BitConverter.ToUInt16(data, 0);
             }
             Log($"Initializing raid for {(Species)raidBossSpecies}.");
+
+            var boss = await ReadUntilPresent(RaidBossLobby, 2_000, 0_200, BoxFormatSlotSize, token).ConfigureAwait(false);
+            if (Settings.DenIsWatchtower)
+                boss = await ReadUntilPresentAbsolute(await ParsePointer("[[[[[[main+26365B8]+68]+78]+88]+68]+58]", token).ConfigureAwait(false), 0_500, 0_200, token).ConfigureAwait(false) ?? new();
+
+            if (boss != null)
+            {
+                if (!Settings.DenIsWatchtower)
+                {
+                    int level = boss.Met_Level;
+                    string message = level switch
+                    {
+                        17 => $"1 ★",
+                        30 => $"2 ★",
+                        40 => $"3 ★",
+                        50 => $"4 ★",
+                        60 => $"5 ★",
+                        _ => throw new NotImplementedException(),
+                    };
+                    EchoUtil.Echo($"{message} Raid\n{(boss.ShinyXor == 0 ? "■ - " : boss.ShinyXor <= 16 ? "★ - " : "")}{ShowdownParsing.GetShowdownText(boss)}");
+                }
+                if (Settings.DenIsWatchtower)
+                {
+                    int level = boss.Met_Level;
+                    string message = level switch
+                    {
+                        15 => $"1 ★",
+                        16 => $"1 ★",
+                        25 => $"2 ★",
+                        35 => $"3 ★",
+                        40 => $"4 ★",
+                        50 => $"5 ★",
+                        _ => throw new NotImplementedException(),
+                    };
+                    EchoUtil.Echo($"{message} Raid\n{(boss.ShinyXor == 0 ? "■ - " : boss.ShinyXor <= 16 ? "★ - " : "")}{ShowdownParsing.GetShowdownText(boss)}");
+                }
+            }
 
             if (code >= 0)
             {

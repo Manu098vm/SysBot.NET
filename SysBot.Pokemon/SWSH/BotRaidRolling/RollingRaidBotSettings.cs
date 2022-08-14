@@ -52,6 +52,9 @@ namespace SysBot.Pokemon
         [Category(Hosting), Description("If enabled, it will check if your den unexpectedly has watts appear. If watts appear, it will attempt to fix it.")]
         public bool RolloverPrevention { get; set; } = false;
 
+        [Category(FeatureToggle), Description("When enabled, will do extra clicks to account for Watchtower Den mechanic.")]
+        public bool DenIsWatchtower { get; set; } = false;
+
         [Category(Hosting), Description("If enabled, it will re-host a rolled lobby if no one readies up in time instead of restarting the game to save time.")]
         public bool RehostEmptyLobby { get; set; } = false;
 

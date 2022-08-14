@@ -58,6 +58,9 @@ namespace SysBot.Pokemon
         [Category(FeatureToggle), Description("When enabled, the screen will be turned off during normal bot loop operation to save power.")]
         public bool ScreenOff { get; set; } = false;
 
+        [Category(FeatureToggle), Description("When enabled, will do extra clicks to account for Watchtower Den mechanic.")]
+        public bool DenIsWatchtower { get; set; } = false;
+
         /// <summary>
         /// Gets a random trade code based on the range settings.
         /// </summary>
