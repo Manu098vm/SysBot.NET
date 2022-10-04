@@ -45,7 +45,6 @@ namespace SysBot.Pokemon
         private LobbyPlayerInfo[] LobbyPlayers = new LobbyPlayerInfo[] { new(), new(), new(), new() };
         private PK8 raidPk = new();
         private string ivString = string.Empty;
-        private int raidBossSpecies = -1;
 
         private class EmbedInfo
         {
@@ -234,61 +233,7 @@ namespace SysBot.Pokemon
 
             // Press A and stall out a bit for the loading
             Log($"Initializing raid for {raidBossString}.");
-            if (Settings.DenIsWatchtower)
-            {
-                while (!await LairStatusCheck(0xFF1461DB, 0x6B30FAC0, token).ConfigureAwait(false))
-                    await Click(A, 1_500, token).ConfigureAwait(false);
-            }
-            // Press A and stall out a bit for the loading
-            if (!Settings.DenIsWatchtower)
-                await Click(A, 5_000 + Hub.Config.Timings.ExtraTimeLoadRaid, token).ConfigureAwait(false);
-
-            await Task.Delay(2_000, token).ConfigureAwait(false);
-
-            if (raidBossSpecies == -1)
-            {
-                var data = await Connection.ReadBytesAsync(RaidBossOffset, 2, token).ConfigureAwait(false);
-                raidBossSpecies = BitConverter.ToUInt16(data, 0);
-            }
-            Log($"Initializing raid for {(Species)raidBossSpecies}.");
-
-            var boss = await ReadUntilPresent(RaidBossLobby, 2_000, 0_200, BoxFormatSlotSize, token).ConfigureAwait(false);
-            if (Settings.DenIsWatchtower)
-                boss = await ReadUntilPresentAbsolute(await ParsePointer("[[[[[[main+26365B8]+68]+78]+88]+68]+58]", token).ConfigureAwait(false), 0_500, 0_200, token).ConfigureAwait(false) ?? new();
-            
-            if (boss != null)
-            {
-                /*if (!Settings.DenIsWatchtower)
-                {
-                    int level = boss.Met_Level;
-                    string message = level switch
-                    {
-                        17 => $"1 ★",
-                        30 => $"2 ★",
-                        40 => $"3 ★",
-                        50 => $"4 ★",
-                        60 => $"5 ★",
-                        _ => throw new NotImplementedException(),
-                    };
-                    //EchoUtil.Echo($"{message} Raid\n{(boss.ShinyXor == 0 ? "■ - " : boss.ShinyXor <= 16 ? "★ - " : "")}{ShowdownParsing.GetShowdownText(boss)}");
-                }
-                if (Settings.DenIsWatchtower)
-                {
-                    int level = boss.Met_Level;
-                    string message = level switch
-                    {
-                        15 => $"1 ★",
-                        16 => $"1 ★",
-                        25 => $"2 ★",
-                        35 => $"3 ★",
-                        40 => $"4 ★",
-                        50 => $"5 ★",
-                        _ => throw new NotImplementedException(),
-                    };
-                    //EchoUtil.Echo($"{message} Raid\n{(boss.ShinyXor == 0 ? "■ - " : boss.ShinyXor <= 16 ? "★ - " : "")}{ShowdownParsing.GetShowdownText(boss)}");
-                }*/
-                info.RaidPk = boss;
-            }
+            await Click(A, 5_000 + Hub.Config.Timings.ExtraTimeLoadRaid, token).ConfigureAwait(false);
 
             if (code >= 0)
             {
@@ -311,6 +256,7 @@ namespace SysBot.Pokemon
             string raiddescmsg = string.IsNullOrEmpty(Settings.RaidDescription) ? raidBossString : Settings.RaidDescription;
             var raidMsg = $"Raid lobby for {raiddescmsg} is open with {linkcodemsg}.";
             info.EmbedString += $"\n\n{raidMsg}";
+
             if (RollingRaidEmbedsInitialized)
             {
                 info.EmbedName = string.IsNullOrEmpty(Settings.RaidDescription) ? $"{RaidInfo.TrainerInfo.OT}'s Raid" : raiddescmsg;
@@ -812,9 +758,6 @@ namespace SysBot.Pokemon
 
         private async Task<bool> CheckDen(CancellationToken token)
         {
-            if (Settings.DenIsWatchtower)
-                return false;
-
             var denData = await Connection.ReadBytesAsync(denOfs, 0x18, token).ConfigureAwait(false);
             RaidInfo.Den = new RaidSpawnDetail(denData, 0);
 
@@ -842,10 +785,10 @@ namespace SysBot.Pokemon
             else RaidInfo.RaidEncounter = DenUtil.GetSpawnShort(RaidInfo);
 
             var species = (Species)(isEvent ? RaidInfo.RaidDistributionEncounter.Species : RaidInfo.RaidEncounter.Species);
-            var speciesStr = SpeciesName.GetSpeciesNameGeneration((int)species, 2, 8);
+            var speciesStr = SpeciesName.GetSpeciesNameGeneration((ushort)(int)species, 2, 8);
 
-            var form = isEvent ? RaidInfo.RaidDistributionEncounter.AltForm : RaidInfo.RaidEncounter.AltForm;
-            var formStr = TradeExtensions<PK8>.FormOutput((int)species, (int)form, out _);
+            var form = (byte)(isEvent ? RaidInfo.RaidDistributionEncounter.AltForm : RaidInfo.RaidEncounter.AltForm);
+            var formStr = TradeExtensions<PK8>.FormOutput((ushort)species, form, out _);
             bool gmax = isEvent ? RaidInfo.RaidDistributionEncounter.IsGigantamax : RaidInfo.RaidEncounter.IsGigantamax;
 
             var flawless = (uint)(isEvent ? RaidInfo.RaidDistributionEncounter.FlawlessIVs : RaidInfo.RaidEncounter.FlawlessIVs);
@@ -874,9 +817,6 @@ namespace SysBot.Pokemon
 
         private async Task<bool> ReadDenData(bool test, CancellationToken token)
         {
-            if (Settings.DenIsWatchtower)
-                return true;
-
             denOfs = DenUtil.GetDenOffset(Settings.DenID, Settings.DenType, out uint denID);
             RaidInfo.DenID = denID;
 

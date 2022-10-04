@@ -9,7 +9,7 @@ namespace SysBot.Pokemon
 {
     public sealed class DenBot : EncounterBot
     {
-        private readonly DenSettings Settings;
+        private new readonly DenSettings Settings;
         private DenUtil.RaidData RaidInfo = new();
         private ulong InitialSeed;
         private ulong DestinationSeed;
@@ -99,7 +99,7 @@ namespace SysBot.Pokemon
             Log("Searching for a matching seed... Search may take a while.");
             SeedSearchUtil.SpecificSeedSearch(RaidInfo, out long frames, out ulong seed, out ulong threeDay, out string ivSpread, token);
             if (token.IsCancellationRequested)
-                return new Tuple<ulong, ulong> (seed, threeDay);
+                return new Tuple<ulong, ulong>(seed, threeDay);
 
             if (ivSpread == string.Empty)
             {
@@ -108,8 +108,8 @@ namespace SysBot.Pokemon
             }
 
             var species = RaidInfo.Den.IsEvent ? RaidInfo.RaidDistributionEncounter.Species : RaidInfo.RaidEncounter.Species;
-            var specName = SpeciesName.GetSpeciesNameGeneration((int)species, 2, 8);
-            var form = TradeExtensions<PK8>.FormOutput((int)(RaidInfo.Den.IsEvent ? RaidInfo.RaidDistributionEncounter.Species : RaidInfo.RaidEncounter.Species), (int)(RaidInfo.Den.IsEvent ? RaidInfo.RaidDistributionEncounter.AltForm : RaidInfo.RaidEncounter.AltForm), out _);
+            var specName = SpeciesName.GetSpeciesNameGeneration((ushort)species, 2, 8);
+            var form = TradeExtensions<PK8>.FormOutput((ushort)(RaidInfo.Den.IsEvent ? RaidInfo.RaidDistributionEncounter.Species : RaidInfo.RaidEncounter.Species), (byte)(RaidInfo.Den.IsEvent ? RaidInfo.RaidDistributionEncounter.AltForm : RaidInfo.RaidEncounter.AltForm), out _);
             var results = $"\n\nDesired species: {(uint)RaidInfo.Den.Stars + 1}★ - {specName}{form}\n" +
                           $"\n{ivSpread}\n" +
                           $"\nStarting seed: {RaidInfo.Den.Seed:X16}\n" +

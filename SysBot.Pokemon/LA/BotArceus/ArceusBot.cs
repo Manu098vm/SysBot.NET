@@ -1335,7 +1335,7 @@ namespace SysBot.Pokemon
         private List<PA8> ReadOutbreakSeed(PokedexSaveData dex, Species species, int totalspawn, ulong groupseed)
         {
             List<PA8> monlist = new();
-            PA8 pk = new() { Species = (int)species };
+            PA8 pk = new() { Species = (ushort)species };
             int givs = 0;
             var mainrng = new Xoroshiro128Plus(groupseed);
             for (int i = 0; i < 4; i++)
@@ -1355,7 +1355,7 @@ namespace SysBot.Pokemon
                 var rolls = 1 + (complete ? 1 : 0) + (perfect ? 2 : 0) + (HasCharm ? 3 : 0) + (int)(SpawnType.Outbreak - 7);
 
                 var gen = GenerateFromSeed(fixedseed, rolls, givs, gt);
-                pk.Species = (int)species;
+                pk.Species = (ushort)species;
                 pk.EncryptionConstant = gen.EC;
                 pk.PID = gen.PID;
                 int[] pkIVList = gen.IVs;
@@ -1395,7 +1395,7 @@ namespace SysBot.Pokemon
                 var rolls = 1 + (complete ? 1 : 0) + (perfect ? 2 : 0) + (HasCharm ? 3 : 0) + (int)(SpawnType.Outbreak - 7);
 
                 var gen = GenerateFromSeed(fixed_seed, rolls, givs, gt);
-                pk.Species = (int)species;
+                pk.Species = (ushort)species;
                 pk.EncryptionConstant = gen.EC;
                 pk.PID = gen.PID;
                 int[] pkIVList = gen.IVs;
@@ -1667,7 +1667,7 @@ namespace SysBot.Pokemon
                     {
                         encmax += keyValue.Rate;
                         if (encounter_slot < encmax)
-                            return (new PA8 { Species = keyValue.Species, Form = keyValue.Form, IsAlpha = keyValue.IsAlpha }, keyValue.FlawlessIVs);
+                            return (new PA8 { Species = keyValue.Species, Form = (byte)keyValue.Form, IsAlpha = keyValue.IsAlpha }, keyValue.FlawlessIVs);
                     }
                 }
             }
@@ -2201,7 +2201,7 @@ namespace SysBot.Pokemon
                         {
                             afk = true;
                             PA8 s1 = new();
-                            s1.Species = (int)s;
+                            s1.Species = (ushort)s;
                             EmbedMons.Add((s1, true));
                             Settings.AddCompletedShinyAlphaFound();
                         }

@@ -94,7 +94,7 @@ namespace SysBot.Tests
 
         private static TradeEntry<T> GetTestTrade<T>(TradeQueueInfo<T> info, int tag, bool favor = false) where T : PKM, new()
         {
-            var trade = GetTestTrade<T>(tag, favor);
+            var trade = GetTestTrade<T>((ushort)tag, favor);
             trade.Trade.Notifier.OnFinish = r => RemoveAndCheck(info, trade, r);
             return trade;
         }
@@ -106,7 +106,7 @@ namespace SysBot.Tests
             routine.Should().NotBeNull();
         }
 
-        private static TradeEntry<T> GetTestTrade<T>(int tag, bool favor) where T : PKM, new()
+        private static TradeEntry<T> GetTestTrade<T>(ushort tag, bool favor) where T : PKM, new()
         {
             var d3 = new PokeTradeDetail<T>(new T { Species = tag }, new PokeTradeTrainerInfo($"{(favor ? "*" : "")}Test {tag}"), new PokeTradeLogNotifier<T>(), PokeTradeType.Specific, tag, favor);
             return new TradeEntry<T>(d3, (ulong)tag, PokeRoutineType.LinkTrade, $"Test Trade {tag}");

@@ -162,15 +162,16 @@ namespace SysBot.Pokemon
             }
 
             pk = TrashBytes(pk);
-            pk.SetDynamaxLevel();
 
             var la = new LegalityAnalysis(pk);
             var enc = la.EncounterMatch;
             pk.CurrentFriendship = enc is EncounterStatic s ? s.EggCycles : pk.PersonalInfo.HatchCycles;
-            pk.RelearnMoves = MoveBreed.GetExpectedMoves(pk.Moves, la.EncounterMatch);
-            pk.Moves = pk.RelearnMoves;
+
+            MoveBreed.GetExpectedMoves(pk.Moves, la.EncounterMatch, pk.Moves);
+            pk.RelearnMoves = pk.Moves;
             pk.Move1_PPUps = pk.Move2_PPUps = pk.Move3_PPUps = pk.Move4_PPUps = 0;
             pk.SetMaximumPPCurrent(pk.Moves);
+
             pk.SetSuggestedHyperTrainingData();
             pk.SetSuggestedRibbons(template, enc);
         }
@@ -270,7 +271,8 @@ namespace SysBot.Pokemon
             mgPkm = EntityConverter.IsConvertibleToFormat(mgPkm, format) ? EntityConverter.ConvertToType(mgPkm, typeof(T), out _) : mgPkm;
             if (mgPkm != null)
             {
-                mgPkm.SetHandlerandMemory(info);
+                var enc = new LegalityAnalysis(mgPkm).EncounterMatch;
+                mgPkm.SetHandlerandMemory(info, enc);
                 if (mgPkm.TID == 0 && mgPkm.SID == 0)
                 {
                     mgPkm.TID = info.TID;
@@ -332,18 +334,16 @@ namespace SysBot.Pokemon
             return string.Join("_", baseLink);
         }
 
-        public static string FormOutput(int species, int form, out string[] formString)
+        public static string FormOutput(ushort species, byte form, out string[] formString)
         {
             var strings = GameInfo.GetStrings("en");
-            var list = FormConverter.GetFormList(species, strings.Types, strings.forms, GameInfo.GenderSymbolASCII, typeof(T) == typeof(PK8) ? 8 : 4).ToList();
-            list[0] = "";
-            list.RemoveAll(x => x.Contains("Mega"));
-            if (typeof(T) != typeof(PA8))
-                list.RemoveAll(x => x.Contains("Hisui") || x.Contains("Lord") || x.Contains("White") || x.Contains("Lady") || (x.Contains("Origin") && species != (int)Species.Giratina));
+            formString = FormConverter.GetFormList(species, strings.Types, strings.forms, GameInfo.GenderSymbolASCII, typeof(T) == typeof(PK8) ? EntityContext.Gen8 : EntityContext.Gen4);
+            if (formString.Length is 0)
+                return string.Empty;
 
-            formString = list.ToArray();
+            formString[0] = "";
             if (form >= formString.Length)
-                form = formString.Length - 1;
+                form = (byte)(formString.Length - 1);
             return formString[form].Contains("-") ? formString[form] : formString[form] == "" ? "" : $"-{formString[form]}";
         }
 

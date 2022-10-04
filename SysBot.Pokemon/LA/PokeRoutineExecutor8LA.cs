@@ -390,7 +390,7 @@ namespace SysBot.Pokemon
             var dex = new PokedexSaveData(data);
             return dex;
         }
-        public (bool, bool) CheckForPerfectComplete(bool hasCharm, PokedexSaveData dex, int species)
+        public (bool, bool) CheckForPerfectComplete(bool hasCharm, PokedexSaveData dex, ushort species)
         {
             bool isComp = false;
             bool isPerfect = dex.IsPerfect(species);
