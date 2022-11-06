@@ -44,7 +44,7 @@ namespace SysBot.Pokemon
                 return true;
             else if (species is (int)Species.Pikachu && form != "" && form != "-Partner")
                 return true;
-            else if (species is (int)Species.Zacian or (int)Species.Zamazenta && !ball.Contains("Cherish") && ball != "")
+            else if ((species is (ushort)Species.Zacian or (ushort)Species.Zamazenta) && !ball.Contains("Cherish"))
                 return true;
             else return false;
         }
@@ -167,11 +167,10 @@ namespace SysBot.Pokemon
             var enc = la.EncounterMatch;
             pk.CurrentFriendship = enc is EncounterStatic s ? s.EggCycles : pk.PersonalInfo.HatchCycles;
 
-            MoveBreed.GetExpectedMoves(pk.Moves, la.EncounterMatch, pk.Moves);
-            pk.RelearnMoves = pk.Moves;
+            pk.RelearnMoves = (ushort[])enc.GetSuggestedRelearn(pk);
+            pk.SetSuggestedMoves();
             pk.Move1_PPUps = pk.Move2_PPUps = pk.Move3_PPUps = pk.Move4_PPUps = 0;
             pk.SetMaximumPPCurrent(pk.Moves);
-
             pk.SetSuggestedHyperTrainingData();
             pk.SetSuggestedRibbons(template, enc);
         }

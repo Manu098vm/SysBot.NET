@@ -268,10 +268,10 @@ namespace SysBot.Pokemon
                     result.EggPoke = EggProcess(user.Daycare, evos, balls, 8, trainerInfo, out eggMsg);
                     if (!new LegalityAnalysis(result.EggPoke).Valid)
                     {
-                        result.Message = $"Oops, something went wrong when generating an egg!\nEgg 1: {(Species)evos[0].Species}-{evos[0].Form}" +
-                            $"\nEgg 2: {(Species)evos[1].Species}-{evos[1].Form}" +
-                            $"\nDC1 ID {user.Daycare.ID1}: {user.Daycare.Species1}{user.Daycare.Form1}" +
-                            $"\nDC2 ID {user.Daycare.ID2}: {user.Daycare.Species2}{user.Daycare.Form2}";
+                        result.Message = $"Oops, something went wrong when generating an egg!" +
+                            $"\nParent 1: {(Species)evos[0].Species}-{evos[0].Form} | DC ID: {user.Daycare.ID1} ({user.Daycare.Species1}{user.Daycare.Form1})" +
+                            $"\nParent 2: {(Species)evos[1].Species}-{evos[1].Form} | DC ID: {user.Daycare.ID2} ({user.Daycare.Species2}{user.Daycare.Form2})" +
+                            $"\nResult: {(Species)result.EggPoke.Species}-{result.EggPoke.Form} ({(Ball)result.EggPoke.Ball})";
                         return false;
                     }
                     else
@@ -319,7 +319,10 @@ namespace SysBot.Pokemon
 
                     if (!new LegalityAnalysis(result.Poke).Valid)
                     {
-                        result.Message = $"Something went wrong when generating a catch!\nSpecies: {speciesName}\nForm: {result.Poke.Form}\nShiny: {Rng.ShinyRNG >= 200 - Settings.StarShinyRate}";
+                        result.Message = $"Something went wrong when generating a catch!" +
+                            $"\nSpecies: {speciesName}" +
+                            $"\nForm: {result.Poke.Form}" +
+                            $"\nShiny: {Rng.ShinyRNG >= 200 - Settings.StarShinyRate}";
                         return false;
                     }
 
@@ -1971,7 +1974,7 @@ namespace SysBot.Pokemon
                 formHack = Rng.SpeciesRNG switch
                 {
                     (ushort)Species.Meowstic or (ushort)Species.Indeedee => formEdgeCaseRng < 5 ? "-M" : "-F",
-                    (ushort)Species.NidoranF or (ushort)Species.NidoranM => Rng.SpeciesRNG is (int)Species.NidoranF ? "-F" : "-M",
+                    (ushort)Species.NidoranF or (ushort)Species.NidoranM => Rng.SpeciesRNG is (ushort)Species.NidoranF ? "-F" : "-M",
                     (ushort)Species.Sinistea or (ushort)Species.Polteageist => formEdgeCaseRng < 5 ? "" : "-Antique",
                     (ushort)Species.Dracovish or (ushort)Species.Dracozolt => formEdgeCaseRng < 5 ? "" : "\nAbility: Sand Rush",
                     (ushort)Species.Arctovish or (ushort)Species.Arctozolt => formEdgeCaseRng < 5 ? "" : "\nAbility: Slush Rush",

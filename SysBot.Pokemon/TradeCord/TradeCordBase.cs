@@ -337,7 +337,7 @@ namespace SysBot.Pokemon
                 if (perkArr[0] != "")
                 {
                     for (int i = 0; i < perkArr.Length; i++)
-                        perks.ActivePerks.Add((DexPerks)int.Parse(perkArr[i]));
+                        perks.ActivePerks.Add((DexPerks)ushort.Parse(perkArr[i]));
                 }
                 perks.SpeciesBoost = boost;
             }
@@ -361,12 +361,15 @@ namespace SysBot.Pokemon
             TCDex dex = new();
             if (reader.Read())
             {
-                var dexEntries = reader["entries"].ToString().Split(',');
+                var dexEntries = reader["entries"].ToString().Replace(" ", "").Split(',');
                 var count = (int)reader["dex_count"];
                 if (dexEntries[0] != "")
                 {
                     for (int i = 0; i < dexEntries.Length; i++)
-                        dex.Entries.Add(ushort.Parse(dexEntries[i]));
+                    {
+                        if (dexEntries[i] is not "-1")
+                            dex.Entries.Add(ushort.Parse(dexEntries[i]));
+                    }
                 }
                 dex.DexCompletionCount = count;
             }
@@ -393,13 +396,13 @@ namespace SysBot.Pokemon
             if (reader.Read())
             {
                 dc.ID1 = (int)reader["id1"];
-                dc.Species1 = (ushort)((int)reader["species1"]);
+                dc.Species1 = (ushort)(int)reader["species1"];
                 dc.Form1 = reader["form1"].ToString();
                 dc.Ball1 = (int)reader["ball1"];
                 dc.Shiny1 = (int)reader["shiny1"] != 0;
 
                 dc.ID2 = (int)reader["id2"];
-                dc.Species2 = (ushort)((int)reader["species2"]);
+                dc.Species2 = (ushort)(int)reader["species2"];
                 dc.Form2 = reader["form2"].ToString();
                 dc.Ball2 = (int)reader["ball2"];
                 dc.Shiny2 = (int)reader["shiny2"] != 0;
