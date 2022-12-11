@@ -55,6 +55,8 @@ namespace SysBot.Pokemon.Discord
                 // (eg. checking Reactions, checking the content of edited/deleted messages),
                 // you must set the MessageCacheSize. You may adjust the number as needed.
                 MessageCacheSize = 100,
+                AlwaysDownloadUsers = true,
+                GatewayIntents = GatewayIntents.All,
             });
 
             _commands = new CommandService(new CommandServiceConfig
