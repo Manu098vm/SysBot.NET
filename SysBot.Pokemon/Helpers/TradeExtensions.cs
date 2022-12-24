@@ -94,9 +94,26 @@ namespace SysBot.Pokemon
             var dittoStats = new string[] { "atk", "spe", "spa" };
             var nickname = pkm.Nickname.ToLower();
             pkm.StatNature = pkm.Nature;
-            pkm.Met_Location = pkm is not PB8 ? 162 : 400;
-            if (pkm is PB8)
-                pkm.Met_Level = 29;
+            pkm.Met_Location = pkm switch
+            {
+                PB8 => 400,
+                PK9 => 28,
+                _ => 162, // PK8
+            };
+
+            pkm.Met_Level = pkm switch
+            {
+                PB8 => 29,
+                PK9 => 34,
+                _ => pkm.Met_Level,
+            };
+
+            if (pkm is PK9 pk9)
+            {
+                pk9.Obedience_Level = (byte)pk9.Met_Level;
+                pk9.TeraTypeOriginal = MoveType.Normal;
+                pk9.TeraTypeOverride = (MoveType)19;
+            }
             pkm.Ball = 21;
             pkm.IVs = new int[] { 31, nickname.Contains(dittoStats[0]) ? 0 : 31, 31, nickname.Contains(dittoStats[1]) ? 0 : 31, nickname.Contains(dittoStats[2]) ? 0 : 31, 31 };
             pkm.ClearHyperTraining();
@@ -119,14 +136,24 @@ namespace SysBot.Pokemon
             };
 
             pk.IsEgg = true;
-            pk.Egg_Location = pk is PK8 ? 60002 : 60010;
+            pk.Egg_Location = pk switch
+            {
+                PB8 => 60010,
+                PK9 => 30023,
+                _ => 60002, //PK8
+            };
             pk.MetDate = DateTime.Parse("2020/10/20");
             pk.EggMetDate = pk.MetDate;
             pk.HeldItem = 0;
             pk.CurrentLevel = 1;
             pk.EXP = 0;
             pk.Met_Level = 1;
-            pk.Met_Location = pk is PK8 ? 30002 : 65535;
+            pk.Met_Location = pk switch
+            {
+                PB8 => 65535,
+                PK9 => 0,
+                _ => 30002, //PK8
+            };
             pk.CurrentHandler = 0;
             pk.OT_Friendship = 1;
             pk.HT_Name = "";
@@ -159,6 +186,18 @@ namespace SysBot.Pokemon
                 pb8.HT_Memory = 0;
                 pb8.HT_Feeling = 0;
                 pb8.HT_Intensity = 0;
+            }
+            else if (pk is PK9 pk9)
+            {
+                pk9.HT_Language = 0;
+                pk9.HT_Gender = 0;
+                pk9.HT_Memory = 0;
+                pk9.HT_Feeling = 0;
+                pk9.HT_Intensity = 0;
+                pk9.Obedience_Level = 1;
+                pk9.Version = 0;
+                pk9.BattleVersion = 0;
+                pk9.TeraTypeOverride = (MoveType)19;
             }
 
             pk = TrashBytes(pk);

@@ -122,12 +122,12 @@ namespace SysBot.Pokemon
 
                 while (TimeLater > DateTime.Now)
                 {
-                    pk = await ReadPokemon(EggData, 344, token).ConfigureAwait(false);
+                    pk = await ReadPokemonMain(EggData, 344, token).ConfigureAwait(false);
                     pkprev = pk;
                     while (pkprev.EncryptionConstant == pk.EncryptionConstant || pk == null || (Species)pk.Species == Species.None)
                     {
                         await Task.Delay(2_500, token).ConfigureAwait(false);
-                        pk = await ReadPokemon(EggData, 344, token).ConfigureAwait(false);
+                        pk = await ReadPokemonMain(EggData, 344, token).ConfigureAwait(false);
                     }
 
                     while (pk != null && (Species)pk.Species != Species.None && pkprev.EncryptionConstant != pk.EncryptionConstant)

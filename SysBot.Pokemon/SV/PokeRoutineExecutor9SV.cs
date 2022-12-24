@@ -25,6 +25,13 @@ namespace SysBot.Pokemon
             return new PK9(data);
         }
 
+        public async Task<PK9> ReadPokemonMain(uint offset, int size, CancellationToken token)
+        {
+            var data = await SwitchConnection.ReadBytesMainAsync(offset, size, token).ConfigureAwait(false);
+            var pk = new PK9(data);
+            return pk;
+        }
+
         public override async Task<PK9> ReadPokemonPointer(IEnumerable<long> jumps, int size, CancellationToken token)
         {
             var (valid, offset) = await ValidatePointerAll(jumps, token).ConfigureAwait(false);
