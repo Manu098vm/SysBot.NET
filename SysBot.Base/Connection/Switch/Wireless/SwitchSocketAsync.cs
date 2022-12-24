@@ -68,8 +68,12 @@ namespace SysBot.Base
         public void ConnectCallback(IAsyncResult ar)
         {
             // Complete the connection request.
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
             Socket client = (Socket)ar.AsyncState;
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
             client.EndConnect(ar);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
 
             // Signal that the connection is complete.
             connectionDone.Set();
@@ -81,8 +85,12 @@ namespace SysBot.Base
         public void DisconnectCallback(IAsyncResult ar)
         {
             // Complete the disconnect request.
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
             Socket client = (Socket)ar.AsyncState;
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
             client.EndDisconnect(ar);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
 
             // Signal that the disconnect is complete.
             disconnectDone.Set();
@@ -139,6 +147,12 @@ namespace SysBot.Base
         {
             var bytes = await ReadRaw(SwitchCommand.GetTitleID(), 17, token).ConfigureAwait(false);
             return Encoding.ASCII.GetString(bytes).Trim();
+        }
+
+        public async Task<bool> IsProgramRunning(ulong pid, CancellationToken token)
+        {
+            var bytes = await ReadRaw(SwitchCommand.IsProgramRunning(pid), 17, token).ConfigureAwait(false);
+            return ulong.TryParse(Encoding.ASCII.GetString(bytes).Trim(), out var value) && value == 1;
         }
 
         private async Task<byte[]> Read(ulong offset, int length, SwitchOffsetType type, CancellationToken token)

@@ -679,7 +679,7 @@ namespace SysBot.Pokemon
         private string DexText(ushort species, byte form, bool gmax)
         {
             bool patterns = form > 0 && species is (ushort)Arceus or (ushort)Unown or (ushort)Deoxys or (ushort)Burmy or (ushort)Wormadam or (ushort)Mothim or (ushort)Vivillon or (ushort)Furfrou;
-            if (FormInfo.IsBattleOnlyForm(species, form, 8) || FormInfo.IsFusedForm(species, form, 8) || FormInfo.IsTotemForm(species, form, 8) || FormInfo.IsLordForm(species, form, 8) || patterns)
+            if (FormInfo.IsBattleOnlyForm(species, form, 8) || FormInfo.IsFusedForm(species, form, 8) || FormInfo.IsTotemForm(species, form, EntityContext.Gen8) || FormInfo.IsLordForm(species, form, EntityContext.Gen8) || patterns)
                 return "";
 
             var resourcePath = "SysBot.Pokemon.TradeCord.Resources.DexFlavor.txt";
@@ -741,11 +741,11 @@ namespace SysBot.Pokemon
             var table = EvolutionTree.GetEvolutionTree(pkm.Context);
             var evos = table.GetValidPreEvolutions(pkm, 100, 8, true);
             var encs = EncounterEggGenerator.GenerateEggs(pkm, evos, 8, true).ToArray();
-            if (encs.Length is 0 || !Breeding.CanHatchAsEgg(species) || !Breeding.CanHatchAsEgg(species, form, 8))
+            if (encs.Length is 0 || !Breeding.CanHatchAsEgg(species) || !Breeding.CanHatchAsEgg(species, form, EntityContext.Gen8))
                 return false;
 
             baseSpecies = encs[^1].Species;
-            if (GameData.GetPersonal(Game).GetFormEntry(baseSpecies, form).IsFormWithinRange(form) && Breeding.CanHatchAsEgg(baseSpecies, form, 8))
+            if (GameData.GetPersonal(Game).GetFormEntry(baseSpecies, form).IsFormWithinRange(form) && Breeding.CanHatchAsEgg(baseSpecies, form, EntityContext.Gen8))
                 baseForm = (byte)(species is (ushort)Darmanitan && form <= 1 ? 0 : form);
             else baseForm = encs[^1].Form;
             return true;

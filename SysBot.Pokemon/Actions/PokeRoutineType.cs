@@ -73,6 +73,8 @@
         EtumrepDump = 6009,
 
         ArceusBot = 9001,
+
+        EncounterBotSV = 9002,
     }
 
     public static class PokeRoutineTypeExtensions

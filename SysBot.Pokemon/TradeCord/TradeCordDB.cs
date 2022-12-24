@@ -11,7 +11,7 @@ namespace SysBot.Pokemon
     {
         protected T RngRoutineSWSH(T pkm, IBattleTemplate template, Shiny shiny)
         {
-            if (pkm.Species is (int)Species.Alcremie)
+            if (pkm.Species is (ushort)Species.Alcremie)
             {
                 var data = pkm.Data;
                 var deco = (uint)Random.Next(7);
@@ -65,8 +65,8 @@ namespace SysBot.Pokemon
                     pkm.SetAbilityIndex(static8U.Ability is AbilityPermission.Any12H ? Random.Next(3) : static8U.Ability is AbilityPermission.Any12 ? Random.Next(2) : static8U.Ability is AbilityPermission.OnlyFirst ? 0 : static8U.Ability is AbilityPermission.OnlySecond ? 1 : 2);
             }
 
-            bool goMew = pkm.Species is (int)Species.Mew && enc.Version is GameVersion.GO && pkm.IsShiny;
-            bool goOther = (pkm.Species is (int)Species.Victini or (int)Species.Jirachi or (int)Species.Celebi or (int)Species.Genesect) && enc.Version is GameVersion.GO;
+            bool goMew = pkm.Species is (ushort)Species.Mew && enc.Version is GameVersion.GO && pkm.IsShiny;
+            bool goOther = (pkm.Species is (ushort)Species.Victini or (ushort)Species.Jirachi or (ushort)Species.Celebi or (ushort)Species.Genesect) && enc.Version is GameVersion.GO;
             if (enc is EncounterSlotGO slotGO && !goMew && !goOther)
                 pkm.SetRandomIVsGO(slotGO.Type.GetMinIV());
             else if (enc is EncounterStatic8N static8N)
@@ -219,7 +219,7 @@ namespace SysBot.Pokemon
                 _ => formName,
             };
 
-            if (speciesID is (ushort)Species.Rotom || FormInfo.IsBattleOnlyForm(speciesID, formID, generation) || !Breeding.CanHatchAsEgg(speciesID, formID, generation))
+            if (speciesID is (ushort)Species.Rotom || FormInfo.IsBattleOnlyForm(speciesID, formID, generation) || !Breeding.CanHatchAsEgg(speciesID, formID, (EntityContext)generation))
                 formName = "";
 
             var set = new ShowdownSet($"Egg({speciesName}{formName}){shinyRng}\n{trainerInfo}");
@@ -449,10 +449,11 @@ namespace SysBot.Pokemon
             }
 
             bool applyMoves = false;
+            bool edgeEvos = (pk.Species is (ushort)Species.Koffing && result.EvolvedForm is 0) || ((pk.Species is (ushort)Species.Exeggcute || pk.Species is (ushort)Species.Pikachu || pk.Species is (ushort)Species.Cubone) && result.EvolvedForm > 0);
             var enc = new LegalityAnalysis(pk).EncounterMatch;
             var sav = new SimpleTrainerInfo() { OT = pk.OT_Name, Gender = pk.OT_Gender, Generation = pk.Version, Language = pk.Language, SID = pk.TrainerSID7, TID = pk.TrainerID7, Context = Game is GameVersion.BDSP ? EntityContext.Gen8b : EntityContext.Gen8 };
 
-            if (typeof(T) == typeof(PK8) && pk.Generation is 8 && ((pk.Species is (ushort)Species.Koffing && result.EvolvedForm is 0) || ((pk.Species is (ushort)Species.Exeggcute || pk.Species is (ushort)Species.Pikachu || pk.Species is (ushort)Species.Cubone) && result.EvolvedForm > 0)))
+            if (typeof(T) == typeof(PK8) && pk.Generation is 8 && edgeEvos)
             {
                 applyMoves = true;
                 int version = pk.Version;
@@ -460,7 +461,6 @@ namespace SysBot.Pokemon
                 pk.Met_Location = 78; // Paniola Ranch
                 pk.Met_Level = 1;
                 pk.SetEggMetData(GameVersion.UM, (GameVersion)version);
-                sav.Generation = version;
                 enc = new LegalityAnalysis(pk).EncounterMatch;
                 pk.SetHandlerandMemory(sav, enc);
                 if (pk is PK8 pk8)

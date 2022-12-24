@@ -62,17 +62,20 @@ namespace SysBot.Pokemon
         public int ExtraTimeScrollDownAR { get; set; } = 0;
 
         // Miscellaneous settings.
-        [Category(Misc), Description("[SWSH] Extra time in milliseconds to wait after clicking + to reconnect to Y-Comm.")]
-        public int ExtraTimeReconnectYComm { get; set; } = 0;
+        [Category(Misc), Description("[SWSH/SV] Extra time in milliseconds to wait after clicking + to connect to Y-Comm (SWSH) or L to connect online (SV).")]
+        public int ExtraTimeConnectOnline { get; set; } = 0;
 
-        [Category(OpenGame), Description("[BDSP] Extra time in milliseconds to wait for the overworld to load after leaving the Union Room.")]
+        [Category(Misc), Description("[BDSP] Extra time in milliseconds to wait for the overworld to load after leaving the Union Room.")]
         public int ExtraTimeLeaveUnionRoom { get; set; } = 1000;
 
-        [Category(OpenGame), Description("[BDSP] Extra time in milliseconds to wait for the Y Menu to load at the start of each trade loop.")]
+        [Category(Misc), Description("[BDSP] Extra time in milliseconds to wait for the Y Menu to load at the start of each trade loop.")]
         public int ExtraTimeOpenYMenu { get; set; } = 500;
 
-        [Category(OpenGame), Description("[BDSP] Extra time in milliseconds to wait for the Union Room to load before trying to call for a trade.")]
+        [Category(Misc), Description("[BDSP] Extra time in milliseconds to wait for the Union Room to load before trying to call for a trade.")]
         public int ExtraTimeJoinUnionRoom { get; set; } = 500;
+
+        [Category(Misc), Description("[SV] Extra time in milliseconds to wait for the Poké Portal to load.")]
+        public int ExtraTimeLoadPortal { get; set; } = 1000;
 
         [Category(Misc), Description("Time to wait after opening the keyboard for code entry during trades.")]
         public int ExtraTimeOpenCodeEntry { get; set; } = 1000;
@@ -81,6 +84,6 @@ namespace SysBot.Pokemon
         public int KeypressTime { get; set; } = 200;
 
         [Category(Misc), Description("Enable this to decline incoming system updates.")]
-        public bool AvoidSystemUpdate { get; set; } = true;
+        public bool AvoidSystemUpdate { get; set; } = false;
     }
 }

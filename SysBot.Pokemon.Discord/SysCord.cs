@@ -147,6 +147,9 @@ namespace SysBot.Pokemon.Discord
             var genericTypes = assembly.DefinedTypes.Where(z => z.IsSubclassOf(typeof(ModuleBase<SocketCommandContext>)) && z.IsGenericType);
             foreach (var t in genericTypes)
             {
+                if (t.Name == "TradeCordModule'1'")
+                    continue;
+
                 var genModule = t.MakeGenericType(typeof(T));
                 await _commands.AddModuleAsync(genModule, _services).ConfigureAwait(false);
             }

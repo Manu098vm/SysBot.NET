@@ -295,6 +295,12 @@ namespace SysBot.Base
         /// <returns>Encoded command bytes</returns>
         public static byte[] Screengrab(bool crlf = true) => Encode("pixelPeek", crlf);
 
-        public static byte[] Touch(int x, int y, int holdTime, bool crlf = true) => Encode($"touch {x} {y} {holdTime}");
+        /// <summary>
+        /// Checks if a process is running.
+        /// </summary>
+        /// <param name="pid">Process ID</param>
+        /// <param name="crlf">Line terminator (unused by USB protocol)</param>
+        /// <returns>Encoded command bytes</returns>
+        public static byte[] IsProgramRunning(ulong pid, bool crlf = true) => Encode($"isProgramRunning 0x{pid:x16}", crlf);
     }
 }

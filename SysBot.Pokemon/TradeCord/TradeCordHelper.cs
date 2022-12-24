@@ -1967,7 +1967,8 @@ namespace SysBot.Pokemon
             TradeExtensions<T>.FormOutput(Rng.SpeciesRNG, 0, out string[] forms);
             var formIDs = Dex[Rng.SpeciesRNG].ToArray();
             var formRng = formIDs[Random.Next(formIDs.Length)];
-            var form = eventForm is 255 ? forms[formRng] : forms[eventForm];
+            var formIndex = eventForm is 255 ? formRng : eventForm;
+            var form = forms[formIndex];
 
             if (!ignoreForm.Contains(Rng.SpeciesRNG))
             {
@@ -2010,13 +2011,14 @@ namespace SysBot.Pokemon
             if (Rng.SpeciesRNG is (ushort)Species.Mew && gameVer == mewOverride[1])
                 trainerInfo[4] = "";
 
-            var showdown = $"{speciesName}{formHack}{shinyType}\n{string.Join("", trainerInfo)}{gameVer}";
+            var tInfo = $"\n{string.Join("", trainerInfo)}";
+            var showdown = $"{speciesName}{formHack}{shinyType}{tInfo}{gameVer}";
             var balls = TradeExtensions<T>.GetLegalBalls(showdown);
             string ball = balls.Length > 0 ? $"\nBall: {balls[Random.Next(balls.Length)]}" : "";
 
             var set = new ShowdownSet($"{showdown}{ball}");
             if (set.CanToggleGigantamax(set.Species, set.Form) && Rng.GmaxRNG >= 100 - Settings.GmaxRate)
-                set.CanGigantamax = true;
+                set = new($"{showdown}{ball}\nGigantamax: Yes");
 
             var template = AutoLegalityWrapper.GetTemplate(set);
             var sav = AutoLegalityWrapper.GetTrainerInfo<T>();

@@ -68,6 +68,16 @@ namespace SysBot.Base
             }, token);
         }
 
+        public Task<bool> IsProgramRunning(ulong pid, CancellationToken token)
+        {
+            return Task.Run(() =>
+            {
+                Send(SwitchCommand.IsProgramRunning(pid, false));
+                byte[] baseBytes = ReadBulkUSB();
+                return baseBytes.Length == 1 && BitConverter.ToBoolean(baseBytes, 0);
+            }, token);
+        }
+
         public Task<byte[]> ReadRaw(byte[] command, int length, CancellationToken token)
         {
             return Task.Run(() =>

@@ -52,6 +52,18 @@ namespace SysBot.Pokemon
 
         // Encounter Bots - For finding or hosting Pokémon in-game.
 
+        [Category(BotEncounter), Description("Stop conditions for EggBot, FossilBot, and EncounterBot.")]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
+        public StopConditionSettings StopConditions { get; set; } = new();
+
+        [Category(BotEncounter)]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
+        public EggSettingsSV EggSV { get; set; } = new();
+
+        [Category(BotEncounter)]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
+        public ArceusBotSettings ArceusLA { get; set; } = new();
+
         [Category(BotEncounter)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public EncounterSettings EncounterSWSH { get; set; } = new();
@@ -67,10 +79,6 @@ namespace SysBot.Pokemon
         [Category(BotEncounter)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public EggSettings EggSWSH { get; set; } = new();
-
-        [Category(BotEncounter), Description("Stop conditions for EggBot, FossilBot, and EncounterBot.")]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public StopConditionSettings StopConditions { get; set; } = new();
 
         [Category(BotEncounter)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
@@ -91,10 +99,6 @@ namespace SysBot.Pokemon
         [Category(BotEncounter)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public RollingRaidSettings RollingRaidSWSH { get; set; } = new();
-
-        [Category(BotEncounter)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public ArceusBotSettings ArceusLA { get; set; } = new();
 
         // Integration
 
