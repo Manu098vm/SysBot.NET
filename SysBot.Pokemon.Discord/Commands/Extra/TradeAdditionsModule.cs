@@ -20,6 +20,7 @@ namespace SysBot.Pokemon.Discord
         private readonly LairBotSettings LairSettings = SysCord<T>.Runner.Hub.Config.LairSWSH;
         private readonly RollingRaidSettings RollingRaidSettings = SysCord<T>.Runner.Hub.Config.RollingRaidSWSH;
         private readonly ArceusBotSettings ArceusSettings = SysCord<T>.Runner.Hub.Config.ArceusLA;
+        private readonly RaidSettingsSV RaidSettingsSV = SysCord<T>.Runner.Hub.Config.RaidSV;
 
         [Command("giveawayqueue")]
         [Alias("gaq")]
@@ -589,6 +590,101 @@ namespace SysBot.Pokemon.Discord
                 else await Task.Delay(1_000, token).ConfigureAwait(false);
             }
             ArceusBot.EmbedSource = new();
+        }
+
+        [Command("raidEmbedSV")]
+        [Alias("resv")]
+        [Summary("Initialize posting of RaidBotSV embeds to specified Discord channels.")]
+        [RequireSudo]
+        public async Task InitializeRaidEmbedsSV()
+        {
+            if (RaidSettingsSV.RaidEmbedChannelsSV == string.Empty)
+            {
+                await ReplyAsync("No channels to post embeds in.").ConfigureAwait(false);
+                return;
+            }
+
+            var raidTitle = string.Empty;
+            if (RaidSettingsSV.RaidTitleDescription.Length != 0)
+                raidTitle = RaidSettingsSV.RaidTitleDescription;
+
+            List<ulong> channels = new();
+            List<ITextChannel> embedChannels = new();
+            if (!RaidSV.RaidSVEmbedsInitialized)
+            {
+                var chStrings = RaidSettingsSV.RaidEmbedChannelsSV.Split(',');
+                foreach (var channel in chStrings)
+                {
+                    if (ulong.TryParse(channel, out ulong result) && !channels.Contains(result))
+                        channels.Add(result);
+                }
+
+                if (channels.Count == 0)
+                {
+                    await ReplyAsync("No valid channels found.").ConfigureAwait(false);
+                    return;
+                }
+
+                foreach (var guild in Context.Client.Guilds)
+                {
+                    foreach (var id in channels)
+                    {
+                        var channel = guild.Channels.FirstOrDefault(x => x.Id == id);
+                        if (channel is not null && channel is ITextChannel ch)
+                            embedChannels.Add(ch);
+                    }
+                }
+
+                if (embedChannels.Count == 0)
+                {
+                    await ReplyAsync("No matching guild channels found.").ConfigureAwait(false);
+                    return;
+                }
+            }
+
+            RaidSV.RaidSVEmbedsInitialized ^= true;
+            await ReplyAsync(!RaidSV.RaidSVEmbedsInitialized ? "Raid Embed task stopped!" : "Raid Embed task started!").ConfigureAwait(false);
+
+            if (!RaidSV.RaidSVEmbedsInitialized)
+            {
+                RaidSV.RaidSVEmbedSource.Cancel();
+                return;
+            }
+
+            RaidSV.RaidSVEmbedSource = new();
+            _ = Task.Run(async () => await RaidSVEmbedLoop(embedChannels, raidTitle).ConfigureAwait(false));
+        }
+
+        private static async Task RaidSVEmbedLoop(List<ITextChannel> channels, string raidTitle)
+        {
+            while (!RaidSV.RaidSVEmbedSource.IsCancellationRequested)
+            {
+                if (RaidSV.EmbedQueue.TryDequeue(out var embedInfo))
+                {
+                    var img = "zap.jpg";
+                    var embed = new EmbedBuilder
+                    {
+                        Title = raidTitle,
+                        Description = embedInfo.Item2,
+                        Color = Color.Blue,
+                        ImageUrl = $"attachment://{img}",
+                    };
+                    embed.WithFooter(new EmbedFooterBuilder { Text = embedInfo.Item3 });
+
+                    foreach (var channel in channels)
+                    {
+#pragma warning disable CS8604 // Possible null reference argument.
+                        var ms = new MemoryStream(embedInfo.Item1);
+#pragma warning restore CS8604 // Possible null reference argument.
+                        try
+                        {
+                            await channel.SendFileAsync(ms, img, "", false, embed: embed.Build()).ConfigureAwait(false);
+                        }
+                        catch { }
+                    }
+                }
+                else await Task.Delay(0_500).ConfigureAwait(false);
+            }
         }
 
         [Command("repeek")]

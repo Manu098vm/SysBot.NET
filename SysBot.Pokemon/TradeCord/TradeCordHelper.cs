@@ -309,8 +309,8 @@ namespace SysBot.Pokemon
                         {
                             Enum.TryParse(user.TrainerInfo.OTGender, out Gender gender);
                             Enum.TryParse(user.TrainerInfo.Language, out LanguageID language);
-                            var info = new SimpleTrainerInfo { Gender = (int)gender, Language = (int)language, OT = user.TrainerInfo.OTName, TID = user.TrainerInfo.TID, SID = user.TrainerInfo.SID, Context = Game is GameVersion.BDSP ? EntityContext.Gen8b : EntityContext.Gen8 };
-                            result.Poke = TradeExtensions<T>.CherishHandler(mgRng, info, format);
+                            var info = new SimpleTrainerInfo { Gender = (int)gender, Language = (int)language, OT = user.TrainerInfo.OTName, TID = user.TrainerInfo.TID, SID = user.TrainerInfo.SID, Context = Game is GameVersion.BDSP ? EntityContext.Gen8b : EntityContext.Gen8, Generation = format };
+                            result.Poke = TradeExtensions<T>.CherishHandler(mgRng, info);
                         }
                     }
 

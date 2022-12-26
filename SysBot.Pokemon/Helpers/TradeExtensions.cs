@@ -303,11 +303,11 @@ namespace SysBot.Pokemon
             return pkm;
         }
 
-        public static T CherishHandler(MysteryGift mg, ITrainerInfo info, int format)
+        public static T CherishHandler(MysteryGift mg, ITrainerInfo info)
         {
             var result = EntityConverterResult.None;
             var mgPkm = mg.ConvertToPKM(info);
-            bool canConvert = EntityConverter.IsConvertibleToFormat(mgPkm, format);
+            bool canConvert = EntityConverter.IsConvertibleToFormat(mgPkm, info.Generation);
             mgPkm = canConvert ? EntityConverter.ConvertToType(mgPkm, typeof(T), out result) : mgPkm;
 
             if (mgPkm is not null && result is EntityConverterResult.Success)
@@ -391,7 +391,7 @@ namespace SysBot.Pokemon
             return formString[form].Contains("-") ? formString[form] : formString[form] == "" ? "" : $"-{formString[form]}";
         }
 
-        public static bool SameFamily(IReadOnlyList<T> pkms)
+        public static bool DifferentFamily(IReadOnlyList<T> pkms)
         {
             var criteriaList = new List<EvoCriteria>();
             for (int i = 0; i < pkms.Count; i++)
