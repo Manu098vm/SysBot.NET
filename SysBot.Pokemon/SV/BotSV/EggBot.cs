@@ -36,10 +36,10 @@ namespace SysBot.Pokemon
 
         private int eggcount = 0;
         private int sandwichcount = 0;
-        private int shinycount = 0;
         private const int InjectBox = 0;
         private const int InjectSlot = 0;
         private uint EggData = 0x04386040;
+        private uint PicnicMenu = 0x04416020;
         private static readonly PK9 Blank = new();
 
         public override async Task MainLoop(CancellationToken token)
@@ -260,21 +260,20 @@ namespace SysBot.Pokemon
             await Click(B, 0_800, token).ConfigureAwait(false);
         }
 
+        private async Task<bool> IsInPicnic(CancellationToken token)
+        {
+            var Data = await SwitchConnection.ReadBytesMainAsync(PicnicMenu, 1, token).ConfigureAwait(false);
+            return Data[0] == 0x01; // 1 when in picnic, 2 in sandwich menu, 3 when eating, 2 when done eating
+        }
+
         private async Task MakeSandwich(CancellationToken token)
         {
             await Click(MINUS, 0_500, token).ConfigureAwait(false);
             await SetStick(LEFT, 0, 30000, 0_700, token).ConfigureAwait(false); // Face up to table
             await SetStick(LEFT, 0, 0, 0, token).ConfigureAwait(false);
-
             await Click(A, 1_500, token).ConfigureAwait(false);
             await Click(A, 4_000, token).ConfigureAwait(false);
             await Click(X, 1_500, token).ConfigureAwait(false);
-
-            var ofs = await GetPointerAddress("[[[[[main+43A7550]+20]+400]+48]+F0]+02", token).ConfigureAwait(false);
-            var data = new byte[] { 0x99 };
-            await SwitchConnection.WriteBytesAbsoluteAsync(data, ofs, token).ConfigureAwait(false);
-
-            // Lettuce
 
             for (int i = 0; i < 0; i++)
             {
@@ -283,7 +282,6 @@ namespace SysBot.Pokemon
                 else
                     await Click(DDOWN, 0_800, token).ConfigureAwait(false);
             }
-
 
             await Click(A, 0_800, token).ConfigureAwait(false);
             await Click(PLUS, 0_800, token).ConfigureAwait(false);
@@ -296,7 +294,6 @@ namespace SysBot.Pokemon
                     await Click(DDOWN, 0_800, token).ConfigureAwait(false);
             }
 
-
             await Click(A, 0_800, token).ConfigureAwait(false);
 
             for (int i = 0; i < 1; i++)
@@ -307,13 +304,9 @@ namespace SysBot.Pokemon
                     await Click(DDOWN, 0_800, token).ConfigureAwait(false);
             }
 
-
             await Click(A, 0_800, token).ConfigureAwait(false);
             await Click(PLUS, 0_800, token).ConfigureAwait(false);
-            // Set pick
             await Click(A, 8_000, token).ConfigureAwait(false);
-            //Wait for bread
-
             await SetStick(LEFT, 0, 30000, 0_700, token).ConfigureAwait(false); // Navigate to ingredients
             await SetStick(LEFT, 0, 0, 0, token).ConfigureAwait(false);
 
@@ -322,25 +315,22 @@ namespace SysBot.Pokemon
             for (int i = 0; i < 5; i++)
                 await Click(A, 0_800, token).ConfigureAwait(false);
 
-            ofs = await GetPointerAddress("[[[[[main+43A7550]+20]+400]+48]+F0]+02", token).ConfigureAwait(false);
-            var text = await SwitchConnection.ReadBytesAbsoluteAsync(ofs, 1, token).ConfigureAwait(false);
-            string result = Encoding.ASCII.GetString(text);
 
-            while (result == "?")
+            bool inPicnic = await IsInPicnic(token).ConfigureAwait(false);
+
+            while (!inPicnic)
             {
                 await Click(A, 3_000, token).ConfigureAwait(false);
-                text = await SwitchConnection.ReadBytesAbsoluteAsync(ofs, 1, token).ConfigureAwait(false);
-                result = Encoding.ASCII.GetString(text);
+                inPicnic = await IsInPicnic(token).ConfigureAwait(false);
             }
 
-            if (result != "?") 
+            if (inPicnic)
             {
-                await Task.Delay(2_500, token).ConfigureAwait(false);
-                await Click(B, 1_000, token).ConfigureAwait(false);
+                await Task.Delay(2_000, token).ConfigureAwait(false);
                 await SetStick(LEFT, 0, -10000, 0_500, token).ConfigureAwait(false); // Face down to basket
                 await SetStick(LEFT, 0, 0, 0, token).ConfigureAwait(false);
                 await Task.Delay(1_000, token).ConfigureAwait(false);
-                await SetStick(LEFT, 0, 5000, 0_500, token).ConfigureAwait(false); // Face up to basket
+                await SetStick(LEFT, 0, 5000, 0_200, token).ConfigureAwait(false); // Face up to basket
                 await SetStick(LEFT, 0, 0, 0, token).ConfigureAwait(false);
             }
         }

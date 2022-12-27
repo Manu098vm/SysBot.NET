@@ -20,7 +20,7 @@ namespace SysBot.Pokemon.Discord
         private readonly LairBotSettings LairSettings = SysCord<T>.Runner.Hub.Config.LairSWSH;
         private readonly RollingRaidSettings RollingRaidSettings = SysCord<T>.Runner.Hub.Config.RollingRaidSWSH;
         private readonly ArceusBotSettings ArceusSettings = SysCord<T>.Runner.Hub.Config.ArceusLA;
-        private readonly RaidSettingsSV RaidSettingsSV = SysCord<T>.Runner.Hub.Config.RaidSV;
+        private static RaidSettingsSV RaidSettingsSV = SysCord<T>.Runner.Hub.Config.RaidSV;
 
         [Command("giveawayqueue")]
         [Alias("gaq")]
@@ -604,12 +604,9 @@ namespace SysBot.Pokemon.Discord
                 return;
             }
 
-            var raidTitle = string.Empty;
-            if (RaidSettingsSV.RaidTitleDescription.Length != 0)
-                raidTitle = RaidSettingsSV.RaidTitleDescription;
-
             List<ulong> channels = new();
             List<ITextChannel> embedChannels = new();
+
             if (!RaidSV.RaidSVEmbedsInitialized)
             {
                 var chStrings = RaidSettingsSV.RaidEmbedChannelsSV.Split(',');
@@ -652,22 +649,29 @@ namespace SysBot.Pokemon.Discord
             }
 
             RaidSV.RaidSVEmbedSource = new();
-            _ = Task.Run(async () => await RaidSVEmbedLoop(embedChannels, raidTitle).ConfigureAwait(false));
+            _ = Task.Run(async () => await RaidSVEmbedLoop(embedChannels).ConfigureAwait(false));
         }
 
-        private static async Task RaidSVEmbedLoop(List<ITextChannel> channels, string raidTitle)
+        private static async Task RaidSVEmbedLoop(List<ITextChannel> channels)
         {
             while (!RaidSV.RaidSVEmbedSource.IsCancellationRequested)
             {
                 if (RaidSV.EmbedQueue.TryDequeue(out var embedInfo))
                 {
                     var img = "zap.jpg";
+                    var turl = string.Empty;
+                    var thumb = (ushort)RaidSettingsSV.RaidSpecies;
+                    if (thumb != 0)
+                    {
+                        turl = $"https://raw.githubusercontent.com/zyro670/PokeTextures/main/Placeholder%20Sprites/scaled_up_sprites/" + $"{thumb}" + ".png";
+                    }
                     var embed = new EmbedBuilder
                     {
-                        Title = raidTitle,
+                        Title = embedInfo.Item4,
                         Description = embedInfo.Item2,
                         Color = Color.Blue,
                         ImageUrl = $"attachment://{img}",
+                        ThumbnailUrl = turl,
                     };
                     embed.WithFooter(new EmbedFooterBuilder { Text = embedInfo.Item3 });
 
