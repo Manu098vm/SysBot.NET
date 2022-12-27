@@ -604,12 +604,13 @@ namespace SysBot.Pokemon.Discord
                 return;
             }
 
-            var raidTitle = string.Empty;
-            if (RaidSettingsSV.RaidTitleDescription.Length != 0)
-                raidTitle = RaidSettingsSV.RaidTitleDescription;
-
             List<ulong> channels = new();
             List<ITextChannel> embedChannels = new();
+            List<ulong> mainchannels = new();
+            List<ITextChannel> embedPriorityChannels = new();
+
+            var priodelay = RaidSettingsSV.DelayBetweenRaidEmbedPostings;
+
             if (!RaidSV.RaidSVEmbedsInitialized)
             {
                 var chStrings = RaidSettingsSV.RaidEmbedChannelsSV.Split(',');
@@ -640,6 +641,35 @@ namespace SysBot.Pokemon.Discord
                     await ReplyAsync("No matching guild channels found.").ConfigureAwait(false);
                     return;
                 }
+
+                var chPrStrings = RaidSettingsSV.PriorityRaidEmbedChannelsSV.Split(',');
+                foreach (var mainchannel in chPrStrings)
+                {
+                    if (ulong.TryParse(mainchannel, out ulong results) && !mainchannels.Contains(results))
+                        mainchannels.Add(results);
+                }
+
+                if (mainchannels.Count == 0)
+                {
+                    await ReplyAsync("No valid priority channels found.").ConfigureAwait(false);
+                    return;
+                }
+
+                foreach (var guilds in Context.Client.Guilds)
+                {
+                    foreach (var ids in mainchannels)
+                    {
+                        var mainchannel = guilds.Channels.FirstOrDefault(x => x.Id == ids);
+                        if (mainchannels is not null && mainchannel is ITextChannel ch2)
+                            embedPriorityChannels.Add(ch2);
+                    }
+                }
+
+                if (embedPriorityChannels.Count == 0)
+                {
+                    await ReplyAsync("No matching guild priority channels found.").ConfigureAwait(false);
+                    return;
+                }
             }
 
             RaidSV.RaidSVEmbedsInitialized ^= true;
@@ -652,10 +682,10 @@ namespace SysBot.Pokemon.Discord
             }
 
             RaidSV.RaidSVEmbedSource = new();
-            _ = Task.Run(async () => await RaidSVEmbedLoop(embedChannels, raidTitle).ConfigureAwait(false));
+            _ = Task.Run(async () => await RaidSVEmbedLoop(embedChannels, embedPriorityChannels, priodelay).ConfigureAwait(false));
         }
 
-        private static async Task RaidSVEmbedLoop(List<ITextChannel> channels, string raidTitle)
+        private static async Task RaidSVEmbedLoop(List<ITextChannel> channels, List<ITextChannel> mainchannels, int priodelay)
         {
             while (!RaidSV.RaidSVEmbedSource.IsCancellationRequested)
             {
@@ -664,12 +694,26 @@ namespace SysBot.Pokemon.Discord
                     var img = "zap.jpg";
                     var embed = new EmbedBuilder
                     {
-                        Title = raidTitle,
+                        Title = embedInfo.Item4,
                         Description = embedInfo.Item2,
                         Color = Color.Blue,
                         ImageUrl = $"attachment://{img}",
                     };
                     embed.WithFooter(new EmbedFooterBuilder { Text = embedInfo.Item3 });
+
+                    foreach (var channelp in mainchannels)
+                    {
+#pragma warning disable CS8604 // Possible null reference argument.
+                        var ms = new MemoryStream(embedInfo.Item1);
+#pragma warning restore CS8604 // Possible null reference argument.
+                        try
+                        {
+                            await channelp.SendFileAsync(ms, img, "", false, embed: embed.Build()).ConfigureAwait(false);
+                        }
+                        catch { }
+                    }
+
+                    await Task.Delay(priodelay).ConfigureAwait(false);
 
                     foreach (var channel in channels)
                     {

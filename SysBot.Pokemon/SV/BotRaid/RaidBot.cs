@@ -15,7 +15,7 @@ namespace SysBot.Pokemon
 
         public static CancellationTokenSource RaidSVEmbedSource = new();
         public static bool RaidSVEmbedsInitialized;
-        public static ConcurrentQueue<(byte[]?, string, string)> EmbedQueue = new();
+        public static ConcurrentQueue<(byte[]?, string, string, string)> EmbedQueue = new();
 
         public RaidSV(PokeBotState cfg, PokeTradeHub<PK9> hub) : base(cfg)
         {
@@ -41,11 +41,14 @@ namespace SysBot.Pokemon
         private uint RaidLobby = 0x0403F4B0;
         private int RaidCount;
         private int ResetCount;
+        public RemoteControlAccessList RaiderBanList => Settings.RaiderBanList;
+        public bool BannedRaider(ulong uid) => RaiderBanList.Contains(uid);
 
         private class EmbedInfo
         {
             public string EmbedString { get; set; } = string.Empty;
             public string EmbedFooter { get; set; } = string.Empty;
+            public string EmbedTitle { get; set; } = string.Empty;
         }
 
         public override async Task MainLoop(CancellationToken token)
@@ -128,7 +131,7 @@ namespace SysBot.Pokemon
 
             await Task.Delay(1_000, token).ConfigureAwait(false);
 
-            if (ResetCount == Settings.RollbackTimeAfterThisManyRaids)
+            if (ResetCount == Settings.RollbackTimeAfterThisManyRaids && Settings.RollbackTime)
             {
                 Log("Applying rollover correction.");
                 await RolloverCorrectionSV(token).ConfigureAwait(false);
@@ -161,12 +164,6 @@ namespace SysBot.Pokemon
 
         }
 
-        public new async Task Click(SwitchButton b, int delay, CancellationToken token)
-        {
-            await SwitchConnection.SendAsync(SwitchCommand.Click(b, true), token).ConfigureAwait(false);
-            await Task.Delay(delay, token).ConfigureAwait(false);
-        }
-
         private async Task<string> GetRaidCode(CancellationToken token)
         {
             bool isReady = await IsConnectedToLobby(token).ConfigureAwait(false);
@@ -182,8 +179,6 @@ namespace SysBot.Pokemon
             var data = await SwitchConnection.ReadBytesAbsoluteAsync(ofs, 6, token).ConfigureAwait(false);
             RaidCode = Encoding.ASCII.GetString(data);
             Log("Raid Code: " + RaidCode);
-
-            await Task.Delay(3_500, token).ConfigureAwait(false);
             return $"\nRaid Code: {RaidCode}";
         }
 
@@ -211,6 +206,8 @@ namespace SysBot.Pokemon
             };
             info.EmbedString += Settings.RaidDescription;
             info.EmbedFooter += Settings.RaidFooterDescription;
+            info.EmbedTitle = Settings.RaidTitleDescription;
+
             string value = string.Empty;
             string NID = string.Empty;
             bool PartyReady = false;
@@ -226,7 +223,7 @@ namespace SysBot.Pokemon
                             if (RaidSVEmbedsInitialized)
                             {
                                 var bytes = await SwitchConnection.Screengrab(token).ConfigureAwait(false);
-                                EmbedQueue.Enqueue((bytes, info.EmbedString, info.EmbedFooter));
+                                EmbedQueue.Enqueue((bytes, info.EmbedString, info.EmbedFooter, info.EmbedTitle));
                             }
                             break;
                         case 1: value = Player2; break;
@@ -264,8 +261,22 @@ namespace SysBot.Pokemon
 
                     if (TrainerNID != 0)
                     {
-                        Log($"Player {i + 1} - " + TrainerName + " | TID: " + TID7);
+                        Log($"Player {i + 1} - " + TrainerName + " | TID: " + TID7 + $" | NID: {TrainerNID}");
                         info.EmbedString += $"\nPlayer {i + 1} - " + TrainerName;
+
+                        if (BannedRaider(TrainerNID))
+                        {
+                            var msg = $"Banned user detected!\n{initialTrainers[i]} was found in the lobby. \nRecreating raid team.";
+                            Log(msg);
+                            if (RaidSVEmbedsInitialized)
+                            {
+                                var bytes = await SwitchConnection.Screengrab(token).ConfigureAwait(false);
+                                EmbedQueue.Enqueue((bytes, "", "", msg));
+                            }
+                            await RegroupFromBannedUser(token).ConfigureAwait(false);
+                            await Task.Delay(1000, token).ConfigureAwait(false);
+                            continue;
+                        }
                     }
                 }
                 PartyReady = true;
@@ -273,14 +284,13 @@ namespace SysBot.Pokemon
             Log($"Raid #{RaidCount} is starting!");
             if (string.Equals(initialTrainers[1], initialTrainers[2]) && string.Equals(initialTrainers[2], initialTrainers[3]))
             {
-                info.EmbedString += $"\n\n{initialTrainers[1]} HAT TRICK!!!";
+                info.EmbedTitle = $" 🌟🎩🌟 {initialTrainers[1]} Hat Trick 🌟🎩🌟\n\n" + Settings.RaidTitleDescription;
             }
 
-            await Task.Delay(3_000, token).ConfigureAwait(false); // Allow trainer to load into lobby
             if (RaidSVEmbedsInitialized)
             {
-                var bytes = await SwitchConnection.Screengrab(token).ConfigureAwait(false);                
-                EmbedQueue.Enqueue((bytes, info.EmbedString, info.EmbedFooter));
+                var bytes = await SwitchConnection.Screengrab(token).ConfigureAwait(false);
+                EmbedQueue.Enqueue((bytes, info.EmbedString, info.EmbedFooter, info.EmbedTitle));
             }
         }
 
@@ -302,7 +312,7 @@ namespace SysBot.Pokemon
         private async Task<bool> IsConnectedToLobby(CancellationToken token)
         {
             var Data = await SwitchConnection.ReadBytesMainAsync(RaidLobby, 1, token).ConfigureAwait(false);
-            return Data[0] != 0x00;
+            return Data[0] != 0x00; // 0 when in lobby but not connected
         }
 
         private async Task<bool> IsOnOverworld(CancellationToken token)
@@ -323,8 +333,8 @@ namespace SysBot.Pokemon
             await PressAndHold(DDOWN, 2_000, 0_250, token).ConfigureAwait(false); // Scroll to system settings
             await Click(A, 1_250, token).ConfigureAwait(false);
 
-            await PressAndHold(DDOWN, 0_750, 0, token).ConfigureAwait(false);
-            await Click(DDOWN, 0_150, token).ConfigureAwait(false);
+            await PressAndHold(DDOWN, 0_700, 0, token).ConfigureAwait(false);
+            await Click(DDOWN, 0_500, token).ConfigureAwait(false);
 
             await Click(A, 1_250, token).ConfigureAwait(false);
             for (int i = 0; i < 2; i++)
@@ -337,6 +347,14 @@ namespace SysBot.Pokemon
                 await Click(A, 0_150, token).ConfigureAwait(false);
 
             await Click(HOME, 1_000, token).ConfigureAwait(false); // Back to title screen
+        }
+
+        private async Task RegroupFromBannedUser(CancellationToken token)
+        {
+            await Click(B, 1_250, token).ConfigureAwait(false);
+            await Click(A, 3_000, token).ConfigureAwait(false);
+            await Click(A, 1_500, token).ConfigureAwait(false);
+            await Click(DDOWN, 1_000, token).ConfigureAwait(false);
         }
     }
 }

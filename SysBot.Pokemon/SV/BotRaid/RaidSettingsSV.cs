@@ -28,11 +28,23 @@ namespace SysBot.Pokemon
         [Category(FeatureToggle), Description("If true, the bot will use a random code for the raid.")]
         public bool CodeTheRaid { get; set; } = true;
 
+        [Category(Hosting), Description("Users NIDs here are banned raiders.")]
+        public RemoteControlAccessList RaiderBanList { get; set; } = new() { AllowIfEmpty = false };
+
+        [Category(FeatureToggle), Description("If true, the bot will apply rollback correction.")]
+        public bool RollbackTime { get; set; } = true;
+
         [Category(Hosting), Description("Amount of raids to complete before rolling time back 1 hour.")]
         public int RollbackTimeAfterThisManyRaids { get; set; } = 10;
 
         [Category(Hosting), Description("Enter Discord channel ID(s) to post raid embeds to. Feature has to be initialized via \"$resv\" after every client restart.")]
         public string RaidEmbedChannelsSV { get; set; } = string.Empty;
+
+        [Category(Hosting), Description("Enter Discord channel ID(s) to post raid embeds to. These channels will receive the embed before other channels. Feature has to be initialized via \"$resv\" after every client restart.")]
+        public string PriorityRaidEmbedChannelsSV { get; set; } = string.Empty;
+
+        [Category(Hosting), Description("Time to wait in milliseconds before posting in RaidEmbedChannelsSV. If 0, there is no delay.")]
+        public int DelayBetweenRaidEmbedPostings { get; set; } = 5000;
 
         [Category(FeatureToggle), Description("When enabled, the screen will be turned off during normal bot loop operation to save power.")]
         public bool ScreenOff { get; set; } = false;
