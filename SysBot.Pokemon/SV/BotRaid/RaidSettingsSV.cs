@@ -28,6 +28,9 @@ namespace SysBot.Pokemon
         [Category(FeatureToggle), Description("If true, the bot will use a random code for the raid.")]
         public bool CodeTheRaid { get; set; } = true;
 
+        [Category(Hosting), Description("Input the species dex ID to post a Thumbnail in the embeds. Ignored if 0.")]
+        public int RaidSpeciesDexID { get; set; } = 0;
+
         [Category(Hosting), Description("Users NIDs here are banned raiders.")]
         public RemoteControlAccessList RaiderBanList { get; set; } = new() { AllowIfEmpty = false };
 
