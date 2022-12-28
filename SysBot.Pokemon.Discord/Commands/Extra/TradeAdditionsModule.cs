@@ -649,12 +649,6 @@ namespace SysBot.Pokemon.Discord
                         mainchannels.Add(results);
                 }
 
-                if (mainchannels.Count == 0)
-                {
-                    await ReplyAsync("No valid priority channels found.").ConfigureAwait(false);
-                    return;
-                }
-
                 foreach (var guilds in Context.Client.Guilds)
                 {
                     foreach (var ids in mainchannels)
@@ -693,7 +687,7 @@ namespace SysBot.Pokemon.Discord
                 {
                     var img = "zap.jpg";
                     var turl = string.Empty;
-                    var thumb = RaidSettingsSV.RaidSpeciesDexID;
+                    var thumb = (ushort)RaidSettingsSV.RaidSpecies;
                     if (thumb != 0)
                     {
                         turl = $"https://raw.githubusercontent.com/zyro670/PokeTextures/main/Placeholder%20Sprites/scaled_up_sprites/" + $"{thumb}" + ".png";
@@ -708,19 +702,22 @@ namespace SysBot.Pokemon.Discord
                     };
                     embed.WithFooter(new EmbedFooterBuilder { Text = embedInfo.Item3 });
 
-                    foreach (var channelp in mainchannels)
+                    if (mainchannels != null)
                     {
-#pragma warning disable CS8604 // Possible null reference argument.
-                        var ms = new MemoryStream(embedInfo.Item1);
-#pragma warning restore CS8604 // Possible null reference argument.
-                        try
+                        foreach (var channelp in mainchannels)
                         {
-                            await channelp.SendFileAsync(ms, img, "", false, embed: embed.Build()).ConfigureAwait(false);
+#pragma warning disable CS8604 // Possible null reference argument.
+                            var ms = new MemoryStream(embedInfo.Item1);
+#pragma warning restore CS8604 // Possible null reference argument.
+                            try
+                            {
+                                await channelp.SendFileAsync(ms, img, "", false, embed: embed.Build()).ConfigureAwait(false);
+                            }
+                            catch { }
                         }
-                        catch { }
-                    }
 
-                    await Task.Delay(priodelay).ConfigureAwait(false);
+                        await Task.Delay(priodelay).ConfigureAwait(false);
+                    }
 
                     foreach (var channel in channels)
                     {

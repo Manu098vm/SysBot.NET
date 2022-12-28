@@ -3,6 +3,7 @@ using PKHeX.Core;
 using System.ComponentModel;
 using System.Threading;
 using SysBot.Base;
+using Discord;
 
 namespace SysBot.Pokemon
 {
@@ -28,8 +29,8 @@ namespace SysBot.Pokemon
         [Category(FeatureToggle), Description("If true, the bot will use a random code for the raid.")]
         public bool CodeTheRaid { get; set; } = true;
 
-        [Category(Hosting), Description("Input the species dex ID to post a Thumbnail in the embeds. Ignored if 0.")]
-        public int RaidSpeciesDexID { get; set; } = 0;
+        [Category(Hosting), Description("Input the Species to post a Thumbnail in the embeds. Ignored if 0.")]
+        public Species RaidSpecies { get; set; } = Species.None;
 
         [Category(Hosting), Description("Users NIDs here are banned raiders.")]
         public RemoteControlAccessList RaiderBanList { get; set; } = new() { AllowIfEmpty = false };
@@ -39,6 +40,9 @@ namespace SysBot.Pokemon
 
         [Category(Hosting), Description("Amount of raids to complete before rolling time back 1 hour.")]
         public int RollbackTimeAfterThisManyRaids { get; set; } = 10;
+
+        [Category(Hosting), Description("Time to scroll down duration in milliseconds for accessing date/time settings during rollover correction. [Default: 1000ms]")]
+        public int TimeToScrollDownForRollover { get; set; } = 1000;
 
         [Category(Hosting), Description("Enter Discord channel ID(s) to post raid embeds to. Feature has to be initialized via \"$resv\" after every client restart.")]
         public string RaidEmbedChannelsSV { get; set; } = string.Empty;
