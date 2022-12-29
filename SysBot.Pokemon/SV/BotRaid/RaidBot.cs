@@ -270,8 +270,6 @@ namespace SysBot.Pokemon
             string NID = string.Empty;
             bool PartyReady = false;
 
-            RaidPenaltyCount = 0;
-
             while (PartyReady == false)
             {
                 for (int i = 0; i < 4; i++)
@@ -345,6 +343,7 @@ namespace SysBot.Pokemon
                                 await ReadTrainers(token).ConfigureAwait(false);
                             }
 
+                            RaidPenaltyCount = 0;
                             foreach (var r in RaidTracker)
                             {
                                 int y = 0;
