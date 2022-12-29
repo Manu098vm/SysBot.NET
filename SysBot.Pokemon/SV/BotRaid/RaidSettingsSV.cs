@@ -1,9 +1,6 @@
-﻿using System.Collections.Generic;
-using PKHeX.Core;
+﻿using PKHeX.Core;
 using System.ComponentModel;
-using System.Threading;
 using SysBot.Base;
-using Discord;
 
 namespace SysBot.Pokemon
 {
@@ -26,8 +23,8 @@ namespace SysBot.Pokemon
         [Category(Hosting), Description("Input the Species to post a Thumbnail in the embeds. Ignored if 0.")]
         public Species RaidSpecies { get; set; } = Species.None;
 
-        [Category(Hosting), Description("Minimum amount of seconds to wait per player before starting a raid. Ranges from 0 to 180 seconds.")]
-        public int MinTimeToWait { get; set; } = 30;
+        [Category(Hosting), Description("Minimum amount of seconds to wait per player slot before starting a raid. It waits the amount here * 3.")]
+        public int TimeToWaitPerSlot { get; set; } = 15;
 
         [Category(FeatureToggle), Description("If true, the bot will use a random code for the raid.")]
         public bool CodeTheRaid { get; set; } = true;

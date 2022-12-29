@@ -47,7 +47,7 @@ namespace SysBot.Pokemon
         public RemoteControlAccessList RaiderBanList => Settings.RaiderBanList;
         public bool BannedRaider(ulong uid) => RaiderBanList.Contains(uid);
 
-        private Dictionary<ulong, int> RaidTracker = new();
+        private List<ulong> RaidTracker = new();
 
         private class EmbedInfo
         {
@@ -58,7 +58,7 @@ namespace SysBot.Pokemon
 
         public override async Task MainLoop(CancellationToken token)
         {
-            if (Settings.MinTimeToWait is < 0 or > 180)
+            if (Settings.TimeToWaitPerSlot is < 0 or > 180)
             {
                 Log("Time to wait must be between 0 and 180 seconds.");
                 return;
@@ -269,7 +269,6 @@ namespace SysBot.Pokemon
             string value = string.Empty;
             string NID = string.Empty;
             bool PartyReady = false;
-            RaidPenaltyCount = 0;
 
             while (PartyReady == false)
             {
@@ -307,7 +306,7 @@ namespace SysBot.Pokemon
                             TrainerNID = BitConverter.ToUInt64(nidData.Slice(0 + (i * 8), 8), 0);
                             tries++;
 
-                            if (tries == Settings.MinTimeToWait)
+                            if (tries == Settings.TimeToWaitPerSlot)
                                 break;
                         }
                     }
@@ -325,24 +324,10 @@ namespace SysBot.Pokemon
                     {
                         Log($"Player {i + 1} - " + TrainerName + " | TID: " + TID7 + $" | NID: {TrainerNID}");
                         info.EmbedString += $"\nPlayer {i + 1} - " + TrainerName;
+                        RaidTracker.Add(TrainerNID);
 
                         if (TrainerNID != HostNID && Settings.MaxJoinsPerRaider != 0)
                         {
-                            if (!RaidTracker.ContainsKey(TrainerNID))
-                                RaidPenaltyCount = 0;
-
-                            RaidTracker.Add(TrainerNID, RaidPenaltyCount);
-
-                            if (RaidTracker.ContainsKey(TrainerNID))
-                            {
-                                RaidPenaltyCount++;
-                                RaidTracker.Remove(TrainerNID);
-                                RaidTracker.Add(TrainerNID, RaidPenaltyCount);
-
-                                if (RaidPenaltyCount == Settings.MaxJoinsPerRaider)
-                                    RaiderBanList.List.Add(new() { ID = TrainerNID, Name = initialTrainers[i], Comment = $"Exceeded max joins on {DateTime.Now}." });
-                            }
-
                             if (BannedRaider(TrainerNID))
                             {
                                 var msg = $"Raid Canceled Due to Banned User\nBanned User: {initialTrainers[i]} was found in the lobby.\nRecreating raid team.";
@@ -354,7 +339,27 @@ namespace SysBot.Pokemon
                                 }
                                 await RegroupFromBannedUser(token).ConfigureAwait(false);
                                 await Task.Delay(1_000, token).ConfigureAwait(false);
-                                continue;
+                                await PrepareForRaid(token).ConfigureAwait(false);
+                                await ReadTrainers(token).ConfigureAwait(false);
+                            }
+
+                            RaidPenaltyCount = 0;
+                            foreach (var r in RaidTracker)
+                            {
+                                int y = 0;
+                                if (r == TrainerNID)
+                                {
+                                    RaidPenaltyCount++;
+                                    if (RaidPenaltyCount > Settings.MaxJoinsPerRaider)
+                                    {
+                                        y++;
+                                        if (y == 1)
+                                        {
+                                            Log($"{TrainerName} has been banned for joining {RaidPenaltyCount}x this raid session on {DateTime.Now}.");
+                                            RaiderBanList.List.Add(new() { ID = TrainerNID, Name = initialTrainers[i], Comment = $"Exceeded max joins {RaidPenaltyCount}/{Settings.MaxJoinsPerRaider} on {DateTime.Now}." });
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -443,7 +448,7 @@ namespace SysBot.Pokemon
             await Click(B, 1_250, token).ConfigureAwait(false);
             await Click(A, 3_000, token).ConfigureAwait(false);
             await Click(A, 1_500, token).ConfigureAwait(false);
-            await Click(DDOWN, 1_000, token).ConfigureAwait(false);
+            await Click(B, 1_000, token).ConfigureAwait(false);
         }
     }
 }

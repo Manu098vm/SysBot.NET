@@ -9,7 +9,7 @@ namespace SysBot.Pokemon
 {
     public sealed class DenBot : EncounterBot
     {
-        private new readonly DenSettings Settings;
+        private readonly DenSettings Settings;
         private DenUtil.RaidData RaidInfo = new();
         private ulong InitialSeed;
         private ulong DestinationSeed;

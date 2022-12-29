@@ -264,7 +264,9 @@ namespace SysBot.Pokemon
             while (!movePass)
             {
                 var move = MoveInfo.Moves.FirstOrDefault(x => x.MoveID == PlayerPk.Moves[priority ? priorityMove : bestMove]);
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
                 bool recoil = move.Recoil >= 206 && move.EffectSequence >= 48;
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
                 if ((stuck && (OldMoveIndex == (priority ? priorityMove : bestMove))) || (Settings.EnableOHKO && (recoil || move.Charge)) || move.MoveID == (int)Move.Belch)
                 {
                     dmgWeight[priority ? priorityMove : bestMove] = 0.0;
@@ -279,7 +281,9 @@ namespace SysBot.Pokemon
             }
 
             var finalMove = MoveInfo.Moves.FirstOrDefault(x => x.MoveID == PlayerPk.Moves[bestMove]);
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
             int dmaxMove = finalMove.Category != MoveCategory.Status ? (int)finalMove.Type : 18;
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
             Log($"Turn {turn}: Selecting {(dmax ? (DmaxMoves)dmaxMove : (Move)PlayerPk.Moves[bestMove])}.");
             var index = bestMove - OldMoveIndex;
             if (dmaxEnded)
@@ -308,12 +312,14 @@ namespace SysBot.Pokemon
                 var maxDmgMoveIndex = dmgWeightPlayer.ToList().IndexOf(dmgWeightPlayer.Max());
                 var move = MoveInfo.Moves.FirstOrDefault(x => x.MoveID == PlayerPk.Moves[maxDmgMoveIndex]);
 
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
                 if (move.Charge || move.MoveID == (int)Move.Belch)
                 {
                     dmgWeightPlayer[maxDmgMoveIndex] = 0.0;
                     if (!dmgWeightPlayer.Any(x => x > 0.0))
                         return false;
                 }
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
 
                 if ((noPriority && (lairPkSpeed > ourSpeed)) || (lairPkPriority && noPriority))
                     upgrade = true;
@@ -581,7 +587,9 @@ namespace SysBot.Pokemon
             OtherItemsPouch = await Connection.ReadBytesAsync(OtherItemAddress, 2184, token).ConfigureAwait(false);
             var pouch = new InventoryPouch8(InventoryType.Items, LairBotUtil.Pouch_Regular_SWSH, 999, 0, 546);
             pouch.GetPouch(OtherItemsPouch);
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
             return pouch.Items.FirstOrDefault(x => x.Index == 1604).Count;
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
         }
 
         private async Task<int> GetPokeBallCount(CancellationToken token)
