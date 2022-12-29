@@ -1,4 +1,5 @@
-﻿using PKHeX.Core;
+﻿using Newtonsoft.Json;
+using PKHeX.Core;
 using SysBot.Base;
 using System.Buffers.Binary;
 using System.Collections.Concurrent;
@@ -27,6 +28,7 @@ namespace SysBot.Pokemon
         public string SID7 { get; set; } = string.Empty;
         public string TrainerName { get; set; } = string.Empty;
         public ulong TrainerNID;
+        public ulong HostNID;
         public List<string> initialTrainers = new List<string>();
         public List<ulong> initialNIDs = new List<ulong>();
         public string RaidCode { get; set; } = string.Empty;
@@ -41,8 +43,11 @@ namespace SysBot.Pokemon
         private uint RaidLobby = 0x0403F4B0;
         private int RaidCount;
         private int ResetCount;
+        private int RaidPenaltyCount;
         public RemoteControlAccessList RaiderBanList => Settings.RaiderBanList;
         public bool BannedRaider(ulong uid) => RaiderBanList.Contains(uid);
+
+        private Dictionary<ulong, int> RaidTracker = new();
 
         private class EmbedInfo
         {
@@ -65,6 +70,12 @@ namespace SysBot.Pokemon
                 await IdentifyTrainer(token).ConfigureAwait(false);
                 await InitializeHardware(Settings, token).ConfigureAwait(false);
 
+                if (Settings.ExportBanListToJson)
+                {
+                    Log("Exporting current banlist collection to json.");
+                    ExportBanList();
+                }
+
                 Log("Starting main RaidBot loop.");
                 await InnerLoop(token).ConfigureAwait(false);
             }
@@ -79,12 +90,27 @@ namespace SysBot.Pokemon
             await HardStop().ConfigureAwait(false);
         }
 
+        private void ExportBanList()
+        {
+            var filepath = "raiderbanlist.json";
+
+            if (!File.Exists(filepath))
+            {
+                var blank = "Raider Ban List\n_________________________________________________\n";
+                File.WriteAllText(filepath, blank);
+            }
+
+            RemoteControlAccessList Banlist = Settings.RaiderBanList ?? new RemoteControlAccessList();
+            string json = JsonConvert.SerializeObject(Banlist.List);
+            File.WriteAllText(filepath, json);
+        }
+
         private async Task InnerLoop(CancellationToken token)
         {
             RaidCount = 0;
             ResetCount = 0;
             while (!token.IsCancellationRequested)
-            {                
+            {
                 await ClearPlayerHistory(token).ConfigureAwait(false);
                 await InitialTrainerNIDRead(token).ConfigureAwait(false);
                 await PrepareForRaid(token).ConfigureAwait(false);
@@ -166,7 +192,7 @@ namespace SysBot.Pokemon
 
             if (await IsOnline(token).ConfigureAwait(false))
             {
-                await Click(B, 0_500, token).ConfigureAwait(false);
+                await Click(B, 1_000, token).ConfigureAwait(false);
                 await Click(A, 2_500, token).ConfigureAwait(false);
                 await Click(A, 2_500, token).ConfigureAwait(false);
             }
@@ -174,7 +200,7 @@ namespace SysBot.Pokemon
             if (!Settings.CodeTheRaid)
                 await Click(DDOWN, 1_000, token).ConfigureAwait(false);
 
-            await Click(A, 5_500, token).ConfigureAwait(false);
+            await Click(A, 6_000, token).ConfigureAwait(false);
 
         }
 
@@ -192,6 +218,7 @@ namespace SysBot.Pokemon
                     if (x == 30)
                     {
                         Log("Failed to connect to lobby, restarting game incase we were in battle/bad connection.");
+                        await Click(A, 1_000, token).ConfigureAwait(false);
                         await CloseGame(Hub.Config, token).ConfigureAwait(false);
                         await StartGame(Hub.Config, token).ConfigureAwait(false);
                         Log("Attempting to restart routine!");
@@ -201,10 +228,15 @@ namespace SysBot.Pokemon
                 }
             }
 
+            await Task.Delay(1_500, token).ConfigureAwait(false);
+
             var ofs = await GetPointerAddress(RaidCodePointer, token).ConfigureAwait(false);
             var data = await SwitchConnection.ReadBytesAbsoluteAsync(ofs, 6, token).ConfigureAwait(false);
             RaidCode = Encoding.ASCII.GetString(data);
             Log("Raid Code: " + RaidCode);
+
+            await Task.Delay(1_000, token).ConfigureAwait(false);
+
             return $"\nRaid Code: {RaidCode}";
         }
 
@@ -237,6 +269,7 @@ namespace SysBot.Pokemon
             string value = string.Empty;
             string NID = string.Empty;
             bool PartyReady = false;
+            RaidPenaltyCount = 0;
 
             while (PartyReady == false)
             {
@@ -248,7 +281,6 @@ namespace SysBot.Pokemon
                             value = Player1; NID = PlayerNIDs; info.EmbedString += await GetRaidCode(token).ConfigureAwait(false);
                             if (RaidSVEmbedsInitialized)
                             {
-                                await Task.Delay(1_000, token).ConfigureAwait(false);
                                 var bytes = await SwitchConnection.Screengrab(token).ConfigureAwait(false);
                                 EmbedQueue.Enqueue((bytes, info.EmbedString, info.EmbedFooter, info.EmbedTitle));
                             }
@@ -262,12 +294,15 @@ namespace SysBot.Pokemon
                     var nidData = await SwitchConnection.ReadBytesAbsoluteAsync(nidofs, 32, token).ConfigureAwait(false);
                     TrainerNID = BitConverter.ToUInt64(nidData.Slice(0 + (i * 8), 8), 0);
 
+                    if (i == 0)
+                        HostNID = TrainerNID;
+
                     var tries = 0;
                     if (i != 0)
                     {
                         while (initialNIDs[i] == TrainerNID && TrainerNID == 0)
                         {
-                            await Task.Delay(1_500, token).ConfigureAwait(false);
+                            await Task.Delay(1_000, token).ConfigureAwait(false);
                             nidData = await SwitchConnection.ReadBytesAbsoluteAsync(nidofs, 32, token).ConfigureAwait(false);
                             TrainerNID = BitConverter.ToUInt64(nidData.Slice(0 + (i * 8), 8), 0);
                             tries++;
@@ -291,18 +326,36 @@ namespace SysBot.Pokemon
                         Log($"Player {i + 1} - " + TrainerName + " | TID: " + TID7 + $" | NID: {TrainerNID}");
                         info.EmbedString += $"\nPlayer {i + 1} - " + TrainerName;
 
-                        if (BannedRaider(TrainerNID))
+                        if (TrainerNID != HostNID && Settings.MaxJoinsPerRaider != 0)
                         {
-                            var msg = $"Banned user detected!\n{initialTrainers[i]} was found in the lobby. \nRecreating raid team.";
-                            Log(msg);
-                            if (RaidSVEmbedsInitialized)
+                            if (!RaidTracker.ContainsKey(TrainerNID))
+                                RaidPenaltyCount = 0;
+
+                            RaidTracker.Add(TrainerNID, RaidPenaltyCount);
+
+                            if (RaidTracker.ContainsKey(TrainerNID))
                             {
-                                var bytes = await SwitchConnection.Screengrab(token).ConfigureAwait(false);
-                                EmbedQueue.Enqueue((bytes, "", "", msg));
+                                RaidPenaltyCount++;
+                                RaidTracker.Remove(TrainerNID);
+                                RaidTracker.Add(TrainerNID, RaidPenaltyCount);
+
+                                if (RaidPenaltyCount == Settings.MaxJoinsPerRaider)
+                                    RaiderBanList.List.Add(new() { ID = TrainerNID, Name = initialTrainers[i], Comment = $"Exceeded max joins on {DateTime.Now}." });
                             }
-                            await RegroupFromBannedUser(token).ConfigureAwait(false);
-                            await Task.Delay(1_000, token).ConfigureAwait(false);
-                            continue;
+
+                            if (BannedRaider(TrainerNID))
+                            {
+                                var msg = $"Raid Canceled Due to Banned User\nBanned User: {initialTrainers[i]} was found in the lobby.\nRecreating raid team.";
+                                Log(msg);
+                                if (RaidSVEmbedsInitialized)
+                                {
+                                    var bytes = await SwitchConnection.Screengrab(token).ConfigureAwait(false);
+                                    EmbedQueue.Enqueue((bytes, "", "", msg));
+                                }
+                                await RegroupFromBannedUser(token).ConfigureAwait(false);
+                                await Task.Delay(1_000, token).ConfigureAwait(false);
+                                continue;
+                            }
                         }
                     }
                 }
@@ -332,7 +385,7 @@ namespace SysBot.Pokemon
             var trainerdata = new byte[32];
             var ofs = await GetPointerAddress(PlayerNIDs, token).ConfigureAwait(false);
             await SwitchConnection.WriteBytesAbsoluteAsync(trainerdata, ofs, token).ConfigureAwait(false);
-         
+
         }
 
         private async Task<bool> IsOnline(CancellationToken token)
@@ -364,9 +417,11 @@ namespace SysBot.Pokemon
             await Click(A, 1_250, token).ConfigureAwait(false); // Enter settings
 
             await PressAndHold(DDOWN, 2_000, 0_250, token).ConfigureAwait(false); // Scroll to system settings
+            await SetStick((SwitchStick)LSTICK, 0, 0, 0, token).ConfigureAwait(false);
             await Click(A, 1_250, token).ConfigureAwait(false);
 
             await PressAndHold(DDOWN, Settings.TimeToScrollDownForRollover, 0, token).ConfigureAwait(false);
+            await SetStick((SwitchStick)LSTICK, 0, 0, 0, token).ConfigureAwait(false);
             await Click(DUP, 0_500, token).ConfigureAwait(false);
             await Click(DUP, 0_500, token).ConfigureAwait(false);
 
@@ -376,9 +431,9 @@ namespace SysBot.Pokemon
             await Click(A, 0_500, token).ConfigureAwait(false);
             for (int i = 0; i < 3; i++)
                 await Click(DRIGHT, 0_150, token).ConfigureAwait(false);
-            await Click(DDOWN, 0_500, token).ConfigureAwait(false);
-            for (int i = 0; i < 3; i++)
-                await Click(A, 0_500, token).ConfigureAwait(false);
+            await Click(DDOWN, 0_150, token).ConfigureAwait(false);
+            for (int i = 0; i < 4; i++)
+                await Click(A, 0_200, token).ConfigureAwait(false);
 
             await Click(HOME, 1_000, token).ConfigureAwait(false); // Back to title screen
         }

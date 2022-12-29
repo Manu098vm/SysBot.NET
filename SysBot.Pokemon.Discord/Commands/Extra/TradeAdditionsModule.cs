@@ -606,10 +606,6 @@ namespace SysBot.Pokemon.Discord
 
             List<ulong> channels = new();
             List<ITextChannel> embedChannels = new();
-            List<ulong> mainchannels = new();
-            List<ITextChannel> embedPriorityChannels = new();
-
-            var priodelay = RaidSettingsSV.DelayBetweenRaidEmbedPostings;
 
             if (!RaidSV.RaidSVEmbedsInitialized)
             {
@@ -641,29 +637,6 @@ namespace SysBot.Pokemon.Discord
                     await ReplyAsync("No matching guild channels found.").ConfigureAwait(false);
                     return;
                 }
-
-                var chPrStrings = RaidSettingsSV.PriorityRaidEmbedChannelsSV.Split(',');
-                foreach (var mainchannel in chPrStrings)
-                {
-                    if (ulong.TryParse(mainchannel, out ulong results) && !mainchannels.Contains(results))
-                        mainchannels.Add(results);
-                }
-
-                foreach (var guilds in Context.Client.Guilds)
-                {
-                    foreach (var ids in mainchannels)
-                    {
-                        var mainchannel = guilds.Channels.FirstOrDefault(x => x.Id == ids);
-                        if (mainchannels is not null && mainchannel is ITextChannel ch2)
-                            embedPriorityChannels.Add(ch2);
-                    }
-                }
-
-                if (embedPriorityChannels.Count == 0)
-                {
-                    await ReplyAsync("No matching guild priority channels found.").ConfigureAwait(false);
-                    return;
-                }
             }
 
             RaidSV.RaidSVEmbedsInitialized ^= true;
@@ -676,10 +649,10 @@ namespace SysBot.Pokemon.Discord
             }
 
             RaidSV.RaidSVEmbedSource = new();
-            _ = Task.Run(async () => await RaidSVEmbedLoop(embedChannels, embedPriorityChannels, priodelay).ConfigureAwait(false));
+            _ = Task.Run(async () => await RaidSVEmbedLoop(embedChannels).ConfigureAwait(false));
         }
 
-        private static async Task RaidSVEmbedLoop(List<ITextChannel> channels, List<ITextChannel> mainchannels, int priodelay)
+        private static async Task RaidSVEmbedLoop(List<ITextChannel> channels)
         {
             while (!RaidSV.RaidSVEmbedSource.IsCancellationRequested)
             {
@@ -701,23 +674,6 @@ namespace SysBot.Pokemon.Discord
                         ThumbnailUrl = turl,
                     };
                     embed.WithFooter(new EmbedFooterBuilder { Text = embedInfo.Item3 });
-
-                    if (mainchannels != null)
-                    {
-                        foreach (var channelp in mainchannels)
-                        {
-#pragma warning disable CS8604 // Possible null reference argument.
-                            var ms = new MemoryStream(embedInfo.Item1);
-#pragma warning restore CS8604 // Possible null reference argument.
-                            try
-                            {
-                                await channelp.SendFileAsync(ms, img, "", false, embed: embed.Build()).ConfigureAwait(false);
-                            }
-                            catch { }
-                        }
-
-                        await Task.Delay(priodelay).ConfigureAwait(false);
-                    }
 
                     foreach (var channel in channels)
                     {

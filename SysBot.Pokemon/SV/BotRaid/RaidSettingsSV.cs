@@ -23,20 +23,26 @@ namespace SysBot.Pokemon
         [Category(FeatureToggle), Description("Optional footer description of the raid the bot is hosting.")]
         public string RaidFooterDescription { get; set; } = string.Empty;
 
-        [Category(Hosting), Description("Minimum amount of seconds to wait before starting a raid. Ranges from 0 to 180 seconds.")]
-        public int MinTimeToWait { get; set; } = 90;
+        [Category(Hosting), Description("Input the Species to post a Thumbnail in the embeds. Ignored if 0.")]
+        public Species RaidSpecies { get; set; } = Species.None;
+
+        [Category(Hosting), Description("Minimum amount of seconds to wait per player before starting a raid. Ranges from 0 to 180 seconds.")]
+        public int MinTimeToWait { get; set; } = 30;
 
         [Category(FeatureToggle), Description("If true, the bot will use a random code for the raid.")]
         public bool CodeTheRaid { get; set; } = true;
 
-        [Category(Hosting), Description("Input the Species to post a Thumbnail in the embeds. Ignored if 0.")]
-        public Species RaidSpecies { get; set; } = Species.None;
+        [Category(Hosting), Description("Maximum number of join a raider can participate before they get added to the ban list automatically in an instance. If 0 will ignore multidippers.")]
+        public int MaxJoinsPerRaider { get; set; } = 0;
+
+        [Category(FeatureToggle), Description("If true, the bot will apply rollback correction.")]
+        public bool RollbackTime { get; set; } = true;
 
         [Category(Hosting), Description("Users NIDs here are banned raiders.")]
         public RemoteControlAccessList RaiderBanList { get; set; } = new() { AllowIfEmpty = false };
 
-        [Category(FeatureToggle), Description("If true, the bot will apply rollback correction.")]
-        public bool RollbackTime { get; set; } = true;
+        [Category(FeatureToggle), Description("If true, the bot will export the current raider ban list to a json file.")]
+        public bool ExportBanListToJson { get; set; } = true;
 
         [Category(Hosting), Description("Amount of raids to complete before rolling time back 1 hour.")]
         public int RollbackTimeAfterThisManyRaids { get; set; } = 10;
@@ -46,12 +52,6 @@ namespace SysBot.Pokemon
 
         [Category(Hosting), Description("Enter Discord channel ID(s) to post raid embeds to. Feature has to be initialized via \"$resv\" after every client restart.")]
         public string RaidEmbedChannelsSV { get; set; } = string.Empty;
-
-        [Category(Hosting), Description("Enter Discord channel ID(s) to post raid embeds to. These channels will receive the embed before other channels. Feature has to be initialized via \"$resv\" after every client restart.")]
-        public string PriorityRaidEmbedChannelsSV { get; set; } = string.Empty;
-
-        [Category(Hosting), Description("Time to wait in milliseconds before posting in RaidEmbedChannelsSV. If 0, there is no delay.")]
-        public int DelayBetweenRaidEmbedPostings { get; set; } = 5000;
 
         [Category(FeatureToggle), Description("When enabled, the screen will be turned off during normal bot loop operation to save power.")]
         public bool ScreenOff { get; set; } = false;
