@@ -326,7 +326,7 @@ namespace SysBot.Pokemon
 
             if (inPicnic)
             {
-                await Task.Delay(2_000, token).ConfigureAwait(false);
+                await Task.Delay(2_500, token).ConfigureAwait(false);
                 await SetStick(LEFT, 0, -10000, 0_500, token).ConfigureAwait(false); // Face down to basket
                 await SetStick(LEFT, 0, 0, 0, token).ConfigureAwait(false);
                 await Task.Delay(1_000, token).ConfigureAwait(false);
