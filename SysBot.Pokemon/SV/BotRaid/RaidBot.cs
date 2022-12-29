@@ -326,23 +326,23 @@ namespace SysBot.Pokemon
                         info.EmbedString += $"\nPlayer {i + 1} - " + TrainerName;
                         RaidTracker.Add(TrainerNID);
 
+                        if (BannedRaider(TrainerNID))
+                        {
+                            var msg = $"Raid Canceled Due to Banned User\nBanned User: {initialTrainers[i]} was found in the lobby.\nRecreating raid team.";
+                            Log(msg);
+                            if (RaidSVEmbedsInitialized)
+                            {
+                                var bytes = await SwitchConnection.Screengrab(token).ConfigureAwait(false);
+                                EmbedQueue.Enqueue((bytes, "", "", msg));
+                            }
+                            await RegroupFromBannedUser(token).ConfigureAwait(false);
+                            await Task.Delay(1_000, token).ConfigureAwait(false);
+                            await PrepareForRaid(token).ConfigureAwait(false);
+                            await ReadTrainers(token).ConfigureAwait(false);
+                        }
+
                         if (TrainerNID != HostNID && Settings.MaxJoinsPerRaider != 0)
                         {
-                            if (BannedRaider(TrainerNID))
-                            {
-                                var msg = $"Raid Canceled Due to Banned User\nBanned User: {initialTrainers[i]} was found in the lobby.\nRecreating raid team.";
-                                Log(msg);
-                                if (RaidSVEmbedsInitialized)
-                                {
-                                    var bytes = await SwitchConnection.Screengrab(token).ConfigureAwait(false);
-                                    EmbedQueue.Enqueue((bytes, "", "", msg));
-                                }
-                                await RegroupFromBannedUser(token).ConfigureAwait(false);
-                                await Task.Delay(1_000, token).ConfigureAwait(false);
-                                await PrepareForRaid(token).ConfigureAwait(false);
-                                await ReadTrainers(token).ConfigureAwait(false);
-                            }
-
                             RaidPenaltyCount = 0;
                             foreach (var r in RaidTracker)
                             {

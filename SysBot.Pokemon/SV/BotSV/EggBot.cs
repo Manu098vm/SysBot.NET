@@ -221,7 +221,7 @@ namespace SysBot.Pokemon
                             Log("There's an egg!");
 
                             for (int i = 0; i < 3; i++)
-                                await Click(A, 0_800, token).ConfigureAwait(false);
+                                await Click(A, 1_000, token).ConfigureAwait(false);
                             break;
                         }
                     case "": // More than 1 egg
@@ -229,7 +229,7 @@ namespace SysBot.Pokemon
                             Log("Oh? More eggs?");
 
                             for (int i = 0; i < 4; i++)
-                                await Click(A, 0_800, token).ConfigureAwait(false);
+                                await Click(A, 1_000, token).ConfigureAwait(false);
 
                             await Task.Delay(2_000, token).ConfigureAwait(false);
 
