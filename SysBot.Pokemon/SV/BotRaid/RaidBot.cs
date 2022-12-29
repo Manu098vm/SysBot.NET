@@ -43,7 +43,7 @@ namespace SysBot.Pokemon
         private uint RaidLobby = 0x0403F4B0;
         private int RaidCount;
         private int ResetCount;
-        private int RaidPenaltyCount = 0;
+        private int RaidPenaltyCount;
         public RemoteControlAccessList RaiderBanList => Settings.RaiderBanList;
         public bool BannedRaider(ulong uid) => RaiderBanList.Contains(uid);
 
@@ -58,7 +58,7 @@ namespace SysBot.Pokemon
 
         public override async Task MainLoop(CancellationToken token)
         {
-            if (Settings.MinTimeToWaitPerSlot is < 0 or > 180)
+            if (Settings.TimeToWaitPerSlot is < 0 or > 180)
             {
                 Log("Time to wait must be between 0 and 180 seconds.");
                 return;
@@ -270,6 +270,8 @@ namespace SysBot.Pokemon
             string NID = string.Empty;
             bool PartyReady = false;
 
+            RaidPenaltyCount = 0;
+
             while (PartyReady == false)
             {
                 for (int i = 0; i < 4; i++)
@@ -306,7 +308,7 @@ namespace SysBot.Pokemon
                             TrainerNID = BitConverter.ToUInt64(nidData.Slice(0 + (i * 8), 8), 0);
                             tries++;
 
-                            if (tries == Settings.MinTimeToWaitPerSlot)
+                            if (tries == Settings.TimeToWaitPerSlot)
                                 break;
                         }
                     }
