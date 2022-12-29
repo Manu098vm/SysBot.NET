@@ -331,15 +331,16 @@ namespace SysBot.Pokemon
                             if (!RaidTracker.ContainsKey(TrainerNID))
                                 RaidPenaltyCount = 0;
 
-                            RaidTracker.Add(TrainerNID, RaidPenaltyCount);
+                            RaidTracker.Add(TrainerNID, RaidPenaltyCount);                            
 
                             if (RaidTracker.ContainsKey(TrainerNID))
                             {
                                 RaidPenaltyCount++;
+                                Log($"{TrainerName} has joined {RaidPenaltyCount}x this raid session on {DateTime.Now}.");
                                 RaidTracker.Remove(TrainerNID);
                                 RaidTracker.Add(TrainerNID, RaidPenaltyCount);
 
-                                if (RaidPenaltyCount == Settings.MaxJoinsPerRaider)
+                                if (RaidPenaltyCount > Settings.MaxJoinsPerRaider)
                                     RaiderBanList.List.Add(new() { ID = TrainerNID, Name = initialTrainers[i], Comment = $"Exceeded max joins on {DateTime.Now}." });
                             }
 
