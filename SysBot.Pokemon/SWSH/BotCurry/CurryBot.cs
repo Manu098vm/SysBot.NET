@@ -243,7 +243,9 @@ namespace SysBot.Pokemon
             if (item == default)
                 item = pouch.Items.FirstOrDefault(x => x.Count > 0);
 
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
             IngredientCount = item.Count;
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
             var index = pouch.Items.ToList().IndexOf(item);
             ScrollUpIngr = pouch.Items.Length - index < index;
             return ScrollUpIngr ? pouch.Items.Length - index : index;
@@ -267,7 +269,9 @@ namespace SysBot.Pokemon
             if (item == default)
                 item = pouch.Items.FirstOrDefault(x => x.Count >= 10);
 
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
             BerryCount = item.Count;
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
             var index = pouch.Items.ToList().IndexOf(item);
             ScrollUpBerry = pouch.Items.Length - index < index;
             return ScrollUpBerry ? pouch.Items.Length - index : index;

@@ -882,7 +882,9 @@ namespace SysBot.Pokemon
             var ball = $"\n{(Ball)offered.Ball}";
             var extraInfo = $"OT: {name}{ball}{shiny}";
             var set = ShowdownParsing.GetShowdownText(offered).Split('\n').ToList();
+#pragma warning disable CS8604 // Possible null reference argument.
             set.Remove(set.Find(x => x.Contains("Shiny")));
+#pragma warning restore CS8604 // Possible null reference argument.
             set.InsertRange(1, extraInfo.Split('\n'));
 
             if (!laInit.Valid)

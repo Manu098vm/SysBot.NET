@@ -175,7 +175,9 @@ namespace SysBot.Pokemon
             {
                 double typeMultiplier = -1.0;
                 var move = root.Moves.FirstOrDefault(x => x.MoveID == pk.Moves[i]);
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
                 var power = Convert.ToDouble(move.Power);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
                 bool immune = AbilityImmunity(pk.Ability, lairPk.Ability, types, move.Type, move.MoveID, party);
 
                 var typeMulti = move.Category == MoveCategory.Status ? new double[] { 1.0, 1.0 } : TypeDamageMultiplier(types, (int)move.Type);
@@ -301,8 +303,12 @@ namespace SysBot.Pokemon
 
         public PokeMoveInfo.MoveInfoRoot LoadMoves()
         {
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
             using Stream stream = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("SysBot.Pokemon.SWSH.BotLair.MoveInfo.json");
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
+#pragma warning disable CS8604 // Possible null reference argument.
             using TextReader reader = new StreamReader(stream);
+#pragma warning restore CS8604 // Possible null reference argument.
             JsonSerializer serializer = new();
             var root = (PokeMoveInfo.MoveInfoRoot?)serializer.Deserialize(reader, typeof(PokeMoveInfo.MoveInfoRoot));
             reader.Close();

@@ -279,7 +279,9 @@ namespace SysBot.Pokemon
 
         private static byte[]? ReadResourceBinary(SAV8SWSH trainerInfo)
         {
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
             using Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(trainerInfo.Version == GameVersion.SW ? SwordTable : ShieldTable);
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
             if (stream == null)
                 return null;
 
