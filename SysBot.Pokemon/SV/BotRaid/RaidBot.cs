@@ -47,7 +47,7 @@ namespace SysBot.Pokemon
         public RemoteControlAccessList RaiderBanList => Settings.RaiderBanList;
         public bool BannedRaider(ulong uid) => RaiderBanList.Contains(uid);
 
-        private List<ulong> RaidTracker = new();
+        private Dictionary<ulong, int> RaidTracker = new();
 
         private class EmbedInfo
         {
@@ -70,12 +70,6 @@ namespace SysBot.Pokemon
                 await IdentifyTrainer(token).ConfigureAwait(false);
                 await InitializeHardware(Settings, token).ConfigureAwait(false);
 
-                if (Settings.ExportBanListToJson)
-                {
-                    Log("Exporting current banlist collection to json.");
-                    ExportBanList();
-                }
-
                 Log("Starting main RaidBot loop.");
                 await InnerLoop(token).ConfigureAwait(false);
             }
@@ -88,21 +82,6 @@ namespace SysBot.Pokemon
 
             Log($"Ending {nameof(RaidBot)} loop.");
             await HardStop().ConfigureAwait(false);
-        }
-
-        private void ExportBanList()
-        {
-            var filepath = "raiderbanlist.json";
-
-            if (!File.Exists(filepath))
-            {
-                var blank = "Raider Ban List\n_________________________________________________\n";
-                File.WriteAllText(filepath, blank);
-            }
-
-            RemoteControlAccessList Banlist = Settings.RaiderBanList ?? new RemoteControlAccessList();
-            string json = JsonConvert.SerializeObject(Banlist.List);
-            File.WriteAllText(filepath, json);
         }
 
         private async Task InnerLoop(CancellationToken token)
@@ -322,9 +301,30 @@ namespace SysBot.Pokemon
 
                     if (TrainerNID != 0)
                     {
-                        Log($"Player {i + 1} - " + TrainerName + " | TID: " + TID7 + $" | NID: {TrainerNID}");
+                        Log($"Player {i + 1} - " + TrainerName + " | TID: " + TID7 + " | NID: {TrainerNID}");
                         info.EmbedString += $"\nPlayer {i + 1} - " + TrainerName;
-                        RaidTracker.Add(TrainerNID);
+
+                        RaidPenaltyCount = 0;
+
+                        if (i == 0)
+                            HostNID = TrainerNID;
+
+                        if (!RaidTracker.ContainsKey(TrainerNID) && HostNID != TrainerNID)
+                            RaidTracker.Add(TrainerNID, RaidPenaltyCount);
+
+
+                        if (RaidTracker.ContainsKey(TrainerNID))
+                        {
+                            RaidPenaltyCount = RaidTracker[TrainerNID] + RaidPenaltyCount + 1;
+                            RaidTracker.Remove(TrainerNID);
+                            RaidTracker.Add(TrainerNID, RaidPenaltyCount);
+
+                            if (RaidPenaltyCount > Settings.MaxJoinsPerRaider && !RaiderBanList.Contains(TrainerNID) && Settings.MaxJoinsPerRaider != 0)
+                            {
+                                Log($"{TrainerName} has been banned for joining {RaidPenaltyCount}x this raid session on {DateTime.Now}.");
+                                RaiderBanList.List.Add(new() { ID = TrainerNID, Name = initialTrainers[i], Comment = $"Exceeded max joins on {DateTime.Now}." });
+                            }
+                        }
 
                         if (BannedRaider(TrainerNID))
                         {
@@ -335,32 +335,11 @@ namespace SysBot.Pokemon
                                 var bytes = await SwitchConnection.Screengrab(token).ConfigureAwait(false);
                                 EmbedQueue.Enqueue((bytes, "", "", msg));
                             }
+                            await Task.Delay(1_000, token).ConfigureAwait(false);
                             await RegroupFromBannedUser(token).ConfigureAwait(false);
                             await Task.Delay(1_000, token).ConfigureAwait(false);
                             await PrepareForRaid(token).ConfigureAwait(false);
                             await ReadTrainers(token).ConfigureAwait(false);
-                        }
-
-                        if (TrainerNID != HostNID && Settings.MaxJoinsPerRaider != 0)
-                        {
-                            RaidPenaltyCount = 0;
-                            foreach (var r in RaidTracker)
-                            {
-                                int y = 0;
-                                if (r == TrainerNID)
-                                {
-                                    RaidPenaltyCount++;
-                                    if (RaidPenaltyCount > Settings.MaxJoinsPerRaider)
-                                    {
-                                        y++;
-                                        if (y == 1)
-                                        {
-                                            Log($"{TrainerName} has been banned for joining {RaidPenaltyCount}x this raid session on {DateTime.Now}.");
-                                            RaiderBanList.List.Add(new() { ID = TrainerNID, Name = initialTrainers[i], Comment = $"Exceeded max joins {RaidPenaltyCount}/{Settings.MaxJoinsPerRaider} on {DateTime.Now}." });
-                                        }
-                                    }
-                                }
-                            }
                         }
                     }
                 }
@@ -422,11 +401,9 @@ namespace SysBot.Pokemon
             await Click(A, 1_250, token).ConfigureAwait(false); // Enter settings
 
             await PressAndHold(DDOWN, 2_000, 0_250, token).ConfigureAwait(false); // Scroll to system settings
-            await SetStick((SwitchStick)LSTICK, 0, 0, 0, token).ConfigureAwait(false);
             await Click(A, 1_250, token).ConfigureAwait(false);
 
             await PressAndHold(DDOWN, Settings.TimeToScrollDownForRollover, 0, token).ConfigureAwait(false);
-            await SetStick((SwitchStick)LSTICK, 0, 0, 0, token).ConfigureAwait(false);
             await Click(DUP, 0_500, token).ConfigureAwait(false);
             await Click(DUP, 0_500, token).ConfigureAwait(false);
 

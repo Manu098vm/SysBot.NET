@@ -275,6 +275,10 @@ namespace SysBot.Pokemon
             await Click(A, 4_000, token).ConfigureAwait(false);
             await Click(X, 1_500, token).ConfigureAwait(false);
 
+            var ofs = await GetPointerAddress("[[[[[main+43A7550]+20]+400]+48]+F0]+02", token).ConfigureAwait(false);
+            var data = new byte[] { 0x99 };
+            await SwitchConnection.WriteBytesAbsoluteAsync(data, ofs, token).ConfigureAwait(false);
+
             for (int i = 0; i < 0; i++)
             {
                 if (Settings.Item1DUP == true)

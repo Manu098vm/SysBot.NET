@@ -38,9 +38,6 @@ namespace SysBot.Pokemon
         [Category(Hosting), Description("Users NIDs here are banned raiders.")]
         public RemoteControlAccessList RaiderBanList { get; set; } = new() { AllowIfEmpty = false };
 
-        [Category(FeatureToggle), Description("If true, the bot will export the current raider ban list to a json file.")]
-        public bool ExportBanListToJson { get; set; } = true;
-
         [Category(Hosting), Description("Amount of raids to complete before rolling time back 1 hour.")]
         public int RollbackTimeAfterThisManyRaids { get; set; } = 10;
 
