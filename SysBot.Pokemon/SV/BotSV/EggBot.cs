@@ -319,18 +319,21 @@ namespace SysBot.Pokemon
             for (int i = 0; i < 5; i++)
                 await Click(A, 0_800, token).ConfigureAwait(false);
 
+            ofs = await GetPointerAddress("[[[[[main+43A7550]+20]+400]+48]+F0]+02", token).ConfigureAwait(false);
+            var text = await SwitchConnection.ReadBytesAbsoluteAsync(ofs, 1, token).ConfigureAwait(false);
+            string result = Encoding.ASCII.GetString(text);
 
-            bool inPicnic = await IsInPicnic(token).ConfigureAwait(false);
-
-            while (!inPicnic)
+            while (result == "?")
             {
-                await Click(A, 3_000, token).ConfigureAwait(false);
-                inPicnic = await IsInPicnic(token).ConfigureAwait(false);
+                await Click(A, 2_500, token).ConfigureAwait(false);
+                text = await SwitchConnection.ReadBytesAbsoluteAsync(ofs, 1, token).ConfigureAwait(false);
+                result = Encoding.ASCII.GetString(text);
             }
 
-            if (inPicnic)
+            if (result != "?")
             {
                 await Task.Delay(2_500, token).ConfigureAwait(false);
+                await Click(B, 1_000, token).ConfigureAwait(false);
                 await SetStick(LEFT, 0, -10000, 0_500, token).ConfigureAwait(false); // Face down to basket
                 await SetStick(LEFT, 0, 0, 0, token).ConfigureAwait(false);
                 await Task.Delay(1_000, token).ConfigureAwait(false);
