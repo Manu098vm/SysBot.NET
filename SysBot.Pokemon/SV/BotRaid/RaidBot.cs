@@ -301,7 +301,7 @@ namespace SysBot.Pokemon
 
                     if (TrainerNID != 0)
                     {
-                        Log($"Player {i + 1} - " + TrainerName + " | TID: " + TID7 + " | NID: {TrainerNID}");
+                        Log($"Player {i + 1} - " + TrainerName + " | TID: " + TID7 + $" | NID: {TrainerNID}");
                         info.EmbedString += $"\nPlayer {i + 1} - " + TrainerName;
 
                         RaidPenaltyCount = 0;
