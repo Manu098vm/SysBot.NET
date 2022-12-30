@@ -28,7 +28,6 @@ namespace SysBot.Pokemon
         public string SID7 { get; set; } = string.Empty;
         public string TrainerName { get; set; } = string.Empty;
         public ulong TrainerNID;
-        public ulong HostNID;
         public List<string> initialTrainers = new List<string>();
         public List<ulong> initialNIDs = new List<ulong>();
         public string RaidCode { get; set; } = string.Empty;
@@ -272,9 +271,6 @@ namespace SysBot.Pokemon
                     var nidData = await SwitchConnection.ReadBytesAbsoluteAsync(nidofs, 32, token).ConfigureAwait(false);
                     TrainerNID = BitConverter.ToUInt64(nidData.Slice(0 + (i * 8), 8), 0);
 
-                    if (i == 0)
-                        HostNID = TrainerNID;
-
                     var tries = 0;
                     if (i != 0)
                     {
@@ -306,10 +302,7 @@ namespace SysBot.Pokemon
 
                         RaidPenaltyCount = 0;
 
-                        if (i == 0)
-                            HostNID = TrainerNID;
-
-                        if (!RaidTracker.ContainsKey(TrainerNID) && HostNID != TrainerNID)
+                        if (!RaidTracker.ContainsKey(TrainerNID) && i != 0)
                             RaidTracker.Add(TrainerNID, RaidPenaltyCount);
 
 
@@ -338,8 +331,7 @@ namespace SysBot.Pokemon
                             await Task.Delay(1_000, token).ConfigureAwait(false);
                             await RegroupFromBannedUser(token).ConfigureAwait(false);
                             await Task.Delay(1_000, token).ConfigureAwait(false);
-                            await PrepareForRaid(token).ConfigureAwait(false);
-                            await ReadTrainers(token).ConfigureAwait(false);
+                            await InnerLoop(token).ConfigureAwait(false);
                         }
                     }
                 }
