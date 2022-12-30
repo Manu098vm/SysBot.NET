@@ -241,6 +241,8 @@ namespace SysBot.Pokemon
                             await SetBoxPokemonEgg(Blank, InjectBox, InjectSlot, token).ConfigureAwait(false);
                             break;
                         }
+                    case "Yo":
+                        await Click(A, 0_800, token).ConfigureAwait(false); break;
                 };
 
                 await Task.Delay(1_500, token).ConfigureAwait(false);
