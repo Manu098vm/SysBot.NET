@@ -141,6 +141,20 @@ namespace SysBot.Pokemon
             return false;
         }
 
+        public static bool HasMark(IRibbonIndex pk, out RibbonIndex result)
+        {
+            result = default;
+            for (var mark = RibbonIndex.MarkLunchtime; mark <= RibbonIndex.MarkSlump; mark++)
+            {
+                if (pk.GetRibbon((int)mark))
+                {
+                    result = mark;
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public string GetPrintName(PKM pk)
         {
             var set = ShowdownParsing.GetShowdownText(pk);

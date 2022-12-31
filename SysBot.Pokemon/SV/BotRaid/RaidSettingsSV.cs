@@ -11,20 +11,14 @@ namespace SysBot.Pokemon
         private const string FeatureToggle = nameof(FeatureToggle);
         public override string ToString() => "Raid Bot Settings";
 
-        [Category(FeatureToggle), Description("Optional description of the raid the bot is hosting.")]
-        public string RaidDescription { get; set; } = string.Empty;
-
         [Category(FeatureToggle), Description("Optional description of the raid title the bot is hosting.")]
         public string RaidTitleDescription { get; set; } = string.Empty;
 
-        [Category(FeatureToggle), Description("Optional footer description of the raid the bot is hosting.")]
-        public string RaidFooterDescription { get; set; } = string.Empty;
+        [Category(FeatureToggle), Description("Optional description of the raid the bot is hosting.")]
+        public string RaidDescription { get; set; } = string.Empty;
 
         [Category(Hosting), Description("Input the Species to post a Thumbnail in the embeds. Ignored if 0.")]
         public Species RaidSpecies { get; set; } = Species.None;
-
-        [Category(Hosting), Description("Minimum amount of seconds to wait per player slot before starting a raid. It waits the amount here * 3.")]
-        public int TimeToWaitPerSlot { get; set; } = 15;
 
         [Category(FeatureToggle), Description("If true, the bot will use a random code for the raid.")]
         public bool CodeTheRaid { get; set; } = true;
@@ -32,23 +26,30 @@ namespace SysBot.Pokemon
         [Category(Hosting), Description("Maximum number of join a raider can participate before they get added to the ban list automatically in an instance. If 0 will ignore multidippers.")]
         public int MaxJoinsPerRaider { get; set; } = 0;
 
-        [Category(FeatureToggle), Description("If true, the bot will apply rollback correction.")]
-        public bool RollbackTime { get; set; } = true;
+        [Category(Hosting), Description("Minimum amount of seconds to wait per player slot before starting a raid. It waits the amount here * 3.")]
+        public int TimeToWaitPerSlot { get; set; } = 15;
 
         [Category(Hosting), Description("Users NIDs here are banned raiders.")]
         public RemoteControlAccessList RaiderBanList { get; set; } = new() { AllowIfEmpty = false };
 
+        [Category(FeatureToggle), Description("If true, the bot will apply rollback correction.")]
+        public bool RollbackTime { get; set; } = true;
+
         [Category(Hosting), Description("Amount of raids to complete before rolling time back 1 hour.")]
         public int RollbackTimeAfterThisManyRaids { get; set; } = 10;
 
-        [Category(Hosting), Description("Time to scroll down duration in milliseconds for accessing date/time settings during rollover correction. [Default: 1000ms]")]
+        [Category(Hosting), Description("Time to scroll down duration in milliseconds for accessing date/time settings during rollover correction. You want to have it overshoot the Date/Time setting by 1, as it will click DUP after scrolling down. [Default: 1000ms]")]
         public int TimeToScrollDownForRollover { get; set; } = 1000;
+
+        [Category(FeatureToggle), Description("If true, start the bot when you are on the HOME screen with the game closed. The bot will only run the rollover routine so you can try to configure accurate timing.")]
+        public bool ConfigureRolloverCorrection { get; set; } = false;
 
         [Category(Hosting), Description("Enter Discord channel ID(s) to post raid embeds to. Feature has to be initialized via \"$resv\" after every client restart.")]
         public string RaidEmbedChannelsSV { get; set; } = string.Empty;
 
         [Category(FeatureToggle), Description("When enabled, the screen will be turned off during normal bot loop operation to save power.")]
         public bool ScreenOff { get; set; } = false;
+
 
         private int _completedRaids;
 

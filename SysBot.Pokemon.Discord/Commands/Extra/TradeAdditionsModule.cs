@@ -686,6 +686,7 @@ namespace SysBot.Pokemon.Discord
                         }
                         catch { }
                     }
+                    await Task.Delay(1_500).ConfigureAwait(false);
                 }
                 else await Task.Delay(0_500).ConfigureAwait(false);
             }

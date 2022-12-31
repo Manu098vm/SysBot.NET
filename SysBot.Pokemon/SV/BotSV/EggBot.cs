@@ -118,7 +118,7 @@ namespace SysBot.Pokemon
             while (!token.IsCancellationRequested)
             {
                 DateTime currentTime = DateTime.Now;
-                DateTime TimeLater = currentTime.AddMinutes(29);
+                DateTime TimeLater = currentTime.AddMinutes(32);
 
                 while (TimeLater > DateTime.Now)
                 {
@@ -257,9 +257,8 @@ namespace SysBot.Pokemon
                 result = rgx.Replace(result, "");
             }
             Log("Waiting..");
+            await Click(PLUS, 1_000, token).ConfigureAwait(false);
             await Click(B, 1_000, token).ConfigureAwait(false);
-            await Click(B, 0_800, token).ConfigureAwait(false);
-            await Click(B, 0_800, token).ConfigureAwait(false);
         }
 
         private async Task<bool> IsInPicnic(CancellationToken token)
