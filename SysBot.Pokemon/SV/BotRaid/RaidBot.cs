@@ -23,7 +23,6 @@ namespace SysBot.Pokemon
         }
 
         public string TID7 { get; set; } = string.Empty;
-        public string SID7 { get; set; } = string.Empty;
         public string TrainerName { get; set; } = string.Empty;
         public ulong TrainerNID;
         public List<string> initialTrainers = new List<string>();
