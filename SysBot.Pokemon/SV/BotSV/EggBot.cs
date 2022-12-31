@@ -14,10 +14,6 @@ namespace SysBot.Pokemon
         private readonly EggSettingsSV Settings;
         public ICountSettings Counts => Settings;
 
-        public static CancellationTokenSource EmbedSource = new();
-        public static bool EmbedsInitialized;
-        public static (PK9?, bool) EmbedMon;
-
         public EggBotSV(PokeBotState cfg, PokeTradeHub<PK9> hub) : base(cfg)
         {
             Hub = hub;
@@ -113,58 +109,36 @@ namespace SysBot.Pokemon
             while (!token.IsCancellationRequested)
             {
                 DateTime currentTime = DateTime.Now;
-                DateTime TimeLater = currentTime.AddMinutes(32);
+                DateTime TimeLater = currentTime.AddMinutes(30);
 
                 while (TimeLater > DateTime.Now)
                 {
-                    for (int e = 0; e < 10; e++)
+                    pk = await ReadPokemonSV(EggData, 344, token).ConfigureAwait(false);
+                    pkprev = pk;
+                    while (pkprev.EncryptionConstant == pk.EncryptionConstant || pk == null || (Species)pk.Species == Species.None)
                     {
+                        await Task.Delay(2_500, token).ConfigureAwait(false);
                         pk = await ReadPokemonSV(EggData, 344, token).ConfigureAwait(false);
-                        pkprev = pk;
-                        while (pkprev.EncryptionConstant == pk.EncryptionConstant || pk == null || (Species)pk.Species == Species.None)
-                        {
-                            await Task.Delay(2_500, token).ConfigureAwait(false);
-                            pk = await ReadPokemonSV(EggData, 344, token).ConfigureAwait(false);
-                        }
-
-                        while (pk != null && (Species)pk.Species != Species.None && pkprev.EncryptionConstant != pk.EncryptionConstant)
-                        {
-                            eggcount++;
-                            Log($"There's an egg!\nBasket Count: {e + 1} eggs.");
-                            var print = Hub.Config.StopConditions.GetPrintName(pk);
-                            Log($"Encounter: {eggcount}{Environment.NewLine}{print}{Environment.NewLine}");
-                            Settings.AddCompletedEggs();
-                            TradeExtensions<PK9>.EncounterLogs(pk, "EncounterLogPretty_Egg.txt");
-
-                            CheckEncounter(print, pk);
-
-                            pkprev = pk;
-                        }
                     }
-                    Log("Collecting eggs now.");
 
-                    await Click(A, 2_500, token).ConfigureAwait(false);
-                    await Click(A, 1_200, token).ConfigureAwait(false);
+                    while (pk != null && (Species)pk.Species != Species.None && pkprev.EncryptionConstant != pk.EncryptionConstant)
+                    {
+                        eggcount++;
+                        Log($"There's an egg!");
+                        var print = Hub.Config.StopConditions.GetPrintName(pk);
+                        Log($"Encounter: {eggcount}{Environment.NewLine}{print}{Environment.NewLine}");
+                        Settings.AddCompletedEggs();
+                        TradeExtensions<PK9>.EncounterLogs(pk, "EncounterLogPretty_Egg.txt");
 
-                    Log("Grabbing egg 1...");
-                    for (int i = 0; i < 3; i++)
+                        CheckEncounter(print, pk);
+
+                        Log("Collecting eggs now.");
+
+                        await Click(A, 2_000, token).ConfigureAwait(false);
                         await Click(A, 1_000, token).ConfigureAwait(false);
 
-                    await Task.Delay(0_500, token).ConfigureAwait(false);
-                    dumpmon = await ReadBoxPokemonSV(b1s1, 344, token).ConfigureAwait(false);
-
-                    if (dumpmon != null && (Species)dumpmon.Species != Species.None)
-                        DumpPokemon(DumpSetting.DumpFolder, "eggs", dumpmon);
-
-                    await Task.Delay(0_500, token).ConfigureAwait(false);
-
-                    await SetBoxPokemonEgg(Blank, InjectBox, InjectSlot, token).ConfigureAwait(false);
-
-                    for (int b = 0; b < 9; b++)
-                    {
-                        Log($"Grabbing egg {b + 2}..."); // Egg 2-10
-
-                        for (int i = 0; i < 4; i++)
+                        Log("Grabbing egg...");
+                        for (int i = 0; i < 3; i++)
                             await Click(A, 1_000, token).ConfigureAwait(false);
 
                         await Task.Delay(0_500, token).ConfigureAwait(false);
@@ -176,14 +150,18 @@ namespace SysBot.Pokemon
                         await Task.Delay(0_500, token).ConfigureAwait(false);
 
                         await SetBoxPokemonEgg(Blank, InjectBox, InjectSlot, token).ConfigureAwait(false);
-                    }
 
-                    Log("Waiting..");
-                    await Click(A, 1_000, token).ConfigureAwait(false);
+                        pkprev = pk;
+
+                        Log("Waiting..");
+                        await Click(A, 1_000, token).ConfigureAwait(false);
+                        await Click(B, 0_500, token).ConfigureAwait(false);
+                        await Click(B, 0_500, token).ConfigureAwait(false);
+                    }
                 }
 
                 await MakeSandwich(token).ConfigureAwait(false);
-                await PerformEggRoutine(token).ConfigureAwait(false);
+                continue;
             }
         }
 
@@ -207,21 +185,14 @@ namespace SysBot.Pokemon
 
             Log(print);
 
-            if (Settings.OneInOneHundredOnly == true)
-            {
-                if ((Species)pk.Species == Species.Dunsparce && pk.EncryptionConstant % 100 != 0)
-                {
-                    EmbedMon = (pk, false);
-                    return false;
-                }
-            }
+            if (Settings.OneInOneHundredOnly == true && (Species)pk.Species == Species.Dunsparce && pk.EncryptionConstant % 100 != 0)
+                return false;
 
             if (mode == ContinueAfterMatch.StopExit)
                 return false;
             if (mode == ContinueAfterMatch.Continue)
                 return true;
 
-            EmbedMon = (pk, true);
             EchoUtil.Echo(msg);
 
             IsWaiting = true;
