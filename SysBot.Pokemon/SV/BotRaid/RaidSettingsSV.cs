@@ -27,7 +27,7 @@ namespace SysBot.Pokemon
         public int MaxJoinsPerRaider { get; set; } = 0;
 
         [Category(Hosting), Description("Minimum amount of seconds to wait per player slot before starting a raid. It waits the amount here * 3.")]
-        public int TimeToWaitPerSlot { get; set; } = 15;
+        public int TimeToWaitPerSlot { get; set; } = 30;
 
         [Category(Hosting), Description("Users NIDs here are banned raiders.")]
         public RemoteControlAccessList RaiderBanList { get; set; } = new() { AllowIfEmpty = false };

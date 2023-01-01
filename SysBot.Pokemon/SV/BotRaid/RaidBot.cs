@@ -1,13 +1,7 @@
-﻿using Newtonsoft.Json;
-using PKHeX.Core;
-using SysBot.Base;
-using System;
+﻿using PKHeX.Core;
 using System.Buffers.Binary;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Xml;
 using static SysBot.Base.SwitchButton;
 
 namespace SysBot.Pokemon
@@ -28,6 +22,7 @@ namespace SysBot.Pokemon
             Settings = hub.Config.RaidSV;
         }
 
+        private string Assembly = "Version: 0.0.0.1";
         private string TID7 { get; set; } = string.Empty;
         private string TrainerName { get; set; } = string.Empty;
         private string HostName { get; set; } = string.Empty;
@@ -197,7 +192,7 @@ namespace SysBot.Pokemon
             {
                 Log("We defeated the raid boss!");
                 WinCount++;
-                for (int i = 0; i < 3; i++)
+                for (int i = 0; i < LobbyNIDs.Count; i++)
                 {
                     RaidPenaltyCount = 0;
                     if (RaidTracker.ContainsKey(LobbyNIDs[i]) && LobbyNIDs[i] != 0)
@@ -205,10 +200,10 @@ namespace SysBot.Pokemon
                         RaidPenaltyCount = RaidTracker[LobbyNIDs[i]] + RaidPenaltyCount + 1;
                         RaidTracker.Remove(LobbyNIDs[i]);
                         RaidTracker.Add(LobbyNIDs[i], RaidPenaltyCount);
-                        Log($"Trainer: {initialTrainers[i]} completed the raid with Penalty Count: {RaidPenaltyCount}.");
+                        Log($"Player: {initialTrainers[i]} completed the raid with Penalty Count: {RaidPenaltyCount}.");
                         if (RaidPenaltyCount > Settings.MaxJoinsPerRaider && !RaiderBanList.Contains(LobbyNIDs[i]) && Settings.MaxJoinsPerRaider != 0)
                         {
-                            Log($"{TrainerName} has been added to the banlist for joining {RaidPenaltyCount}x this raid session on {DateTime.Now}.");
+                            Log($"Player: {initialTrainers[i]} has been added to the banlist for joining {RaidPenaltyCount}x this raid session on {DateTime.Now}.");
                             RaiderBanList.List.Add(new() { ID = LobbyNIDs[i], Name = initialTrainers[i], Comment = $"Exceeded max joins on {DateTime.Now}." });
                         }
                     }
@@ -297,7 +292,7 @@ namespace SysBot.Pokemon
                 EmbedString = string.Empty,
             };
             info.EmbedString += Settings.RaidDescription;
-            info.EmbedFooter += $"Wins: {WinCount} | Losses: {LossCount}";
+            info.EmbedFooter += $"Wins: {WinCount} | Losses: {LossCount} - {Assembly}";
             info.EmbedTitle = Settings.RaidTitleDescription;
 
             info.EmbedString += await GetRaidCode(token).ConfigureAwait(false);
@@ -308,7 +303,7 @@ namespace SysBot.Pokemon
                 var bytes = await SwitchConnection.Screengrab(token).ConfigureAwait(false);
                 EmbedQueue.Enqueue((bytes, info.EmbedString, info.EmbedFooter, info.EmbedTitle));
             }
-
+            await Task.Delay(2_000, token).ConfigureAwait(false);
             string value = string.Empty;
             string NID = $"{PlayerNIDs}+8";
             List<string> initialTID = new();
@@ -371,6 +366,7 @@ namespace SysBot.Pokemon
                             var bytes = await SwitchConnection.Screengrab(token).ConfigureAwait(false);
                             EmbedQueue.Enqueue((bytes, "", "", msg));
                         }
+                        await Task.Delay(2_000, token).ConfigureAwait(false);
                         return (false, LobbyNIDs, initialTrainers);
                     }
 
@@ -394,7 +390,7 @@ namespace SysBot.Pokemon
                 var bytes = await SwitchConnection.Screengrab(token).ConfigureAwait(false);
                 EmbedQueue.Enqueue((bytes, info.EmbedString, info.EmbedFooter, info.EmbedTitle));
             }
-
+            await Task.Delay(2_000, token).ConfigureAwait(false);
             return (true, LobbyNIDs, initialTrainers);
         }
 

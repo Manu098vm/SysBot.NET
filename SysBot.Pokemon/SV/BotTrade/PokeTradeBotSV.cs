@@ -232,7 +232,19 @@ namespace SysBot.Pokemon
                 await RecoverToOverworld(token).ConfigureAwait(false);
 
             // Handles getting into the portal. Will retry this until successful.
-            if (StartFromOverworld && !await ConnectAndEnterPortal(Hub.Config, token).ConfigureAwait(false))
+            // if we're not starting from overworld, then ensure we're online before opening link trade -- will break the bot otherwise.
+            // If we're starting from overworld, then ensure we're online before opening the portal.
+            if (!StartFromOverworld && !await IsConnectedOnline(ConnectedOffset, token).ConfigureAwait(false))
+            {
+                await RecoverToOverworld(token).ConfigureAwait(false);
+                if (!await ConnectAndEnterPortal(Hub.Config, token).ConfigureAwait(false))
+                {
+                    await RecoverToOverworld(token).ConfigureAwait(false);
+                    return PokeTradeResult.RecoverStart;
+                }
+            }
+
+            else if (StartFromOverworld && !await ConnectAndEnterPortal(Hub.Config, token).ConfigureAwait(false))
             {
                 await RecoverToOverworld(token).ConfigureAwait(false);
                 return PokeTradeResult.RecoverStart;
@@ -309,7 +321,7 @@ namespace SysBot.Pokemon
                     return PokeTradeResult.RecoverOpenBox;
                 }
             }
-            await Task.Delay(2_000, token).ConfigureAwait(false);
+            await Task.Delay(3_000 + Hub.Config.Timings.ExtraTimeOpenBox, token).ConfigureAwait(false);
 
             var tradePartner = await GetTradePartnerInfo(token).ConfigureAwait(false);
             var trainerNID = await GetTradePartnerNID(TradePartnerNIDOffset, token).ConfigureAwait(false);
@@ -335,7 +347,7 @@ namespace SysBot.Pokemon
 
             // Wait for user input...
             var offered = await ReadUntilPresent(TradePartnerOfferedOffset, 25_000, 1_000, BoxFormatSlotSize, token).ConfigureAwait(false);
-            var oldEC = await SwitchConnection.ReadBytesAbsoluteAsync(TradePartnerOfferedOffset, 4, token).ConfigureAwait(false);
+            var oldEC = await SwitchConnection.ReadBytesAbsoluteAsync(TradePartnerOfferedOffset, 8, token).ConfigureAwait(false);
             if (offered == null || offered.Species < 1 || !offered.ChecksumValid)
             {
                 Log("Trade ended because a valid Pokémon was not offered.");
