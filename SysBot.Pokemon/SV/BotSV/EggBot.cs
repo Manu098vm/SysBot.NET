@@ -132,8 +132,6 @@ namespace SysBot.Pokemon
 
                         CheckEncounter(print, pk);
 
-                        Log("Collecting eggs now.");
-
                         await Click(A, 2_000, token).ConfigureAwait(false);
                         await Click(A, 1_000, token).ConfigureAwait(false);
 
@@ -155,8 +153,6 @@ namespace SysBot.Pokemon
 
                         Log("Waiting..");
                         await Click(A, 1_000, token).ConfigureAwait(false);
-                        await Click(B, 0_500, token).ConfigureAwait(false);
-                        await Click(B, 0_500, token).ConfigureAwait(false);
                     }
                 }
 
@@ -262,7 +258,7 @@ namespace SysBot.Pokemon
             await Click(A, 0_800, token).ConfigureAwait(false);
             await Click(PLUS, 0_800, token).ConfigureAwait(false);
             await Click(A, 8_000, token).ConfigureAwait(false);
-            await SetStick(LEFT, 0, 30000, 0_700, token).ConfigureAwait(false); // Navigate to ingredients
+            await SetStick(LEFT, 0, 30000, Settings.HoldUpToIngredients, token).ConfigureAwait(false); // Navigate to ingredients
             await SetStick(LEFT, 0, 0, 0, token).ConfigureAwait(false);
 
             sandwichcount++;

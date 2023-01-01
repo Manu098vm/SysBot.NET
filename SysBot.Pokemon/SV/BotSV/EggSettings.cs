@@ -26,6 +26,9 @@ namespace SysBot.Pokemon
         [Category(FeatureToggle), Description("When enabled, the bot will click DUP on Item 3.")]
         public bool Item3DUP { get; set; } = true;
 
+        [Category(FeatureToggle), Description("Amount of time to hold L stick up to ingredients for sandwich. [Default: 700ms]")]
+        public int HoldUpToIngredients { get; set; } = 700;
+
         [Category(FeatureToggle), Description("When enabled, the bot will look for 3 Segment Dunsparce.")]
         public bool OneInOneHundredOnly { get; set; } = true;
 
