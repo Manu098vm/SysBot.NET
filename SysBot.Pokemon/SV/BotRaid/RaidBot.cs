@@ -1,6 +1,10 @@
-﻿using PKHeX.Core;
+﻿using Newtonsoft.Json;
+using PKHeX.Core;
+using SysBot.Pokemon.Models;
+using SysBot.Pokemon.Utils;
 using System.Buffers.Binary;
 using System.Collections.Concurrent;
+using System.Net;
 using System.Text;
 using static SysBot.Base.SwitchButton;
 
@@ -360,7 +364,7 @@ namespace SysBot.Pokemon
 
                     RaidPenaltyCount = 0;
 
-                    if (BannedRaider(TrainerNID))
+                    if (IsRaiderBanned(TrainerName))
                     {
                         var titlemsg = "Raid Canceled Due to Banned User";
                         var msg = $"Banned User: {initialTrainers[i]} was found in the lobby.\nRecreating raid team.";
@@ -400,6 +404,34 @@ namespace SysBot.Pokemon
             }
             await Task.Delay(2_000, token).ConfigureAwait(false);
             return (true, LobbyNIDs, initialTrainers);
+        }
+
+        public bool IsRaiderBanned(string raiderName)
+        {
+            //Gets banned list
+            List<BannedRaider> bannedRaiders = new List<BannedRaider>();
+            try
+            {
+                WebClient client = new WebClient();
+                Stream stream = client.OpenRead("https://raw.githubusercontent.com/PokemonAutomation/ServerConfigs-PA-SHA/main/PokemonScarletViolet/TeraAutoHost-BanList.json");
+                StreamReader reader = new StreamReader(stream);
+                var content = reader.ReadToEnd();
+                var jsonContent = JsonConvert.DeserializeObject<List<BannedRaider>>(content);
+                bannedRaiders = jsonContent.Where(item => item.Enabled == "true").ToList();
+            }
+            catch (Exception e)
+            {
+                Log("Error retrieving ban list from PA.");
+                return false;
+            }
+
+            List<LanguageData> languages = JsonConvert.DeserializeObject<List<LanguageData>>(File.ReadAllText("Files\\languages.json"));
+
+            var result = BanService.CheckRaider(raiderName, bannedRaiders, languages);
+
+            Log(result.BanReason);
+
+            return result.IsBanned;
         }
 
         private async Task ClearPlayerHistory(CancellationToken token)
