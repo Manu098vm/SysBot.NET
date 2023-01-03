@@ -22,7 +22,7 @@ namespace SysBot.Pokemon
             Settings = hub.Config.RaidSV;
         }
 
-        private string Assembly = "Version: 0.0.0.2";
+        private string Assembly = "Version: 0.0.2";
         private string TID7 { get; set; } = string.Empty;
         private string TrainerName { get; set; } = string.Empty;
         private string HostName { get; set; } = string.Empty;
@@ -297,7 +297,7 @@ namespace SysBot.Pokemon
             info.EmbedTitle = Settings.RaidTitleDescription;
 
             info.EmbedString += await GetRaidCode(token).ConfigureAwait(false);
-            info.EmbedString += $"\nPlayer 1 - {HostName}";
+            info.EmbedString += $"\nHost - {HostName}";
             await Task.Delay(1_000, token).ConfigureAwait(false);
             if (RaidSVEmbedsInitialized)
             {

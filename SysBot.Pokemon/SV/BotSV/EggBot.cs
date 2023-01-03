@@ -141,7 +141,7 @@ namespace SysBot.Pokemon
                             return;
 
                         Log("Grabbing egg...");
-                        await Click(A, 1_500, token).ConfigureAwait(false);
+                        await Click(A, 0_500, token).ConfigureAwait(false);
                         var currenttext = await SwitchConnection.ReadBytesAbsoluteAsync(ofs, 16, token).ConfigureAwait(false);
 
                         while (!currenttext.SequenceEqual(textval))
