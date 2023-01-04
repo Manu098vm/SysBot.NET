@@ -141,27 +141,40 @@ namespace SysBot.Pokemon
                             return;
 
                         Log("Grabbing egg...");
-                        await Click(A, 0_500, token).ConfigureAwait(false);
-                        var currenttext = await SwitchConnection.ReadBytesAbsoluteAsync(ofs, 16, token).ConfigureAwait(false);
+                        await Click(A, 1_000, token).ConfigureAwait(false);
 
+                        for (int i = 0; i < 5; i++)
+                            await Click(A, 1_500, token).ConfigureAwait(false);
+
+                        var dumpmon = await ReadBoxPokemonSV(b1s1, 344, token).ConfigureAwait(false);
+                        if (dumpmon != null && (Species)dumpmon.Species != Species.None)
+                        {
+                            DumpPokemon(DumpSetting.DumpFolder, "eggs", dumpmon);
+
+                            await Task.Delay(0_500, token).ConfigureAwait(false);
+                            await SetBoxPokemonEgg(Blank, InjectBox, InjectSlot, token).ConfigureAwait(false);
+                        }
+
+                        var currenttext = await SwitchConnection.ReadBytesAbsoluteAsync(ofs, 16, token).ConfigureAwait(false);
                         while (!currenttext.SequenceEqual(textval))
                         {
-                            await Click(A, 1_500, token).ConfigureAwait(false);
-                            var dumpmon = await ReadBoxPokemonSV(b1s1, 344, token).ConfigureAwait(false);
+                            currenttext = await SwitchConnection.ReadBytesAbsoluteAsync(ofs, 16, token).ConfigureAwait(false);
+                            await Click(A, 1_000, token).ConfigureAwait(false);
+                            dumpmon = await ReadBoxPokemonSV(b1s1, 344, token).ConfigureAwait(false);
                             if (dumpmon != null && (Species)dumpmon.Species != Species.None)
                             {
                                 DumpPokemon(DumpSetting.DumpFolder, "eggs", dumpmon);
 
-                                await Task.Delay(0_500, token).ConfigureAwait(false);
+                                await Task.Delay(1_000, token).ConfigureAwait(false);
                                 await SetBoxPokemonEgg(Blank, InjectBox, InjectSlot, token).ConfigureAwait(false);
                             }
-                            currenttext = await SwitchConnection.ReadBytesAbsoluteAsync(ofs, 16, token).ConfigureAwait(false);
                         }
 
                         pkprev = pk;
 
                         Log("Waiting..");
-                        await Click(A, 1_000, token).ConfigureAwait(false);
+                        for (int i = 0; i < 3; i++)
+                            await Click(A, 1_000, token).ConfigureAwait(false);
                     }
                 }
 
