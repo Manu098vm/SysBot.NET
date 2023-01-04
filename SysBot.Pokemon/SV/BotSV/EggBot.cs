@@ -140,11 +140,11 @@ namespace SysBot.Pokemon
                         if (!match)
                             return;
 
-                        Log("Grabbing egg...");
+                        Log("Grabbing eggs...");
                         await Click(A, 1_000, token).ConfigureAwait(false);
 
                         for (int i = 0; i < 5; i++)
-                            await Click(A, 1_500, token).ConfigureAwait(false);
+                            await Click(A, 1_200, token).ConfigureAwait(false);
 
                         var dumpmon = await ReadBoxPokemonSV(b1s1, 344, token).ConfigureAwait(false);
                         if (dumpmon != null && (Species)dumpmon.Species != Species.None)
@@ -159,13 +159,12 @@ namespace SysBot.Pokemon
                         while (!currenttext.SequenceEqual(textval))
                         {
                             currenttext = await SwitchConnection.ReadBytesAbsoluteAsync(ofs, 16, token).ConfigureAwait(false);
-                            await Click(A, 1_000, token).ConfigureAwait(false);
+                            await Click(A, 1_500, token).ConfigureAwait(false);
                             dumpmon = await ReadBoxPokemonSV(b1s1, 344, token).ConfigureAwait(false);
                             if (dumpmon != null && (Species)dumpmon.Species != Species.None)
                             {
                                 DumpPokemon(DumpSetting.DumpFolder, "eggs", dumpmon);
 
-                                await Task.Delay(1_000, token).ConfigureAwait(false);
                                 await SetBoxPokemonEgg(Blank, InjectBox, InjectSlot, token).ConfigureAwait(false);
                             }
                         }
