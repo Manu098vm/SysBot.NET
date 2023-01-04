@@ -684,9 +684,9 @@ namespace SysBot.Pokemon.Discord
                         turl = TradeExtensions<PK9>.PokeImg(pk, false, false);
                     }
                     if ((Species)pk.Species is Species.Wooper && pk.Form != 0 || (Species)pk.Species is Species.Tauros && pk.Form != 0 || (Species)pk.Species > Species.Enamorus && pk.Species != 0)
-                        turl = $"https://raw.githubusercontent.com/zyro670/PokeTextures/main/Placeholder%20Sprites/scaled_up_sprites/Shiny/" + $"{pk.Species}{form}{gender}" + ".png";
+                        turl = $"https://raw.githubusercontent.com/zyro670/PokeTextures/main/Placeholder_Sprites/scaled_up_sprites/Shiny/" + $"{pk.Species}{form}{gender}" + ".png";
                     if (turl == null)
-                        turl = $"https://raw.githubusercontent.com/zyro670/PokeTextures/main/Placeholder%20Sprites/scaled_up_sprites/" + $"{pk.Species}{form}{gender}" + ".png";
+                        turl = $"https://raw.githubusercontent.com/zyro670/PokeTextures/main/Placeholder_Sprites/scaled_up_sprites/" + $"{pk.Species}{form}{gender}" + ".png";
 
                     var embed = new EmbedBuilder
                     {
