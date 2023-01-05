@@ -275,6 +275,7 @@ namespace SysBot.Pokemon
 
         private async Task RetrieveEgg(CancellationToken token)
         {
+            string noegg = Settings.NoEgg;
             var b1s1 = await GetPointerAddress(B1S1, token).ConfigureAwait(false);
             var dumpmon = await ReadPokemon(b1s1, 344, token).ConfigureAwait(false);
 
@@ -284,7 +285,7 @@ namespace SysBot.Pokemon
             Regex rgx = new Regex("[^a-zA-Z0-9 -]");
             result = rgx.Replace(result, "");
 
-            while (result != "Do") // No egg
+            while (result != noegg) // No egg
             {
                 switch (result)
                 {
@@ -298,6 +299,8 @@ namespace SysBot.Pokemon
                             dumpmon = await ReadPokemon(b1s1, 344, token).ConfigureAwait(false);
                             if (dumpmon != null && (Species)dumpmon.Species != Species.None)
                                 DumpPokemon(DumpSetting.DumpFolder, "eggs", dumpmon);
+
+                            await SetBoxPokemonEgg(Blank, InjectBox, InjectSlot, token).ConfigureAwait(false);
                             break;
                         }
                     case "": // More than 1 egg

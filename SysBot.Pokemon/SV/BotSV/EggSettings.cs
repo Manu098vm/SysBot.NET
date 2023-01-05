@@ -29,6 +29,9 @@ namespace SysBot.Pokemon
         [Category(FeatureToggle), Description("Amount of time to hold L stick up to ingredients for sandwich. [Default: 700ms]")]
         public int HoldUpToIngredients { get; set; } = 700;
 
+        [Category(FeatureToggle), Description("Set this to the first two letters of the dialogue text box when no egg is present. For english games it starts with \"Doesn't look like\" so we enter \"Do\"")]
+        public string NoEgg { get; set; } = "Do";
+
         [Category(FeatureToggle), Description("When enabled, the bot will look for 3 Segment Dunsparce.")]
         public bool OneInOneHundredOnly { get; set; } = true;
 
