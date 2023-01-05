@@ -202,7 +202,7 @@ namespace SysBot.Pokemon
                         RaidTracker.Remove(LobbyNIDs[i]);
                         RaidTracker.Add(LobbyNIDs[i], RaidPenaltyCount);
                         Log($"Player: {initialTrainers[i]} completed the raid with Penalty Count: {RaidPenaltyCount}.");
-                        if (RaidPenaltyCount > Settings.MaxJoinsPerRaider && !RaiderBanList.Contains(LobbyNIDs[i]) && Settings.MaxJoinsPerRaider != 0)
+                        if (RaidPenaltyCount > Settings.CatchLimit && !RaiderBanList.Contains(LobbyNIDs[i]) && Settings.CatchLimit != 0)
                         {
                             Log($"Player: {initialTrainers[i]} has been added to the banlist for joining {RaidPenaltyCount}x this raid session on {DateTime.Now}.");
                             RaiderBanList.List.Add(new() { ID = LobbyNIDs[i], Name = initialTrainers[i], Comment = $"Exceeded max joins on {DateTime.Now}." });
@@ -212,7 +212,7 @@ namespace SysBot.Pokemon
             }
             else if (RaidsAtStart == seeds.Count && RaidCount != 0)
             {
-                Log("We lost the raid :(");
+                Log("We lost the raid..");
                 LossCount++;
             }
         }

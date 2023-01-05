@@ -29,8 +29,8 @@ namespace SysBot.Pokemon
         [Category(FeatureToggle), Description("If true, the bot will use a random code for the raid.")]
         public bool CodeTheRaid { get; set; } = true;
 
-        [Category(Hosting), Description("Maximum number of join a raider can participate before they get added to the ban list automatically in an instance. If 0 will ignore multidippers.")]
-        public int MaxJoinsPerRaider { get; set; } = 0;
+        [Category(Hosting), Description("Catch limit per player before they get added to the ban list automatically. If set to 0 this setting will be ignored")]
+        public int CatchLimit { get; set; } = 0;
 
         [Category(Hosting), Description("Minimum amount of seconds to wait per player slot before starting a raid. It waits the amount here * 3.")]
         public int TimeToWaitPerSlot { get; set; } = 30;
