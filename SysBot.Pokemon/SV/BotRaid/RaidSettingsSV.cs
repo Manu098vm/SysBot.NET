@@ -53,6 +53,12 @@ namespace SysBot.Pokemon
         [Category(FeatureToggle), Description("If true, the bot will attempt take screenshots for the Raid Embeds. If you experience crashes often about \"Size/Parameter\" try setting this to false.")]
         public bool TakeScreenshot { get; set; } = true;
 
+        [Category(FeatureToggle), Description("Import ban list from a URL.")]
+        public bool ImportBanList { get; set; } = false;
+
+        [Category(Hosting), Description("Enter global ban list URL if \"ImportBanList\" is set to true.")]
+        public string GlobalBanListURL { get; set; } = string.Empty;
+
         [Category(Hosting), Description("Enter Discord channel ID(s) to post raid embeds to. Feature has to be initialized via \"$resv\" after every client restart.")]
         public string RaidEmbedChannelsSV { get; set; } = string.Empty;
 

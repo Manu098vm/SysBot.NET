@@ -667,12 +667,12 @@ namespace SysBot.Pokemon.Discord
                     var img = "zap.jpg";
                     var turl = string.Empty;
                     var form = string.Empty;
-                    var gender = string.Empty;                    
+                    var gender = string.Empty;
                     PK9 pk = new();
                     pk.Species = (ushort)RaidSettingsSV.RaidSpecies;
                     pk.Form = (byte)RaidSettingsSV.RaidSpeciesForm;
                     if (pk.Form != 0)
-                        form = $"-{pk.Form}";                    
+                        form = $"-{pk.Form}";
                     CommonEdits.SetShiny(pk, Shiny.Always);
                     if (RaidSettingsSV.RaidSpeciesIsFemale)
                     {
@@ -680,28 +680,19 @@ namespace SysBot.Pokemon.Discord
                         gender = "f";
                     }
                     if ((Species)pk.Species <= Species.Enamorus)
-                    {
                         turl = TradeExtensions<PK9>.PokeImg(pk, false, false);
-                    }
+
                     if ((Species)pk.Species is Species.Wooper && pk.Form != 0 || (Species)pk.Species is Species.Tauros && pk.Form != 0 || (Species)pk.Species > Species.Enamorus && pk.Species != 0)
                         turl = $"https://raw.githubusercontent.com/zyro670/PokeTextures/main/Placeholder_Sprites/scaled_up_sprites/Shiny/" + $"{pk.Species}{form}{gender}" + ".png";
                     if (turl == null)
                         turl = $"https://raw.githubusercontent.com/zyro670/PokeTextures/main/Placeholder_Sprites/scaled_up_sprites/" + $"{pk.Species}{form}{gender}" + ".png";
-
-                    var embed = new EmbedBuilder
-                    {
-                        Title = embedInfo.Item4,
-                        Description = embedInfo.Item2,
-                        Color = Color.Blue,
-                        ImageUrl = $"attachment://{img}",
-                        ThumbnailUrl = turl,
-                    };
-                    embed.WithFooter(new EmbedFooterBuilder { Text = embedInfo.Item3 });
-
+                    _ = new EmbedBuilder();
+                    EmbedBuilder? embed = embedInfo.Item2;
+                    embed.ThumbnailUrl = turl;
                     foreach (var channel in channels)
                     {
 #pragma warning disable CS8604 // Possible null reference argument.
-                        var ms = new MemoryStream(embedInfo.Item1);
+                        MemoryStream? ms = new MemoryStream(embedInfo.Item1);
 #pragma warning restore CS8604 // Possible null reference argument.
                         try
                         {
@@ -712,7 +703,6 @@ namespace SysBot.Pokemon.Discord
                         }
                         catch { }
                     }
-                    await Task.Delay(1_500).ConfigureAwait(false);
                 }
                 else await Task.Delay(0_500).ConfigureAwait(false);
             }

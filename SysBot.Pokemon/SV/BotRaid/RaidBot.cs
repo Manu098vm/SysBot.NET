@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Discord;
+using Newtonsoft.Json;
 using PKHeX.Core;
 using SysBot.Pokemon.Models;
 using SysBot.Pokemon.Utils;
@@ -17,7 +18,7 @@ namespace SysBot.Pokemon
 
         public static CancellationTokenSource RaidSVEmbedSource = new();
         public static bool RaidSVEmbedsInitialized;
-        public static ConcurrentQueue<(byte[]?, string, string, string)> EmbedQueue = new();
+        public static ConcurrentQueue<(byte[]?, EmbedBuilder)> EmbedQueue = new();
 
         public RaidSV(PokeBotState cfg, PokeTradeHub<PK9> hub) : base(cfg)
         {
@@ -25,7 +26,6 @@ namespace SysBot.Pokemon
             Settings = hub.Config.RaidSV;
         }
 
-        private string Assembly = "Version: 0.0.2";
         private string TID7 { get; set; } = string.Empty;
         private string TrainerName { get; set; } = string.Empty;
         private string HostName { get; set; } = string.Empty;
@@ -39,6 +39,7 @@ namespace SysBot.Pokemon
         private const string PlayerNIDs = "[[main+43A28F0]+F8]"; // length 32
         private const string RaidCodePointer = "[[[[[[main+437DEC0]+98]]+10]+30]+10]+1A9";
         private uint RaidLobby = 0x0403F4B0;
+        private uint LoadedIntoRaid = 0x04416020;
         private int RaidCount;
         private int ResetCount;
         private int RaidPenaltyCount;
@@ -47,20 +48,21 @@ namespace SysBot.Pokemon
         private const string RaidBlock = "[[main+4384B18]+180]+60";
         private int RaidsAtStart { get; set; }
         private RemoteControlAccessList RaiderBanList => Settings.RaiderBanList;
-        private bool BannedRaider(ulong uid) => RaiderBanList.Contains(uid);
+        private bool CheckBannedRaider(ulong uid) => RaiderBanList.Contains(uid);
 
         private Dictionary<ulong, int> RaidTracker = new();
 
-        private class EmbedInfo
-        {
-            public string EmbedString { get; set; } = string.Empty;
-            public string EmbedFooter { get; set; } = string.Empty;
-            public string EmbedTitle { get; set; } = string.Empty;
-        }
+        private List<BannedRaider> bannedRaiders = new List<BannedRaider>();
+        private string GlobalBanReason { get; set; } = string.Empty;
+
+        private DateTime startTime = new();
 
         public override async Task MainLoop(CancellationToken token)
         {
             RaidTracker = new(); // Create new dictionary each bot start incase we changed the raid to not keep old raider info.
+            //if (Settings.ImportBanList && !string.IsNullOrEmpty(Settings.GlobalBanListURL))
+                // Store ban list on start here?
+
             if (Settings.ConfigureRolloverCorrection)
             {
                 await RolloverCorrectionSV(token).ConfigureAwait(false);
@@ -68,7 +70,7 @@ namespace SysBot.Pokemon
             }
 
             if (Settings.TimeToWaitPerSlot is < 0 or > 180)
-            {
+            {                
                 Log("Time to wait must be between 0 and 180 seconds.");
                 return;
             }
@@ -80,6 +82,7 @@ namespace SysBot.Pokemon
                 await InitializeHardware(Settings, token).ConfigureAwait(false);
 
                 Log("Starting main RaidBot loop.");
+                startTime = DateTime.Now;
                 await InnerLoop(token).ConfigureAwait(false);
             }
 #pragma warning disable CA1031 // Do not catch general exception types
@@ -131,12 +134,38 @@ namespace SysBot.Pokemon
 
         private async Task CompleteRaid(List<ulong> NIDs, List<string> trainers, CancellationToken token)
         {
+            string value = string.Empty;
             bool isReady = await IsConnectedToLobby(token).ConfigureAwait(false);
 
             if (isReady)
             {
                 int b = 0;
                 Log("Preparing for battle!");
+                while (!await IsInRaid(token).ConfigureAwait(false))
+                {
+                    await Click(A, 1_000, token).ConfigureAwait(false);
+                }
+                Log("In the raid! Rereading trainers...");
+                var nids = await InitialTrainerNIDRead(token).ConfigureAwait(false);
+                RaidCount = RaidCount - 1;
+                if (!NIDs.SequenceEqual(nids.ToList()))
+                {
+                    Log("Initial trainers did not match trainers in raid! Updating trainers now...");
+                    for (int i = 0; i < 3; i++)
+                    {
+                        string NID = $"{PlayerNIDs}+8";
+                        var ofs = await GetPointerAddress(value, token).ConfigureAwait(false);
+                        var Data = await SwitchConnection.ReadBytesAbsoluteAsync(ofs, 32, token).ConfigureAwait(false);
+                        var nidofs = await GetPointerAddress(NID, token).ConfigureAwait(false);
+                        var nidData = await SwitchConnection.ReadBytesAbsoluteAsync(nidofs, 24, token).ConfigureAwait(false);
+                        var (_, currNID, currTr) = await ValidateTrainer(false, i, nidData, Data, token).ConfigureAwait(false);
+                        NIDs.Add(currNID);
+                        trainers.Add(currTr);
+                    }
+                }
+                else
+                    Log("Party didn't change, onward!");
+
                 while (await IsConnectedToLobby(token).ConfigureAwait(false))
                 {
                     b++;
@@ -177,9 +206,29 @@ namespace SysBot.Pokemon
             await StartGame(Hub.Config, token).ConfigureAwait(false);
         }
 
+        private void ApplyPenalty(List<ulong> LobbyNIDs, List<string> initialTrainers)
+        {
+            for (int i = 0; i < LobbyNIDs.Count; i++)
+            {
+                RaidPenaltyCount = 0;
+                if (RaidTracker.ContainsKey(LobbyNIDs[i]) && LobbyNIDs[i] != 0)
+                {
+                    RaidPenaltyCount = RaidTracker[LobbyNIDs[i]] + RaidPenaltyCount + 1;
+                    RaidTracker.Remove(LobbyNIDs[i]);
+                    RaidTracker.Add(LobbyNIDs[i], RaidPenaltyCount);
+                    Log($"Player: {initialTrainers[i]} completed the raid with Penalty Count: {RaidPenaltyCount}.");
+                    if (RaidPenaltyCount > Settings.CatchLimit && !RaiderBanList.Contains(LobbyNIDs[i]) && Settings.CatchLimit != 0)
+                    {
+                        Log($"Player: {initialTrainers[i]} has been added to the banlist for joining {RaidPenaltyCount}x this raid session on {DateTime.Now}.");
+                        RaiderBanList.List.Add(new() { ID = LobbyNIDs[i], Name = initialTrainers[i], Comment = $"Exceeded max joins on {DateTime.Now}." });
+                    }
+                }
+            }
+        }
+
         private async Task CountRaids(List<ulong> LobbyNIDs, List<string> initialTrainers, CancellationToken token)
         {
-            List<uint> seeds = new List<uint>();
+            List<uint> seeds = new();
             var ofs = await GetPointerAddress(RaidBlock, token).ConfigureAwait(false);
             var data = await SwitchConnection.ReadBytesAbsoluteAsync(ofs, 2304, token).ConfigureAwait(false);
             for (int i = 0; i < 69; i++)
@@ -196,22 +245,7 @@ namespace SysBot.Pokemon
             {
                 Log("We defeated the raid boss!");
                 WinCount++;
-                for (int i = 0; i < LobbyNIDs.Count; i++)
-                {
-                    RaidPenaltyCount = 0;
-                    if (RaidTracker.ContainsKey(LobbyNIDs[i]) && LobbyNIDs[i] != 0)
-                    {
-                        RaidPenaltyCount = RaidTracker[LobbyNIDs[i]] + RaidPenaltyCount + 1;
-                        RaidTracker.Remove(LobbyNIDs[i]);
-                        RaidTracker.Add(LobbyNIDs[i], RaidPenaltyCount);
-                        Log($"Player: {initialTrainers[i]} completed the raid with Penalty Count: {RaidPenaltyCount}.");
-                        if (RaidPenaltyCount > Settings.CatchLimit && !RaiderBanList.Contains(LobbyNIDs[i]) && Settings.CatchLimit != 0)
-                        {
-                            Log($"Player: {initialTrainers[i]} has been added to the banlist for joining {RaidPenaltyCount}x this raid session on {DateTime.Now}.");
-                            RaiderBanList.List.Add(new() { ID = LobbyNIDs[i], Name = initialTrainers[i], Comment = $"Exceeded max joins on {DateTime.Now}." });
-                        }
-                    }
-                }
+                ApplyPenalty(LobbyNIDs, initialTrainers);
             }
             else if (RaidsAtStart == seeds.Count && RaidCount != 0)
             {
@@ -230,13 +264,9 @@ namespace SysBot.Pokemon
                 while (!await IsOnOverworld(token).ConfigureAwait(false))
                     await Click(B, 0_500, token).ConfigureAwait(false);
             }
-            await Task.Delay(1_000, token).ConfigureAwait(false);
-            if (await IsOnline(token).ConfigureAwait(false))
-            {
-                await Click(B, 1_000, token).ConfigureAwait(false);
-                await Click(A, 3_000, token).ConfigureAwait(false);
-                await Click(A, 3_000, token).ConfigureAwait(false);
-            }
+            await Click(B, 1_000, token).ConfigureAwait(false);
+            await Click(A, 3_000, token).ConfigureAwait(false);
+            await Click(A, 3_000, token).ConfigureAwait(false);
 
             if (!Settings.CodeTheRaid)
                 await Click(DDOWN, 1_000, token).ConfigureAwait(false);
@@ -268,6 +298,7 @@ namespace SysBot.Pokemon
             }
             return isReady;
         }
+
         private async Task<string> GetRaidCode(CancellationToken token)
         {
             var ofs = await GetPointerAddress(RaidCodePointer, token).ConfigureAwait(false);
@@ -289,31 +320,84 @@ namespace SysBot.Pokemon
             return nids;
         }
 
+        private async Task<(bool, ulong, string)> ValidateTrainer(bool inRaid, int i, byte[]? nidData, byte[]? Data, CancellationToken token)
+        {
+            bool isValid = true;
+            while (!token.IsCancellationRequested)
+            {
+                var DisplayTID = BinaryPrimitives.ReadUInt32LittleEndian(Data.AsSpan(0)) % 1_000_000;
+                TID7 = DisplayTID.ToString("D6");
+                TrainerName = StringConverter8.GetString(Data.AsSpan(8, 24));
+                if (nidData != null)
+                    TrainerNID = BitConverter.ToUInt64(nidData.Slice(0 + (i * 8), 8), 0);
+                if (TrainerNID != 0)
+                {
+                    Log($"Player {i + 2} - " + TrainerName + " | TID: " + TID7 + $" | NID: {TrainerNID}");
+                    RaidPenaltyCount = 0;
+                    GlobalBanReason = string.Empty;
+
+                    if (!RaidTracker.ContainsKey(TrainerNID))
+                        RaidTracker.Add(TrainerNID, RaidPenaltyCount);
+
+                    bool textvalid = TrainerName.Length != 0;
+                    if (CheckBannedRaider(TrainerNID) && !inRaid || IsRaiderBanned(TrainerName) && textvalid && !inRaid)
+                    {
+                        var titlemsg = "Raid Canceled Due to Banned User";
+                        var msg = $"{TrainerName} was found in the lobby.\nRecreating raid team.\n";
+                        if (!string.IsNullOrEmpty(GlobalBanReason))
+                            msg = msg + GlobalBanReason;
+                        else
+                            msg = msg + $"Banned user found in host's ban list record.";
+                        Log(msg);
+                        if (RaidSVEmbedsInitialized)
+                        {
+                            var bytes = new byte[0];
+                            if (Settings.TakeScreenshot)
+                                bytes = await SwitchConnection.Screengrab(token).ConfigureAwait(false);
+
+                            var embed = new EmbedBuilder();
+                            embed.AddField("Description:", $"**{titlemsg}**\n{msg}");
+                            embed.AddField("Session Stats:", $"Raids: {WinCount + LossCount} - Wins: {WinCount} - Losses: {LossCount}");
+                            embed.ImageUrl = "attachment://zap.jpg";
+                            embed.Color = Color.Red;
+                            EmbedQueue.Enqueue((bytes, embed));
+                        }
+
+                        isValid = false;
+
+                        return (isValid, TrainerNID, TrainerName);
+                    }
+                }
+                return (isValid, TrainerNID, TrainerName);
+            }
+            return (isValid, TrainerNID, TrainerName);
+        }
+
         private async Task<(bool, List<ulong>, List<string>)> ReadTrainers(ulong[] nids, CancellationToken token)
         {
-            var info = new EmbedInfo()
-            {
-                EmbedString = string.Empty,
-            };
-            info.EmbedString += Settings.RaidDescription;
-            info.EmbedFooter += $"Wins: {WinCount} | Losses: {LossCount} - {Assembly}";
-            info.EmbedTitle = Settings.RaidTitleDescription;
+            var uptime = DateTime.Now - startTime;
+            var embed = new EmbedBuilder();
+            embed.AddField("Tera Raid Notification:", $"**{Settings.RaidTitleDescription}**" + $"\n\nUptime: " + uptime.ToString(@"d\.hh\:mm\:ss"));
+            embed.AddField("Description:", $"\n{Settings.RaidDescription}");
+            embed.AddField("Raid Code:", await GetRaidCode(token).ConfigureAwait(false));
+            embed.AddField("Host:", $"{HostName}");
+            embed.AddField("Session Stats:", $"Raids: {WinCount + LossCount} - Wins: {WinCount} - Losses: {LossCount}");
+            embed.ImageUrl = "attachment://zap.jpg";
+            embed.Color = Color.Green;
+            string hattrick = string.Empty;
+            TrainerNID = new();
 
-            info.EmbedString += await GetRaidCode(token).ConfigureAwait(false);
-            info.EmbedString += $"\nHost - {HostName}";
-            await Task.Delay(1_000, token).ConfigureAwait(false);
+            await Task.Delay(2_000, token).ConfigureAwait(false);
             if (RaidSVEmbedsInitialized)
             {
                 var bytes = new byte[0];
                 if (Settings.TakeScreenshot)
                     bytes = await SwitchConnection.Screengrab(token).ConfigureAwait(false);
-                EmbedQueue.Enqueue((bytes, info.EmbedString, info.EmbedFooter, info.EmbedTitle));
+                EmbedQueue.Enqueue((bytes, embed));
             }
-            await Task.Delay(2_000, token).ConfigureAwait(false);
+
             string value = string.Empty;
             string NID = $"{PlayerNIDs}+8";
-            List<string> initialTID = new();
-            List<string> initialSID = new();
             List<string> initialTrainers = new();
             List<ulong> LobbyNIDs = new();
 
@@ -347,61 +431,39 @@ namespace SysBot.Pokemon
 
                 var ofs = await GetPointerAddress(value, token).ConfigureAwait(false);
                 var Data = await SwitchConnection.ReadBytesAbsoluteAsync(ofs, 32, token).ConfigureAwait(false);
-                var DisplaySID = BinaryPrimitives.ReadUInt32LittleEndian(Data.AsSpan(0)) / 1_000_000;
-                var DisplayTID = BinaryPrimitives.ReadUInt32LittleEndian(Data.AsSpan(0)) % 1_000_000;
-                TID7 = DisplayTID.ToString("D6");
-                TrainerName = StringConverter8.GetString(Data.AsSpan(8, 24));
-                initialTrainers.Add(TrainerName);
-                initialTID.Add(TID7);
+                var (isValid, currNID, currTr) = await ValidateTrainer(false, i, nidData, Data, token).ConfigureAwait(false);
+                if (isValid == false)
+                    return (false, LobbyNIDs, initialTrainers);
 
-                if (TrainerNID != 0)
-                {
-                    LobbyNIDs.Add(TrainerNID);
-
-                    Log($"Player {i + 2} - " + TrainerName + " | TID: " + TID7 + $" | NID: {TrainerNID}");
-                    info.EmbedString += $"\nPlayer {i + 2} - " + TrainerName;
-
-                    RaidPenaltyCount = 0;
-
-                    if (IsRaiderBanned(TrainerName))
-                    {
-                        var titlemsg = "Raid Canceled Due to Banned User";
-                        var msg = $"Banned User: {initialTrainers[i]} was found in the lobby.\nRecreating raid team.";
-                        Log(msg);
-                        if (RaidSVEmbedsInitialized)
-                        {
-                            var bytes = new byte[0];
-                            if (Settings.TakeScreenshot)
-                                bytes = await SwitchConnection.Screengrab(token).ConfigureAwait(false);
-                            EmbedQueue.Enqueue((bytes, msg, Assembly, titlemsg));
-                        }
-                        await Task.Delay(2_000, token).ConfigureAwait(false);
-                        return (false, LobbyNIDs, initialTrainers);
-                    }
-
-                    if (!RaidTracker.ContainsKey(TrainerNID))
-                        RaidTracker.Add(TrainerNID, RaidPenaltyCount);
-
-                }
+                LobbyNIDs.Add(currNID);
+                initialTrainers.Add(currTr);
             }
 
             Log($"Raid #{RaidCount} is starting!");
+
             if (!string.IsNullOrEmpty(initialTrainers[0]) && !string.IsNullOrEmpty(initialTrainers[1]) && !string.IsNullOrEmpty(initialTrainers[2]))
             {
                 if (string.Equals(initialTrainers[0], initialTrainers[1]) && string.Equals(initialTrainers[1], initialTrainers[2]))
                 {
-                    info.EmbedTitle = $" 🌟🎩🌟 {initialTrainers[1]} Hat Trick 🌟🎩🌟\n\n" + Settings.RaidTitleDescription;
+                    hattrick = $" 🌟🎩🌟 {initialTrainers[1]} Hat Trick 🌟🎩🌟\n\n" + Settings.RaidTitleDescription;
                 }
             }
             await Task.Delay(2_000, token).ConfigureAwait(false);
             if (RaidSVEmbedsInitialized)
             {
+                var rez = string.Join("\nPlayer - ", initialTrainers);
                 var bytes = new byte[0];
                 if (Settings.TakeScreenshot)
                     bytes = await SwitchConnection.Screengrab(token).ConfigureAwait(false);
-                EmbedQueue.Enqueue((bytes, info.EmbedString, info.EmbedFooter, info.EmbedTitle));
+                embed = new EmbedBuilder();
+                if (!string.IsNullOrEmpty(hattrick))
+                    embed.AddField("Special Event:", $"{hattrick}");
+                embed.AddField("Description:", $"Raid #{RaidCount} is starting!\n\nHost - {HostName}\nPlayer - {rez}");
+                embed.AddField("Session Stats:", $"Raids: {WinCount + LossCount} - Wins: {WinCount} - Losses: {LossCount}");
+                embed.ImageUrl = "attachment://zap.jpg";
+                embed.Color = Color.Teal;
+                EmbedQueue.Enqueue((bytes, embed));
             }
-            await Task.Delay(2_000, token).ConfigureAwait(false);
             return (true, LobbyNIDs, initialTrainers);
         }
 
@@ -426,7 +488,11 @@ namespace SysBot.Pokemon
 
             var result = BanService.CheckRaider(raiderName, bannedRaiders, languages);
 
-            Log(result.BanReason);
+            if (result.IsBanned)
+            {
+                GlobalBanReason = $"Banned user found from global banlist." + "\nReason: " + result.BanReason + $"\nLog10p: {result.Log10p}";
+                Log(GlobalBanReason);
+            }
 
             return result.IsBanned;
         }
@@ -436,7 +502,6 @@ namespace SysBot.Pokemon
             var trainerdata = new byte[32];
             var ofs = await GetPointerAddress(PlayerNIDs, token).ConfigureAwait(false);
             await SwitchConnection.WriteBytesAbsoluteAsync(trainerdata, ofs, token).ConfigureAwait(false);
-
         }
 
         private async Task<bool> IsOnline(CancellationToken token)
@@ -457,6 +522,12 @@ namespace SysBot.Pokemon
             var ofs = await GetPointerAddress(OverworldPointer, token).ConfigureAwait(false);
             var Data = await SwitchConnection.ReadBytesAbsoluteAsync(ofs, 1, token).ConfigureAwait(false);
             return Data[0] == 0x11;
+        }
+
+        private async Task<bool> IsInRaid(CancellationToken token)
+        {
+            var Data = await SwitchConnection.ReadBytesMainAsync(LoadedIntoRaid, 1, token).ConfigureAwait(false);
+            return Data[0] == 0x02; // 2 when in raid, 1 when not
         }
 
         private async Task RolloverCorrectionSV(CancellationToken token)
@@ -495,6 +566,5 @@ namespace SysBot.Pokemon
             await Click(A, 1_500, token).ConfigureAwait(false);
             await Click(B, 1_000, token).ConfigureAwait(false);
         }
-
     }
 }
