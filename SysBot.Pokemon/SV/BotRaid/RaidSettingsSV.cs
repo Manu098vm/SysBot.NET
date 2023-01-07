@@ -38,8 +38,8 @@ namespace SysBot.Pokemon
         [Category(Hosting), Description("Catch limit per player before they get added to the ban list automatically. If set to 0 this setting will be ignored")]
         public int CatchLimit { get; set; } = 0;
 
-        [Category(Hosting), Description("Minimum amount of seconds to wait per player slot before starting a raid. It waits the amount here * 3.")]
-        public int TimeToWaitPerSlot { get; set; } = 30;
+        [Category(Hosting), Description("Minimum amount of seconds to wait before starting a raid.")]
+        public int TimeToWait { get; set; } = 90;
 
         [Category(Hosting), Description("Users NIDs here are banned raiders.")]
         public RemoteControlAccessList RaiderBanList { get; set; } = new() { AllowIfEmpty = false };
@@ -58,12 +58,6 @@ namespace SysBot.Pokemon
 
         [Category(FeatureToggle), Description("If true, the bot will attempt take screenshots for the Raid Embeds. If you experience crashes often about \"Size/Parameter\" try setting this to false.")]
         public bool TakeScreenshot { get; set; } = true;
-
-        [Category(FeatureToggle), Description("Import ban list from a URL.")]
-        public bool ImportBanList { get; set; } = false;
-
-        [Category(Hosting), Description("Enter global ban list URL if \"ImportBanList\" is set to true.")]
-        public string GlobalBanListURL { get; set; } = string.Empty;
 
         [Category(Hosting), Description("Enter Discord channel ID(s) to post raid embeds to. Feature has to be initialized via \"$resv\" after every client restart.")]
         public string RaidEmbedChannelsSV { get; set; } = string.Empty;

@@ -11,6 +11,7 @@ namespace SysBot.Pokemon.SV
         private static List<LanguageData> Languages = new();
         private static List<BannedRaider> BannedList = new();
         private static readonly string languageResource = "SysBot.Pokemon.SV.BotRaid.BanList.Resources.languages.json";
+        public static string GlobalBanReason = string.Empty;
 
         public static async Task<bool> IsRaiderBanned(string raiderName, string url, string connectionLabel, bool updateJson)
         {
@@ -44,7 +45,10 @@ namespace SysBot.Pokemon.SV
             }
 
             var result = CheckRaider(raiderName, bannedRaiders, Languages, connectionLabel);
-            return result.IsBanned;
+            if (result.IsBanned)            
+                GlobalBanReason = $"\nBanned user {raiderName} found from global banlist." + "\nReason: " + result.BanReason + $"\nLog10p: {result.Log10p}";
+            
+            return (result.IsBanned);
         }
 
         private static int CalculateLevenshteinDistance(string normRaider, string normBanned)

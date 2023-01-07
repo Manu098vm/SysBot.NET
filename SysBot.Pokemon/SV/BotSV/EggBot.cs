@@ -312,6 +312,7 @@ namespace SysBot.Pokemon
 
                             await Task.Delay(1_500, token).ConfigureAwait(false);
 
+                            dumpmon = await ReadPokemon(b1s1, 344, token).ConfigureAwait(false);
                             if (dumpmon != null && (Species)dumpmon.Species != Species.None)
                                 DumpPokemon(DumpSetting.DumpFolder, "eggs", dumpmon);
 
@@ -332,7 +333,8 @@ namespace SysBot.Pokemon
                 result = rgx.Replace(result, "");
             }
             Log("Waiting..");
-            await Click(PLUS, 1_000, token).ConfigureAwait(false);
+            for (int i = 0; i < 2; i++)
+                await Click(PLUS, 0_500, token).ConfigureAwait(false);
             await Click(B, 1_000, token).ConfigureAwait(false);
         }
     }
