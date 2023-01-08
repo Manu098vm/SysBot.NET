@@ -35,7 +35,6 @@ namespace SysBot.Pokemon
         private ulong OverworldOffset;
         private ulong ConnectedOffset;
         private ulong TeraRaidBlockOffset;
-        private ulong TeraRaidCodeOffset;
         private readonly ulong[] TeraNIDOffsets = new ulong[3];
 
         public override async Task MainLoop(CancellationToken token)
