@@ -668,9 +668,11 @@ namespace SysBot.Pokemon.Discord
                     var turl = string.Empty;
                     var form = string.Empty;
                     var gender = string.Empty;
-                    PK9 pk = new();
-                    pk.Species = (ushort)RaidSettingsSV.RaidSpecies;
-                    pk.Form = (byte)RaidSettingsSV.RaidSpeciesForm;
+                    PK9 pk = new()
+                    {
+                        Species = (ushort)RaidSettingsSV.RaidSpecies,
+                        Form = (byte)RaidSettingsSV.RaidSpeciesForm
+                    };
                     if (pk.Form != 0)
                         form = $"-{pk.Form}";
                     CommonEdits.SetShiny(pk, Shiny.Always);
@@ -691,17 +693,18 @@ namespace SysBot.Pokemon.Discord
                     embed.ThumbnailUrl = turl;
                     foreach (var channel in channels)
                     {
-#pragma warning disable CS8604 // Possible null reference argument.
-                        MemoryStream? ms = new MemoryStream(embedInfo.Item1);
-#pragma warning restore CS8604 // Possible null reference argument.
-                        try
+                        if (embedInfo.Item1 != null)
                         {
-                            if (!RaidSettingsSV.TakeScreenshot)
-                                await channel.SendMessageAsync(null, false, embed: embed.Build()).ConfigureAwait(false);
-                            else
-                                await channel.SendFileAsync(ms, img, "", false, embed: embed.Build()).ConfigureAwait(false);
+                            MemoryStream? ms = new(embedInfo.Item1);
+                            try
+                            {
+                                if (!RaidSettingsSV.TakeScreenshot)
+                                    await channel.SendMessageAsync(null, false, embed: embed.Build()).ConfigureAwait(false);
+                                else
+                                    await channel.SendFileAsync(ms, img, "", false, embed: embed.Build()).ConfigureAwait(false);
+                            }
+                            catch { }
                         }
-                        catch { }
                     }
                 }
                 else await Task.Delay(0_500).ConfigureAwait(false);

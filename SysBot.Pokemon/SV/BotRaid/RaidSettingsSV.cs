@@ -21,7 +21,7 @@ namespace SysBot.Pokemon
         public string RaidTitleDescription { get; set; } = string.Empty;
 
         [Category(FeatureToggle), Description("Optional description of the raid the bot is hosting.")]
-        public string RaidDescription { get; set; } = string.Empty;
+        public string[] RaidDescription { get; set; } = Array.Empty<string>();
 
         [Category(Hosting), Description("Input the Species to post a Thumbnail in the embeds. Ignored if 0.")]
         public Species RaidSpecies { get; set; } = Species.None;

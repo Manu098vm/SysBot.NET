@@ -1691,7 +1691,7 @@ namespace SysBot.Pokemon
                 if (!huntedspecies || huntedspecies && Settings.OutbreakConditions.AlphaShinyOnly && !pk.IsAlpha)
                     EmbedMons.Add((pk, false));
 
-                if (huntedspecies && Settings.OutbreakConditions.AlphaShinyOnly && pk.IsAlpha)
+                if (huntedspecies && Settings.OutbreakConditions.AlphaShinyOnly && pk.IsAlpha || huntedspecies && !Settings.OutbreakConditions.AlphaShinyOnly && pk.IsShiny)
                 {
                     EmbedMons.Add((pk, true));
                     match = true;

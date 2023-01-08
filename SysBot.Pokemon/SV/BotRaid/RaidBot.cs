@@ -2,6 +2,7 @@ using Discord;
 ﻿using PKHeX.Core;
 using SysBot.Pokemon.SV;
 using System.Collections.Concurrent;
+using System.Reflection;
 using System.Text;
 using static SysBot.Base.SwitchButton;
 
@@ -197,7 +198,7 @@ namespace SysBot.Pokemon
 
             Log("Back in the overworld, checking if we won or lost.");
             Settings.AddCompletedRaids();
-            if (RaidsAtStart < seeds.Count)
+            if (RaidsAtStart > seeds.Count)
             {
                 Log("We defeated the raid boss!");
                 WinCount++;
@@ -263,13 +264,13 @@ namespace SysBot.Pokemon
 
         private async Task<string> GetRaidCode(CancellationToken token)
         {
-            var data = await SwitchConnection.ReadBytesAbsoluteAsync(TeraRaidCodeOffset, 6, token).ConfigureAwait(false);
-            var str = Encoding.UTF8.GetString(data);
+            var data = await SwitchConnection.PointerPeek(6, Offsets.TeraRaidCodePointer, token).ConfigureAwait(false);
+            string str = Encoding.ASCII.GetString(data);
             if (!char.IsLetterOrDigit(str[0]))
                 str = "Free For All";
 
             Log($"Raid Code: {str}");
-            return $"\nRaid Code: {str}\n";
+            return $"\n{str}\n";
         }
 
         private async Task<bool> CheckIfTrainerBanned(string name, uint tid, ulong nid, int player, CancellationToken token)
@@ -312,12 +313,14 @@ namespace SysBot.Pokemon
         // This is messy, needs a way to check if player X is ready, and when we're in a raid, in order to avoid adding players that may have disconnected or quit. Players get shifted down as they leave.
         private async Task<(bool, List<(ulong, TradeMyStatus)>)> ReadTrainers(DateTime startTime, string ot, CancellationToken token)
         {
-            await Task.Delay(2_000, token).ConfigureAwait(false);
-
+            var raidDescr = string.Empty;
+            if (Settings.RaidDescription.Length != 0)            
+                raidDescr = string.Join("\n", Settings.RaidDescription);
+            
             var uptime = DateTime.Now - startTime;
             var embed = new EmbedBuilder();
             embed.AddField("Tera Raid Notification:", $"**{Settings.RaidTitleDescription}**" + $"\n\nUptime: " + uptime.ToString(@"d\.hh\:mm\:ss"));
-            embed.AddField("Description:", $"\n{Settings.RaidDescription}");
+            embed.AddField("Description:", $"\n{raidDescr}");
             embed.AddField("Raid Code:", await GetRaidCode(token).ConfigureAwait(false));
             embed.AddField("Host:", ot);
             embed.AddField("Session Stats:", $"Raids: {WinCount + LossCount} - Wins: {WinCount} - Losses: {LossCount}");
@@ -480,8 +483,7 @@ namespace SysBot.Pokemon
             Log("Caching session offsets...");
             OverworldOffset = await SwitchConnection.PointerAll(Offsets.OverworldPointer, token).ConfigureAwait(false);
             ConnectedOffset = await SwitchConnection.PointerAll(Offsets.IsConnectedPointer, token).ConfigureAwait(false);
-            TeraRaidBlockOffset = await SwitchConnection.PointerAll(Offsets.TeraRaidBlockPointer, token).ConfigureAwait(false);
-            TeraRaidCodeOffset = await SwitchConnection.PointerAll(Offsets.TeraRaidCodePointer, token).ConfigureAwait(false);
+            TeraRaidBlockOffset = await SwitchConnection.PointerAll(Offsets.TeraRaidBlockPointer, token).ConfigureAwait(false);            
 
             var nidPointer = new long[] { Offsets.LinkTradePartnerNIDPointer[0], Offsets.LinkTradePartnerNIDPointer[1], Offsets.LinkTradePartnerNIDPointer[2] };
             for (int p = 0; p < TeraNIDOffsets.Length; p++)
