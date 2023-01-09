@@ -2,7 +2,6 @@ using Discord;
 ﻿using PKHeX.Core;
 using SysBot.Pokemon.SV;
 using System.Collections.Concurrent;
-using System.Reflection;
 using System.Text;
 using static SysBot.Base.SwitchButton;
 
@@ -201,7 +200,8 @@ namespace SysBot.Pokemon
             {
                 Log("We defeated the raid boss!");
                 WinCount++;
-                ApplyPenalty(trainers);
+                if (trainers.ToList().Count > 0)
+                    ApplyPenalty(trainers);
                 return;
             }
 
@@ -404,7 +404,7 @@ namespace SysBot.Pokemon
             var names = lobbyTrainersFinal.Select(x => x.Item2.OT).ToArray();
             string hattrick = string.Empty;
             if (lobbyTrainersFinal.Count == 3 && names.Distinct().Count() == 1)
-                hattrick = $" 🪄🎩🌟 {lobbyTrainers[0]} Hat Trick 🪄🎩🌟\n\n{Settings.RaidTitleDescription}";
+                hattrick = $" 🪄🎩🌟 {lobbyTrainers[0].Item2.OT} Hat Trick 🪄🎩🌟\n\n{Settings.RaidTitleDescription}";
 
             await Task.Delay(2_000, token).ConfigureAwait(false);
             if (RaidSVEmbedsInitialized)
