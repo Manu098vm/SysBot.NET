@@ -667,7 +667,7 @@ namespace SysBot.Pokemon.Discord
                     var img = "zap.jpg";
                     var turl = string.Empty;
                     var form = string.Empty;
-                    var gender = string.Empty;
+                    var isShiny = RaidSettingsSV.RaidSpeciesIsShiny;
                     PK9 pk = new()
                     {
                         Species = (ushort)RaidSettingsSV.RaidSpecies,
@@ -675,19 +675,14 @@ namespace SysBot.Pokemon.Discord
                     };
                     if (pk.Form != 0)
                         form = $"-{pk.Form}";
-                    CommonEdits.SetShiny(pk, Shiny.Always);
-                    if (RaidSettingsSV.RaidSpeciesIsFemale)
-                    {
-                        pk.Gender = (int)Gender.Female;
-                        gender = "f";
-                    }
+                    if (isShiny)
+                        CommonEdits.SetShiny(pk, Shiny.Always);
                     if ((Species)pk.Species <= Species.Enamorus)
                         turl = TradeExtensions<PK9>.PokeImg(pk, false, false);
-
-                    if ((Species)pk.Species is Species.Wooper && pk.Form != 0 || (Species)pk.Species is Species.Tauros && pk.Form != 0 || (Species)pk.Species > Species.Enamorus && pk.Species != 0)
-                        turl = $"https://raw.githubusercontent.com/zyro670/PokeTextures/main/Placeholder_Sprites/scaled_up_sprites/Shiny/" + $"{pk.Species}{form}{gender}" + ".png";
-                    if (turl == null)
-                        turl = $"https://raw.githubusercontent.com/zyro670/PokeTextures/main/Placeholder_Sprites/scaled_up_sprites/" + $"{pk.Species}{form}{gender}" + ".png";
+                    if ((Species)pk.Species is Species.Wooper && pk.Form != 0 && isShiny || (Species)pk.Species is Species.Tauros && pk.Form != 0 && isShiny || (Species)pk.Species > Species.Enamorus && pk.Species != 0 && isShiny)
+                        turl = $"https://raw.githubusercontent.com/zyro670/PokeTextures/main/Placeholder_Sprites/scaled_up_sprites/Shiny/" + $"{pk.Species}{form}" + ".png";
+                    if ((Species)pk.Species is Species.Wooper && pk.Form != 0 && !isShiny || (Species)pk.Species is Species.Tauros && pk.Form != 0 && !isShiny || (Species)pk.Species > Species.Enamorus && pk.Species != 0 && !isShiny)
+                        turl = $"https://raw.githubusercontent.com/zyro670/PokeTextures/main/Placeholder_Sprites/scaled_up_sprites/" + $"{pk.Species}{form}" + ".png";
                     _ = new EmbedBuilder();
                     EmbedBuilder? embed = embedInfo.Item2;
                     embed.ThumbnailUrl = turl;
