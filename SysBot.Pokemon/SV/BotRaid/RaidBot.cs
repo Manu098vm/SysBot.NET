@@ -24,6 +24,7 @@ namespace SysBot.Pokemon
             Settings = hub.Config.RaidSV;
         }
 
+        private const string RaidBotVersion = "Version 0.2.0";
         private int RaidsAtStart;
         private int RaidCount;
         private int ResetCount;
@@ -173,8 +174,8 @@ namespace SysBot.Pokemon
 
                     if (penalty > Settings.CatchLimit && !RaiderBanList.Contains(nid) && Settings.CatchLimit != 0)
                     {
-                        Log($"Player: {name} has been added to the banlist for joining {penalty}x this raid session on {DateTime.Now}.");
-                        RaiderBanList.List.Add(new() { ID = nid, Name = name, Comment = $"Exceeded catch limit on {DateTime.Now}." });
+                        Log($"Player: {name} exceeded the catch limit {penalty}/{Settings.CatchLimit} for {Settings.RaidSpecies} on {DateTime.Now}.");
+                        RaiderBanList.List.Add(new() { ID = nid, Name = name, Comment = $"Player: {name} exceeded the catch limit {penalty}/{Settings.CatchLimit} for {Settings.RaidSpecies} on {DateTime.Now}." });
                     }
                 }
             }
@@ -192,7 +193,7 @@ namespace SysBot.Pokemon
                     seeds.Add(seed);
             }
 
-            Log($"Total raids: {seeds.Count}");
+            Log($"Active raid count: {seeds.Count}");
             if (RaidCount == 0)
             {
                 RaidsAtStart = seeds.Count;
@@ -293,7 +294,7 @@ namespace SysBot.Pokemon
             bool isBanned = banResultCC.Item1 || banResultCFW != default;
             if (isBanned)
             {
-                var msg = banResultCC.Item1 ? banResultCC.Item2 : $"\nBanned user {banResultCFW!.Name} found from host's ban list.\n{banResultCFW.Comment}";
+                var msg = banResultCC.Item1 ? banResultCC.Item2 : $"\nBanned user {banResultCFW!.Name} found in the host's ban list.\n{banResultCFW.Comment}";
                 Log(msg);
 
                 await EnqueueEmbed(null, msg, false, true, token).ConfigureAwait(false);
@@ -479,7 +480,8 @@ namespace SysBot.Pokemon
                 }.WithFooter(new EmbedFooterBuilder()
                 {
                     Text = $"Host: {HostSAV.OT} | Uptime: {StartTime - DateTime.Now:d\\.hh\\:mm\\:ss}\n" +
-                           $"Raids: {RaidCount} | Wins: {WinCount} | Losses: {LossCount}",
+                           $"Raids: {RaidCount} | Wins: {WinCount} | Losses: {LossCount}\n" +
+                           $"Powered By: RaidBotSV - {RaidBotVersion}",
                 });
 
                 if (!disband && names is null)
