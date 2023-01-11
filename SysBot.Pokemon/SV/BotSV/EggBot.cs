@@ -117,6 +117,18 @@ namespace SysBot.Pokemon
         private bool IsWaiting;
         public void Acknowledge() => IsWaiting = false;
 
+        private async Task ReopenPicnic(CancellationToken token)
+        {
+            await Task.Delay(0_500, token).ConfigureAwait(false);
+            await Click(Y, 1_500, token).ConfigureAwait(false);
+            while (!await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
+                await Click(A, 0_500, token).ConfigureAwait(false);
+            for (int i = 0; i < 10; i++)
+                await Click(A, 0_500, token).ConfigureAwait(false); // Click A alot incase pokemon are not level 100
+            await Click(X, 1_500, token).ConfigureAwait(false);
+            await Click(A, 4_500, token).ConfigureAwait(false);
+        }
+
         private async Task WaitForEggs(CancellationToken token)
         {
             PK9 pkprev = new();
@@ -125,13 +137,23 @@ namespace SysBot.Pokemon
                 var wait = TimeSpan.FromMinutes(30);
                 var endTime = DateTime.Now + wait;
                 var ctr = 0;
+                var waiting = 0;
                 while (DateTime.Now < endTime)
                 {
                     var pk = await ReadPokemonSV(EggData, 344, token).ConfigureAwait(false);
                     while (pkprev.EncryptionConstant == pk.EncryptionConstant || pk == null || (Species)pk.Species == Species.None)
                     {
+                        waiting++;
                         await Task.Delay(1_500, token).ConfigureAwait(false);
                         pk = await ReadPokemonSV(EggData, 344, token).ConfigureAwait(false);
+                        if (waiting == 50)
+                        {
+                            waiting = 0;
+                            ctr = 0;
+                            await ReopenPicnic(token).ConfigureAwait(false);
+                            await MakeSandwich(token).ConfigureAwait(false);
+                            continue;
+                        }
                     }
 
                     while (pk != null && (Species)pk.Species != Species.None && pkprev.EncryptionConstant != pk.EncryptionConstant)
@@ -154,13 +176,7 @@ namespace SysBot.Pokemon
                     if (ctr == 10)
                     {
                         Log("No match in basket. Resetting picnic..");
-                        await Click(Y, 1_500, token).ConfigureAwait(false);
-                        while (!await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
-                            await Click(A, 0_500, token).ConfigureAwait(false);
-                        for (int i = 0; i < 10; i++)
-                            await Click(A, 0_500, token).ConfigureAwait(false); // Click A alot incase pokemon are not level 100
-                        await Click(X, 1_500, token).ConfigureAwait(false);
-                        await Click(A, 4_500, token).ConfigureAwait(false);
+                        await ReopenPicnic(token).ConfigureAwait(false);
                         ctr = 0;
                         Log("Resuming routine..");
                     }
