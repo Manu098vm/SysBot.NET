@@ -143,10 +143,6 @@ namespace SysBot.Pokemon
                         TradeExtensions<PK9>.EncounterLogs(pk, "EncounterLogPretty_Egg.txt");
                         ctr++;
                         bool match = CheckEncounter(print, pk);
-
-                        if (pk != null && (Species)pk.Species != Species.None)
-                            DumpPokemon(DumpSetting.DumpFolder, "eggs", pk);
-
                         if (!match)
                         {
                             Log("Make sure to pick up your egg in the basket!");
