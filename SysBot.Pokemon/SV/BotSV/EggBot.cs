@@ -158,6 +158,7 @@ namespace SysBot.Pokemon
 
                     while (pk != null && (Species)pk.Species != Species.None && pkprev.EncryptionConstant != pk.EncryptionConstant)
                     {
+                        waiting = 0;
                         eggcount++;
                         var print = Hub.Config.StopConditions.GetPrintName(pk);
                         Log($"Encounter: {eggcount}{Environment.NewLine}{print}{Environment.NewLine}");
@@ -178,6 +179,7 @@ namespace SysBot.Pokemon
                         Log("No match in basket. Resetting picnic..");
                         await ReopenPicnic(token).ConfigureAwait(false);
                         ctr = 0;
+                        waiting = 0;
                         Log("Resuming routine..");
                     }
                 }
