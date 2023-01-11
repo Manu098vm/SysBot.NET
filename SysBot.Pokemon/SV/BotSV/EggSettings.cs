@@ -12,7 +12,10 @@ namespace SysBot.Pokemon
         public override string ToString() => "Egg Bot Settings";
 
         [Category(FeatureToggle), Description("When enabled, the bot will continue after finding a suitable match.")]
-        public ContinueAfterMatch ContinueAfterMatch { get; set; } = ContinueAfterMatch.PauseWaitAcknowledge;
+        public ContinueAfterMatch ContinueAfterMatch { get; set; } = ContinueAfterMatch.StopExit;
+
+        [Category(FeatureToggle), Description("Choose your method of collecting eggs. CollectAndDump is traditional collect eggs from basket. WaitAndClose will watch for 10 eggs to spawn then close and reopen picnic to reset them. Make sure no bonus is active or any eggs are in basket if using WaitAndClose mode.")]
+        public EggMode EggBotMode { get; set; } = EggMode.CollectAndDump;
 
         [Category(FeatureToggle), Description("When enabled, the bot will make a sandwich on start.")]
         public bool EatFirst { get; set; } = true;
@@ -28,9 +31,6 @@ namespace SysBot.Pokemon
 
         [Category(FeatureToggle), Description("Amount of time to hold L stick up to ingredients for sandwich. [Default: 700ms]")]
         public int HoldUpToIngredients { get; set; } = 700;
-
-        [Category(FeatureToggle), Description("Set this to the first two letters of the dialogue text box when no egg is present. For english games it starts with \"Doesn't look like\" so we enter \"Do\"")]
-        public string NoEgg { get; set; } = "Do";
 
         [Category(FeatureToggle), Description("When enabled, the bot will look for 3 Segment Dunsparce.")]
         public bool OneInOneHundredOnly { get; set; } = true;
@@ -58,6 +58,12 @@ namespace SysBot.Pokemon
                 yield break;
             if (CompletedEggs != 0)
                 yield return $"Eggs Received: {CompletedEggs}";
+        }
+
+        public enum EggMode
+        {
+            CollectAndDump = 0,
+            WaitAndClose = 1,
         }
     }
 }

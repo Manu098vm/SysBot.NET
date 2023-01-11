@@ -24,7 +24,7 @@ namespace SysBot.Pokemon
             Settings = hub.Config.RaidSV;
         }
 
-        private const string RaidBotVersion = "Version 0.2.0";
+        private const string RaidBotVersion = "Version 0.2.0a";
         private int RaidsAtStart;
         private int RaidCount;
         private int ResetCount;
@@ -274,8 +274,6 @@ namespace SysBot.Pokemon
         {
             var data = await SwitchConnection.PointerPeek(6, Offsets.TeraRaidCodePointer, token).ConfigureAwait(false);
             string str = Encoding.ASCII.GetString(data);
-            if (!char.IsLetterOrDigit(str[0]))
-                str = "Free For All";
 
             Log($"Raid Code: {str}");
             return $"\n{str}\n";
@@ -476,7 +474,7 @@ namespace SysBot.Pokemon
                     Title = disband ? "**Raid was disbanded due to a banned user**" : title,
                     Description = disband ? message : description,
                     Color = disband ? Color.Red : hatTrick ? Color.Purple : Color.Green,
-                    ImageUrl = bytes.Length > 0 ? "attachment://zap.jpg" : "",
+                    ImageUrl = bytes.Length > 0 ? "attachment://zap.jpg" : default,
                 }.WithFooter(new EmbedFooterBuilder()
                 {
                     Text = $"Host: {HostSAV.OT} | Uptime: {StartTime - DateTime.Now:d\\.hh\\:mm\\:ss}\n" +
