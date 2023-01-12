@@ -167,6 +167,18 @@ namespace SysBot.Pokemon
             return set;
         }
 
+        public string GetSpecialPrintName(PKM pk)
+        {
+            var set = $"{(pk.ShinyXor == 0 ? "■ - " : pk.ShinyXor <= 16 ? "★ - " : "")}{SpeciesName.GetSpeciesNameGeneration(pk.Species, 2, 8)}{TradeExtensions<PK9>.FormOutput(pk.Species, pk.Form, out _)}\nEC: {pk.EncryptionConstant:X8} | PID: {pk.PID:X8}\nNature: {(Nature)pk.Nature} | Gender: {(Gender)pk.Gender}\nIVs: {pk.IV_HP}/{pk.IV_ATK}/{pk.IV_DEF}/{pk.IV_SPA}/{pk.IV_SPD}/{pk.IV_SPE}";
+            if (pk is IRibbonIndex r)
+            {
+                var rstring = GetMarkName(r);
+                if (!string.IsNullOrEmpty(rstring))
+                    set += $"\nPokémon found to have **{GetMarkName(r)}**!";
+            }
+            return set;
+        }
+
         public static void ReadUnwantedMarks(StopConditionSettings settings, out IReadOnlyList<string> marks) =>
             marks = settings.UnwantedMarks.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
 

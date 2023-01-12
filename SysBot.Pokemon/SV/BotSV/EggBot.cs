@@ -163,7 +163,7 @@ namespace SysBot.Pokemon
                     {
                         waiting = 0;
                         eggcount++;
-                        var print = Hub.Config.StopConditions.GetPrintName(pk);
+                        var print = Hub.Config.StopConditions.GetSpecialPrintName(pk);
                         Log($"Encounter: {eggcount}{Environment.NewLine}{print}{Environment.NewLine}");
                         Settings.AddCompletedEggs();
                         TradeExtensions<PK9>.EncounterLogs(pk, "EncounterLogPretty_Egg.txt");
@@ -212,7 +212,7 @@ namespace SysBot.Pokemon
                     while (pk != null && (Species)pk.Species != Species.None && pkprev.EncryptionConstant != pk.EncryptionConstant)
                     {
                         eggcount++;
-                        var print = Hub.Config.StopConditions.GetPrintName(pk);
+                        var print = Hub.Config.StopConditions.GetSpecialPrintName(pk);
                         Log($"Encounter: {eggcount}{Environment.NewLine}{print}{Environment.NewLine}");
                         Settings.AddCompletedEggs();
                         TradeExtensions<PK9>.EncounterLogs(pk, "EncounterLogPretty_Egg.txt");
@@ -260,8 +260,11 @@ namespace SysBot.Pokemon
 
             Log(print);
 
-            if (Settings.OneInOneHundredOnly == true && (Species)pk.Species == Species.Dunsparce && pk.EncryptionConstant % 100 != 0)
-                return true;
+            if (Settings.OneInOneHundredOnly)
+            {
+                if ((Species)pk.Species is Species.Dunsparce or Species.Tandemaus && pk.EncryptionConstant % 100 != 0)
+                    return true;
+            }
 
             if (mode == ContinueAfterMatch.StopExit)
                 return false;

@@ -32,7 +32,7 @@ namespace SysBot.Pokemon
         [Category(FeatureToggle), Description("Amount of time to hold L stick up to ingredients for sandwich. [Default: 700ms]")]
         public int HoldUpToIngredients { get; set; } = 700;
 
-        [Category(FeatureToggle), Description("When enabled, the bot will look for 3 Segment Dunsparce.")]
+        [Category(FeatureToggle), Description("When enabled, the bot will look for 3 Segment Dunsparce or Family of Three Maus.")]
         public bool OneInOneHundredOnly { get; set; } = true;
 
         [Category(FeatureToggle), Description("When enabled, the screen will be turned off during normal bot loop operation to save power.")]
