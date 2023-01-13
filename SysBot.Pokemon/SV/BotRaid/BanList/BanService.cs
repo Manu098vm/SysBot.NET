@@ -18,11 +18,18 @@ namespace SysBot.Pokemon.SV
             var bannedRaiders = new List<BannedRaider>();
             try
             {
-                if (updateJson)
+                if (updateJson || BannedList.Count == 0)
                 {
                     var client = new HttpClient();
                     jsonContent = await client.GetStringAsync(url).ConfigureAwait(false);
                     BannedList = JsonConvert.DeserializeObject<List<BannedRaider>>(jsonContent)!;
+                    if (BannedList.Count == 0)
+                    {
+                        LogUtil.LogError("Global ban list has no entries.", connectionLabel);
+                        return (false, "");
+                    }
+                    else LogUtil.LogInfo($"Fetched the global ban list. It has {BannedList.Count} entries.", connectionLabel);
+
                     bannedRaiders = BannedList.Where(x => x.Enabled).ToList();
                 }
             }
@@ -43,7 +50,7 @@ namespace SysBot.Pokemon.SV
                 else Languages = languages;
             }
 
-            var result = CheckRaider(raiderName, bannedRaiders, Languages, connectionLabel);
+            var result = CheckRaider(raiderName, bannedRaiders, connectionLabel);
             var msg = result.IsBanned ? $"\nBanned user {raiderName} found from global ban list.\nReason: {result.BanReason}\nLog10p: {result.Log10p}" : "";       
             return (result.IsBanned, msg);
         }
@@ -82,7 +89,7 @@ namespace SysBot.Pokemon.SV
             return matrix[normRaiderLength, normBannedLength];
         }
     
-        private static BanCheckResult CheckRaider(string raiderName, IReadOnlyList<BannedRaider> banList, IReadOnlyList<LanguageData> languages, string connectionLabel)
+        private static BanCheckResult CheckRaider(string raiderName, IReadOnlyList<BannedRaider> banList, string connectionLabel)
         {
             foreach (BannedRaider bannedUser in banList)
             {
@@ -100,8 +107,8 @@ namespace SysBot.Pokemon.SV
                     };
                 }
 
-                var lang = languages.FirstOrDefault(x => x.Language == bannedUser.Language);
-                if (lang is null)
+                var lang = Languages.FirstOrDefault(x => x.Language == bannedUser.Language);
+                if (lang == default)
                     throw new Exception($"No language in table matches with banned user. Banned User Language: {bannedUser.Language}.");
 
                 var dt = new DataTable();
