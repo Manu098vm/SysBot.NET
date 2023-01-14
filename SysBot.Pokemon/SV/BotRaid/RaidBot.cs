@@ -367,8 +367,6 @@ namespace SysBot.Pokemon
                         nid = BitConverter.ToUInt64(data, 0);
                     }
 
-                    await Task.Delay(Settings.WaitTimeToReadTrainersAfterNID, token).ConfigureAwait(false);
-
                     var pointer = new long[] { 0x437ECE0, 0x48, 0xE0 + (i * 0x30), 0x0 };
                     var trainer = await GetTradePartnerMyStatus(pointer, token).ConfigureAwait(false);
 
