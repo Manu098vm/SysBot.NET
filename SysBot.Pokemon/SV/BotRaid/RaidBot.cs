@@ -24,7 +24,7 @@ namespace SysBot.Pokemon
             Settings = hub.Config.RaidSV;
         }
 
-        private const string RaidBotVersion = "Version 0.2.1a";
+        private const string RaidBotVersion = "Version 0.2.2";
         private int RaidsAtStart;
         private int RaidCount;
         private int ResetCount;
@@ -323,13 +323,12 @@ namespace SysBot.Pokemon
             return $"\n{str}\n";
         }
 
-        private async Task<bool> CheckIfTrainerBanned(TradeMyStatus trainer, ulong nid, int player, CancellationToken token)
+        private async Task<bool> CheckIfTrainerBanned(TradeMyStatus trainer, ulong nid, int player, bool updateBanList, CancellationToken token)
         {
             Log($"Player {player} - {trainer.OT} | TID: {trainer.DisplayTID} | NID: {nid}");
             if (!RaidTracker.ContainsKey(nid))
                 RaidTracker.Add(nid, 0);
 
-            bool updateBanList = RaidCount == 0 || RaidCount % Settings.RaidsBetweenUpdate == 0;
             var banResultCC = await BanService.IsRaiderBanned(trainer.OT, Settings.BanListURL, Connection.Label, updateBanList).ConfigureAwait(false);
             var banResultCFW = RaiderBanList.List.FirstOrDefault(x => x.ID == nid);
 
@@ -355,6 +354,7 @@ namespace SysBot.Pokemon
             var wait = TimeSpan.FromSeconds(Settings.TimeToWait);
             var endTime = DateTime.Now + wait;
             bool full = false;
+            bool updateBanList = RaidCount == 0 || RaidCount % Settings.RaidsBetweenUpdate == 0;
 
             while (!full && (DateTime.Now < endTime))
             {
@@ -385,8 +385,10 @@ namespace SysBot.Pokemon
 
                     if (nid != 0 && !string.IsNullOrWhiteSpace(trainer.OT))
                     {
-                        if (await CheckIfTrainerBanned(trainer, nid, player, token).ConfigureAwait(false))
+                        if (await CheckIfTrainerBanned(trainer, nid, player, updateBanList, token).ConfigureAwait(false))
                             return (false, lobbyTrainers);
+
+                        updateBanList = false;
                     }
 
                     if (lobbyTrainers.FirstOrDefault(x => x.Item1 == nid && x.Item2.OT == trainer.OT) != default)

@@ -7,21 +7,18 @@ namespace SysBot.Pokemon.SV
 {
     public class BanService : BanListSerialization
     {
-        private static string jsonContent = "";
-        private static List<LanguageData> Languages = new();
         private static List<BannedRaider> BannedList = new();
         private static readonly string languageResource = "SysBot.Pokemon.SV.BotRaid.BanList.Resources.languages.json";
 
         public static async Task<(bool, string)> IsRaiderBanned(string raiderName, string url, string connectionLabel, bool updateJson)
         {
             //Gets banned list
-            var bannedRaiders = new List<BannedRaider>();
             try
             {
                 if (updateJson || BannedList.Count == 0)
                 {
                     var client = new HttpClient();
-                    jsonContent = await client.GetStringAsync(url).ConfigureAwait(false);
+                    var jsonContent = await client.GetStringAsync(url).ConfigureAwait(false);
                     BannedList = JsonConvert.DeserializeObject<List<BannedRaider>>(jsonContent)!;
                     if (BannedList.Count == 0)
                     {
@@ -29,8 +26,6 @@ namespace SysBot.Pokemon.SV
                         return (false, "");
                     }
                     else LogUtil.LogInfo($"Fetched the global ban list. It has {BannedList.Count} entries.", connectionLabel);
-
-                    bannedRaiders = BannedList.Where(x => x.Enabled).ToList();
                 }
             }
             catch (Exception e)
@@ -39,18 +34,15 @@ namespace SysBot.Pokemon.SV
                 return (false, "");
             }
 
-            if (Languages.Count == 0)
+            var bannedRaiders = BannedList.Where(x => x.Enabled).ToList();
+            var languages = languageResource.DeserializeResource<List<LanguageData>>(connectionLabel);
+            if (languages is null)
             {
-                var languages = languageResource.DeserializeResource<List<LanguageData>>(connectionLabel);
-                if (languages is null)
-                {
-                    LogUtil.LogError("Failed to deserialize languages.", connectionLabel);
-                    return (false, "");
-                }
-                else Languages = languages;
+                LogUtil.LogError("Failed to deserialize languages.", connectionLabel);
+                return (false, "");
             }
 
-            var result = CheckRaider(raiderName, bannedRaiders, connectionLabel);
+            var result = CheckRaider(raiderName, bannedRaiders, languages, connectionLabel);
             var msg = result.IsBanned ? $"\nBanned user {raiderName} found from global ban list.\nReason: {result.BanReason}\nLog10p: {result.Log10p}" : "";       
             return (result.IsBanned, msg);
         }
@@ -89,7 +81,7 @@ namespace SysBot.Pokemon.SV
             return matrix[normRaiderLength, normBannedLength];
         }
     
-        private static BanCheckResult CheckRaider(string raiderName, IReadOnlyList<BannedRaider> banList, string connectionLabel)
+        private static BanCheckResult CheckRaider(string raiderName, IReadOnlyList<BannedRaider> banList, IReadOnlyList<LanguageData> languages, string connectionLabel)
         {
             foreach (BannedRaider bannedUser in banList)
             {
@@ -107,7 +99,7 @@ namespace SysBot.Pokemon.SV
                     };
                 }
 
-                var lang = Languages.FirstOrDefault(x => x.Language == bannedUser.Language);
+                var lang = languages.FirstOrDefault(x => x.Language == bannedUser.Language);
                 if (lang == default)
                     throw new Exception($"No language in table matches with banned user. Banned User Language: {bannedUser.Language}.");
 
