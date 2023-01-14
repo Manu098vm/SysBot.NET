@@ -138,6 +138,7 @@ namespace SysBot.Pokemon
                 {
                     // Clear NIDs to refresh player check.
                     await SwitchConnection.WriteBytesAbsoluteAsync(new byte[32], TeraNIDOffsets[0], token).ConfigureAwait(false);
+
                     // Loop through trainers again in case someone disconnected.
                     List<(ulong, TradeMyStatus)> lobbyTrainersFinal = new();
                     for (int i = 0; i < 3; i++)
@@ -150,20 +151,22 @@ namespace SysBot.Pokemon
                         var pointer = new long[] { 0x437ECE0, 0x48, 0xE0 + (i * 0x30), 0x0 };
                         var trainer = await GetTradePartnerMyStatus(pointer, token).ConfigureAwait(false);
 
-                        if (nid != 0 && !string.IsNullOrWhiteSpace(trainer.OT))                        
-                            lobbyTrainersFinal.Add((nid, trainer));
+                        if (nid == 0 || string.IsNullOrWhiteSpace(trainer.OT))
+                            continue;
 
+                        lobbyTrainersFinal.Add((nid, trainer));
                         if (trainers[i].Item2.OT != lobbyTrainersFinal[i].Item2.OT)
                             Log($"New Player: {lobbyTrainersFinal[i].Item2.OT} - {lobbyTrainersFinal[i]} - {lobbyTrainersFinal[i].Item1}.");
-                        else
-                            Log($"Player: {i + 2} matches lobby check for {lobbyTrainersFinal[i].Item2.OT}.");
+                        else Log($"Player: {i + 2} matches lobby check for {lobbyTrainersFinal[i].Item2.OT}.");
                     }
+
                     var names = lobbyTrainersFinal.Select(x => x.Item2.OT).ToList();
                     bool hatTrick = lobbyTrainersFinal.Count == 3 && names.Distinct().Count() == 1;
 
                     await Task.Delay(20_000, token).ConfigureAwait(false);
                     await EnqueueEmbed(names, "", hatTrick, false, token).ConfigureAwait(false);
                 }
+
                 while (await IsConnectedToLobby(token).ConfigureAwait(false))
                 {
                     b++;
