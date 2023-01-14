@@ -52,7 +52,8 @@ namespace SysBot.Pokemon
             {
                 try
                 {
-                    await InnerLoop(token).ConfigureAwait(false);
+                    if (!await InnerLoop(token).ConfigureAwait(false))
+                        break;
                 }
 #pragma warning disable CA1031 // Do not catch general exception types
                 catch (Exception e)
@@ -70,13 +71,13 @@ namespace SysBot.Pokemon
         {
             // If aborting the sequence, we might have the stick set at some position. Clear it just in case.
             await SetStick(LEFT, 0, 0, 0, CancellationToken.None).ConfigureAwait(false); // reset
-            await CleanExit(Hub.Config.Trade, CancellationToken.None).ConfigureAwait(false);
+            await CleanExit(CancellationToken.None).ConfigureAwait(false);
         }
 
         /// <summary>
         /// Return true if we need to stop looping.
         /// </summary>
-        private async Task InnerLoop(CancellationToken token)
+        private async Task<bool> InnerLoop(CancellationToken token)
         {
             await SetCurrentBox(0, token).ConfigureAwait(false);
             await SwitchConnection.WriteBytesMainAsync(BlankVal, PicnicMenu, token).ConfigureAwait(false);
@@ -94,11 +95,11 @@ namespace SysBot.Pokemon
 
             var task = Hub.Config.EggSV.EggBotMode switch
             {
-                EggMode.CollectAndDump => PerformEggRoutine(token),
                 EggMode.WaitAndClose => WaitForEggs(token),
                 _ => PerformEggRoutine(token),
             };
             await task.ConfigureAwait(false);
+            return false;
         }
 
         private async Task SetupBoxState(CancellationToken token)
@@ -123,7 +124,7 @@ namespace SysBot.Pokemon
             await Click(Y, 1_500, token).ConfigureAwait(false);
             var overworldWaitCycles = 0;
             var hasReset = false;
-            while (!await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false)) //wait until we return to the overworld
+            while (!await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false)) // Wait until we return to the overworld
             {
                 await Click(A, 1_000, token).ConfigureAwait(false);
                 overworldWaitCycles++;
@@ -140,25 +141,25 @@ namespace SysBot.Pokemon
                         await Click(B, 0_500, token).ConfigureAwait(false); // Click a few times to attempt to escape any menu
                 }
 
-                else if (overworldWaitCycles >= 53) //if still not in the overworld after ~1 minute of trying, hard reset the game
+                else if (overworldWaitCycles >= 53) // If still not in the overworld after ~1 minute of trying, hard reset the game
                 {
                     overworldWaitCycles = 0;
                     Log("Failed to return to the overworld after 1 minute.  Forcing a game reset.");
                     await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
-                    OverworldOffset = await SwitchConnection.PointerAll(Offsets.OverworldPointer, token).ConfigureAwait(false);  //re-acquire overworld offset to escape the while loop
+                    OverworldOffset = await SwitchConnection.PointerAll(Offsets.OverworldPointer, token).ConfigureAwait(false);  // Re-acquire overworld offset to escape the while loop
                     hasReset = true;
                 }
             }
             for (int i = 0; i < 10; i++)
                 await Click(A, 0_500, token).ConfigureAwait(false); // Click A alot incase pokemon are not level 100
             await Click(X, 1_500, token).ConfigureAwait(false);
-            if (hasReset) //If we are starting fresh, we need to reposition over the picnic button
+            if (hasReset) // If we are starting fresh, we need to reposition over the picnic button
             {
                 await Click(DRIGHT, 0_250, token).ConfigureAwait(false);
                 await Click(DDOWN, 0_250, token).ConfigureAwait(false);
                 await Click(DDOWN, 0_250, token).ConfigureAwait(false);
             }
-            await Click(A, 7_000, token).ConfigureAwait(false); //first picnic *might* take longer.  value originally was 4_500
+            await Click(A, 7_000, token).ConfigureAwait(false); // First picnic might take longer.
         }
 
         private async Task WaitForEggs(CancellationToken token)
@@ -220,7 +221,6 @@ namespace SysBot.Pokemon
                 }
                 Log("30 minutes have passed, remaking sandwich.");
                 await MakeSandwich(token).ConfigureAwait(false);
-                await WaitForEggs(token).ConfigureAwait(false);
             }
         }
 
@@ -268,7 +268,6 @@ namespace SysBot.Pokemon
                 }
                 Log("30 minutes have passed, remaking sandwich.");
                 await MakeSandwich(token).ConfigureAwait(false);
-                await PerformEggRoutine(token).ConfigureAwait(false);
             }
         }
 

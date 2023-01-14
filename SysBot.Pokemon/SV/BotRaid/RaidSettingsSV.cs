@@ -41,6 +41,9 @@ namespace SysBot.Pokemon
         [Category(Hosting), Description("Minimum amount of seconds to wait before starting a raid.")]
         public int TimeToWait { get; set; } = 90;
 
+        [Category(Hosting), Description("Amount of time to wait after player NID refreshes before reading for Trainer OT.")]
+        public int WaitTimeToReadTrainersAfterNID { get; set; } = 5000;
+
         [Category(Hosting), Description("Users NIDs here are banned raiders.")]
         public RemoteControlAccessList RaiderBanList { get; set; } = new() { AllowIfEmpty = false };
 

@@ -16,7 +16,7 @@ namespace SysBot.Base
     /// <remarks>
     /// Interactions are performed asynchronously.
     /// </remarks>
-    public sealed class SwitchSocketAsync : SwitchSocket, ISwitchConnectionAsync, IAsyncConnection
+    public sealed class SwitchSocketAsync : SwitchSocket, ISwitchConnectionAsync
     {
         public SwitchSocketAsync(IWirelessConnectionConfig cfg) : base(cfg) { }
 
@@ -30,7 +30,6 @@ namespace SysBot.Base
 
             Log("Connecting to device...");
             Connection.Connect(Info.IP, Info.Port);
-            Connected = true;
             Log("Connected!");
             Label = Name;
         }
@@ -41,14 +40,22 @@ namespace SysBot.Base
             if (Connected)
                 Disconnect();
 
+            // Socket will update "Connected" condition itself based on the success of the most recent read/write call.
+            // We want to ensure we initialize the Socket if we're resetting after a crash.
             InitializeSocket();
             Log("Connecting to device...");
             var address = Dns.GetHostAddresses(ip);
             foreach (IPAddress adr in address)
             {
                 IPEndPoint ep = new(adr, Info.Port);
-                Connection.BeginConnect(ep, ConnectCallback, Connection);
-                Connected = true;
+                try
+                {
+                    Connection.Connect(ep);
+                }
+                catch
+                {
+                    return;
+                }
                 Log("Connected!");
             }
         }
@@ -57,44 +64,17 @@ namespace SysBot.Base
         {
             Log("Disconnecting from device...");
             Connection.Shutdown(SocketShutdown.Both);
-            Connection.BeginDisconnect(true, DisconnectCallback, Connection);
-            Connected = false;
+            try
+            {
+                Connection.Disconnect(false);
+            }
+            catch
+            {
+                return;
+            }
+
             Log("Disconnected! Resetting Socket.");
             InitializeSocket();
-        }
-
-        private readonly AutoResetEvent connectionDone = new(false);
-
-        public void ConnectCallback(IAsyncResult ar)
-        {
-            // Complete the connection request.
-#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-            Socket client = (Socket)ar.AsyncState;
-#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
-            client.EndConnect(ar);
-#pragma warning restore CS8602 // Dereference of a possibly null reference.
-
-            // Signal that the connection is complete.
-            connectionDone.Set();
-            LogUtil.LogInfo("Connected.", Name);
-        }
-
-        private readonly AutoResetEvent disconnectDone = new(false);
-
-        public void DisconnectCallback(IAsyncResult ar)
-        {
-            // Complete the disconnect request.
-#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-            Socket client = (Socket)ar.AsyncState;
-#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
-            client.EndDisconnect(ar);
-#pragma warning restore CS8602 // Dereference of a possibly null reference.
-
-            // Signal that the disconnect is complete.
-            disconnectDone.Set();
-            LogUtil.LogInfo("Disconnected.", Name);
         }
 
         private int Read(byte[] buffer)
@@ -247,22 +227,42 @@ namespace SysBot.Base
         public async Task<byte[]> Screengrab(CancellationToken token)
         {
             List<byte> flexBuffer = new();
-            int received = 0;
+            Connection.ReceiveTimeout = 1_000;
 
             await SendAsync(SwitchCommand.Screengrab(), token).ConfigureAwait(false);
             await Task.Delay(Connection.ReceiveBufferSize / DelayFactor + BaseDelay, token).ConfigureAwait(false);
-            while (Connection.Available > 0)
+
+            int available = Connection.Available;
+            do
             {
-                byte[] buffer = new byte[Connection.ReceiveBufferSize];
-                received += Connection.Receive(buffer, 0, Connection.ReceiveBufferSize, SocketFlags.None);
-                flexBuffer.AddRange(buffer);
+                byte[] buffer = new byte[available];
+                try
+                {
+                    Connection.Receive(buffer, available, SocketFlags.None);
+                    flexBuffer.AddRange(buffer);
+                }
+                catch (Exception ex)
+                {
+                    LogError($"Socket exception thrown while receiving screenshot data:\n{ex.Message}");
+                    return Array.Empty<byte>();
+                }
+
                 await Task.Delay(MaximumTransferSize / DelayFactor + BaseDelay, token).ConfigureAwait(false);
+                available = Connection.Available;
+            } while (flexBuffer.Count == 0 || flexBuffer.Last() != (byte)'\n');
+
+            Connection.ReceiveTimeout = 0;
+            var result = Array.Empty<byte>();
+            try
+            {
+                result = Decoder.ConvertHexByteStringToBytes(flexBuffer.ToArray());
+            }
+            catch (Exception e)
+            {
+                LogError($"Malformed screenshot data received:\n{e.Message}");
             }
 
-            byte[] data = new byte[flexBuffer.Count];
-            flexBuffer.CopyTo(data);
-            var result = data.SliceSafe(0, received);
-            return Decoder.ConvertHexByteStringToBytes(result);
+            return result;
         }
     }
 }

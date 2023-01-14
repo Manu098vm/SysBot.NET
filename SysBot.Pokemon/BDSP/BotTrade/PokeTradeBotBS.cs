@@ -1,11 +1,7 @@
 ﻿using PKHeX.Core;
 using PKHeX.Core.Searching;
 using SysBot.Base;
-using System;
-using System.Linq;
 using System.Net.Sockets;
-using System.Threading;
-using System.Threading.Tasks;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Pokemon.BasePokeDataOffsetsBS;
 
@@ -90,7 +86,7 @@ namespace SysBot.Pokemon
         public override async Task HardStop()
         {
             UpdateBarrier(false);
-            await CleanExit(TradeSettings, CancellationToken.None).ConfigureAwait(false);
+            await CleanExit(CancellationToken.None).ConfigureAwait(false);
         }
 
         private async Task InnerLoop(SAV8BS sav, CancellationToken token)
