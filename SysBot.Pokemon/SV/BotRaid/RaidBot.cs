@@ -127,6 +127,7 @@ namespace SysBot.Pokemon
 
         private async Task CompleteRaid(List<(ulong, TradeMyStatus)> trainers, CancellationToken token)
         {
+            List<(ulong, TradeMyStatus)> lobbyTrainersFinal = new();
             if (await IsConnectedToLobby(token).ConfigureAwait(false))
             {
                 int b = 0;
@@ -140,7 +141,6 @@ namespace SysBot.Pokemon
                     await SwitchConnection.WriteBytesAbsoluteAsync(new byte[32], TeraNIDOffsets[0], token).ConfigureAwait(false);
 
                     // Loop through trainers again in case someone disconnected.
-                    List<(ulong, TradeMyStatus)> lobbyTrainersFinal = new();
                     for (int i = 0; i < 3; i++)
                     {
                         var player = i + 2;
@@ -148,16 +148,20 @@ namespace SysBot.Pokemon
                         var data = await SwitchConnection.ReadBytesAbsoluteAsync(nidOfs, 8, token).ConfigureAwait(false);
                         var nid = BitConverter.ToUInt64(data, 0);
 
+                        if (nid == 0)
+                            continue;
+
                         var pointer = new long[] { 0x437ECE0, 0x48, 0xE0 + (i * 0x30), 0x0 };
                         var trainer = await GetTradePartnerMyStatus(pointer, token).ConfigureAwait(false);
 
-                        if (nid == 0 || string.IsNullOrWhiteSpace(trainer.OT))
+                        if (string.IsNullOrWhiteSpace(trainer.OT))
                             continue;
 
                         lobbyTrainersFinal.Add((nid, trainer));
-                        if (trainers[i].Item2.OT != lobbyTrainersFinal[i].Item2.OT)
-                            Log($"New Player: {lobbyTrainersFinal[i].Item2.OT} - {lobbyTrainersFinal[i]} - {lobbyTrainersFinal[i].Item1}.");
-                        else Log($"Player: {i + 2} matches lobby check for {lobbyTrainersFinal[i].Item2.OT}.");
+                        var tr = lobbyTrainersFinal.FirstOrDefault(x => x.Item2.OT == trainers[i].Item2.OT);
+                        if (tr != default)
+                            Log($"Player: {i + 2} matches lobby check for {tr.Item2.OT}.");
+                        else Log($"New Player: {tr.Item2.OT} - {tr.Item2.DisplayTID} - {tr.Item1}.");
                     }
 
                     var names = lobbyTrainersFinal.Select(x => x.Item2.OT).ToList();
@@ -185,7 +189,7 @@ namespace SysBot.Pokemon
             while (!await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
                 await Click(A, 1_000, token).ConfigureAwait(false);
 
-            await CountRaids(trainers, token).ConfigureAwait(false);
+            await CountRaids(lobbyTrainersFinal, token).ConfigureAwait(false);
 
             ResetCount++;
             await CloseGame(Hub.Config, token).ConfigureAwait(false);
