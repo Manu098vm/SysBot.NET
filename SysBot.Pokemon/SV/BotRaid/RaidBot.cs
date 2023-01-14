@@ -24,7 +24,7 @@ namespace SysBot.Pokemon
             Settings = hub.Config.RaidSV;
         }
 
-        private const string RaidBotVersion = "Version 0.2.2";
+        private const string RaidBotVersion = "Version 0.2.3";
         private int RaidsAtStart;
         private int RaidCount;
         private int ResetCount;
@@ -104,6 +104,7 @@ namespace SysBot.Pokemon
                 {
                     // Should add overworld recovery with a game restart fallback.
                     await RegroupFromBannedUser(token).ConfigureAwait(false);
+
                     // Clear trainer OTs.
                     Log("Clearing stored OTs");
                     for (int i = 0; i < 3; i++)
@@ -139,6 +140,7 @@ namespace SysBot.Pokemon
                 {
                     // Clear NIDs to refresh player check.
                     await SwitchConnection.WriteBytesAbsoluteAsync(new byte[32], TeraNIDOffsets[0], token).ConfigureAwait(false);
+                    await Task.Delay(5_000, token).ConfigureAwait(false);
 
                     // Loop through trainers again in case someone disconnected.
                     for (int i = 0; i < 3; i++)
@@ -158,16 +160,16 @@ namespace SysBot.Pokemon
                             continue;
 
                         lobbyTrainersFinal.Add((nid, trainer));
-                        var tr = lobbyTrainersFinal.FirstOrDefault(x => x.Item2.OT == trainers[i].Item2.OT);
+                        var tr = trainers.FirstOrDefault(x => x.Item2.OT == trainer.OT);
                         if (tr != default)
-                            Log($"Player: {i + 2} matches lobby check for {tr.Item2.OT}.");
-                        else Log($"New Player: {tr.Item2.OT} - {tr.Item2.DisplayTID} - {tr.Item1}.");
+                            Log($"Player {i + 2} matches lobby check for {trainer.OT}.");
+                        else Log($"New Player {i + 2}: {trainer.OT} | TID: {trainer.DisplayTID} | NID: {nid}.");
                     }
 
                     var names = lobbyTrainersFinal.Select(x => x.Item2.OT).ToList();
                     bool hatTrick = lobbyTrainersFinal.Count == 3 && names.Distinct().Count() == 1;
 
-                    await Task.Delay(20_000, token).ConfigureAwait(false);
+                    await Task.Delay(15_000, token).ConfigureAwait(false);
                     await EnqueueEmbed(names, "", hatTrick, false, token).ConfigureAwait(false);
                 }
 
@@ -325,7 +327,7 @@ namespace SysBot.Pokemon
 
         private async Task<bool> CheckIfTrainerBanned(TradeMyStatus trainer, ulong nid, int player, bool updateBanList, CancellationToken token)
         {
-            Log($"Player {player} - {trainer.OT} | TID: {trainer.DisplayTID} | NID: {nid}");
+            Log($"Player {player}: {trainer.OT} | TID: {trainer.DisplayTID} | NID: {nid}");
             if (!RaidTracker.ContainsKey(nid))
                 RaidTracker.Add(nid, 0);
 
@@ -335,7 +337,7 @@ namespace SysBot.Pokemon
             bool isBanned = banResultCC.Item1 || banResultCFW != default;
             if (isBanned)
             {
-                var msg = banResultCC.Item1 ? banResultCC.Item2 : $"\nBanned user {banResultCFW!.Name} found in the host's ban list.\n{banResultCFW.Comment}";
+                var msg = banResultCC.Item1 ? banResultCC.Item2 : $"Banned user {banResultCFW!.Name} found in the host's ban list.\n{banResultCFW.Comment}";
                 Log(msg);
 
                 await EnqueueEmbed(null, msg, false, true, token).ConfigureAwait(false);
@@ -391,7 +393,7 @@ namespace SysBot.Pokemon
                         updateBanList = false;
                     }
 
-                    if (lobbyTrainers.FirstOrDefault(x => x.Item1 == nid && x.Item2.OT == trainer.OT) != default)
+                    if (lobbyTrainers.FirstOrDefault(x => x.Item1 == nid) != default && trainer.OT.Length > 0)
                         lobbyTrainers[i] = (nid, trainer);
                     else if (nid > 0 && trainer.OT.Length > 0)
                         lobbyTrainers.Add((nid, trainer));
@@ -514,12 +516,17 @@ namespace SysBot.Pokemon
                 if (!disband && names is not null)
                 {
                     var players = string.Empty;
-                    int i = 2;
-                    names.ForEach(x =>
+                    if (names.Count == 0)
+                        players = "Though our party did not make it :(";
+                    else
                     {
-                        players += $"Player {i} - **{x}**\n";
-                        i++;
-                    });
+                        int i = 2;
+                        names.ForEach(x =>
+                        {
+                            players += $"Player {i} - **{x}**\n";
+                            i++;
+                        });
+                    }
 
                     embed.AddField($"**Raid #{RaidCount} is starting!**", players);
                 }

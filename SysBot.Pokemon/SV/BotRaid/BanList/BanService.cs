@@ -43,7 +43,7 @@ namespace SysBot.Pokemon.SV
             }
 
             var result = CheckRaider(raiderName, bannedRaiders, languages, connectionLabel);
-            var msg = result.IsBanned ? $"\nBanned user {raiderName} found from global ban list.\nReason: {result.BanReason}\nLog10p: {result.Log10p}" : "";       
+            var msg = result.IsBanned ? $"Banned user {raiderName} found from global ban list.\nReason: {result.BanReason}\nLog10p: {result.Log10p}" : "";       
             return (result.IsBanned, msg);
         }
 
