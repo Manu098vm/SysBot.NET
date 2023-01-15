@@ -35,7 +35,7 @@ namespace SysBot.Pokemon
         [Category(FeatureToggle), Description("If true, the bot will use a random code for the raid.")]
         public bool CodeTheRaid { get; set; } = true;
 
-        [Category(Hosting), Description("Catch limit per player before they get added to the ban list automatically. If set to 0 this setting will be ignored")]
+        [Category(Hosting), Description("Catch limit per player before they get added to the ban list automatically. If set to 0 this setting will be ignored.")]
         public int CatchLimit { get; set; } = 0;
 
         [Category(Hosting), Description("Minimum amount of seconds to wait before starting a raid.")]
@@ -50,8 +50,8 @@ namespace SysBot.Pokemon
         [Category(Hosting), Description("Amount of raids to complete before rolling time back 1 hour.")]
         public int RollbackTimeAfterThisManyRaids { get; set; } = 10;
 
-        [Category(Hosting), Description("Time to scroll down duration in milliseconds for accessing date/time settings during rollover correction. You want to have it overshoot the Date/Time setting by 1, as it will click DUP after scrolling down. [Default: 1000ms]")]
-        public int TimeToScrollDownForRollover { get; set; } = 1000;
+        [Category(Hosting), Description("Time to scroll down duration in milliseconds for accessing date/time settings during rollover correction. You want to have it overshoot the Date/Time setting by 1, as it will click DUP after scrolling down. [Default: 930ms]")]
+        public int HoldTimeForRollover { get; set; } = 930;
 
         [Category(FeatureToggle), Description("If true, start the bot when you are on the HOME screen with the game closed. The bot will only run the rollover routine so you can try to configure accurate timing.")]
         public bool ConfigureRolloverCorrection { get; set; } = false;

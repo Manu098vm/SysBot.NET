@@ -24,7 +24,7 @@ namespace SysBot.Pokemon
             Settings = hub.Config.RaidSV;
         }
 
-        private const string RaidBotVersion = "Version 0.2.3a";
+        private const string RaidBotVersion = "Version 0.2.3b";
         private int RaidsAtStart;
         private int RaidCount;
         private int ResetCount;
@@ -97,8 +97,9 @@ namespace SysBot.Pokemon
                 // Connect online and enter den.
                 if (!await PrepareForRaid(token).ConfigureAwait(false))
                 {
-                    Log("Failed to prepare the raid. Stopping the routine.");
-                    return;
+                    Log("Failed to prepare the raid, rebooting the game.");
+                    await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
+                    continue;
                 }
 
                 // Wait until we're in lobby.
@@ -284,16 +285,12 @@ namespace SysBot.Pokemon
                     return false;
             }
 
-            // Recover and check if we're connected again.
-            await RecoverToOverworld(token).ConfigureAwait(false);
-            if (!await IsConnectedOnline(ConnectedOffset, token).ConfigureAwait(false))
-            {
-                Log("Connecting again...");
-                if (!await ConnectToOnline(Hub.Config, token).ConfigureAwait(false))
-                    return false;
-            }
+            await Click(B, 0_500, token).ConfigureAwait(false);
 
-            await Click(B, 2_000, token).ConfigureAwait(false);
+            // If not in the overworld, we've been attacked so quit earlier.
+            if (!await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
+                return false;
+
             await Click(A, 3_000, token).ConfigureAwait(false);
             await Click(A, 3_000, token).ConfigureAwait(false);
 
@@ -446,7 +443,7 @@ namespace SysBot.Pokemon
             await PressAndHold(DDOWN, 2_000, 0_250, token).ConfigureAwait(false); // Scroll to system settings
             await Click(A, 1_250, token).ConfigureAwait(false);
 
-            await PressAndHold(DDOWN, Settings.TimeToScrollDownForRollover, 0, token).ConfigureAwait(false);
+            await PressAndHold(DDOWN, Settings.HoldTimeForRollover, 0, token).ConfigureAwait(false);
             await Click(DUP, 0_500, token).ConfigureAwait(false);
 
             await Click(A, 1_250, token).ConfigureAwait(false);
