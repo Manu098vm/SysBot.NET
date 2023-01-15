@@ -24,7 +24,7 @@ namespace SysBot.Pokemon
             Settings = hub.Config.RaidSV;
         }
 
-        private const string RaidBotVersion = "Version 0.2.3";
+        private const string RaidBotVersion = "Version 0.2.3a";
         private int RaidsAtStart;
         private int RaidCount;
         private int ResetCount;
@@ -52,6 +52,13 @@ namespace SysBot.Pokemon
                 Log("Time to wait must be between 0 and 180 seconds.");
                 return;
             }
+
+            if (Settings.RaidsBetweenUpdate == 0 || Settings.RaidsBetweenUpdate < -1)
+            {
+                Log("Raids between updating the global ban list must be greater than 0, or -1 if you want it off.");
+                return;
+            }
+
             try
             {
                 Log("Identifying trainer data of the host console.");
@@ -331,7 +338,7 @@ namespace SysBot.Pokemon
             if (!RaidTracker.ContainsKey(nid))
                 RaidTracker.Add(nid, 0);
 
-            var banResultCC = await BanService.IsRaiderBanned(trainer.OT, Settings.BanListURL, Connection.Label, updateBanList).ConfigureAwait(false);
+            var banResultCC = Settings.RaidsBetweenUpdate == -1 ? (false, "") : await BanService.IsRaiderBanned(trainer.OT, Settings.BanListURL, Connection.Label, updateBanList).ConfigureAwait(false);
             var banResultCFW = RaiderBanList.List.FirstOrDefault(x => x.ID == nid);
 
             bool isBanned = banResultCC.Item1 || banResultCFW != default;
@@ -356,7 +363,7 @@ namespace SysBot.Pokemon
             var wait = TimeSpan.FromSeconds(Settings.TimeToWait);
             var endTime = DateTime.Now + wait;
             bool full = false;
-            bool updateBanList = RaidCount == 0 || RaidCount % Settings.RaidsBetweenUpdate == 0;
+            bool updateBanList = Settings.RaidsBetweenUpdate != -1 && (RaidCount == 0 || RaidCount % Settings.RaidsBetweenUpdate == 0);
 
             while (!full && (DateTime.Now < endTime))
             {
