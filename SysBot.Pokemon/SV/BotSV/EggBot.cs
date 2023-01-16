@@ -220,6 +220,17 @@ namespace SysBot.Pokemon
                     }
                 }
                 Log("30 minutes have passed, remaking sandwich.");
+                if (sandwichcount % 4 != 0)
+                {
+                    Log("Resetting game to rid us of any memory leak.");
+                    await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
+                    await Task.Delay(1_000, token).ConfigureAwait(false);
+                    await Click(X, 0_550, token).ConfigureAwait(false);
+                    await Click(DRIGHT, 0_250, token).ConfigureAwait(false);
+                    await Click(DDOWN, 0_250, token).ConfigureAwait(false);
+                    await Click(DDOWN, 0_250, token).ConfigureAwait(false);
+                    await Click(A, 7_000, token).ConfigureAwait(false);
+                }
                 await MakeSandwich(token).ConfigureAwait(false);
             }
         }
@@ -267,6 +278,17 @@ namespace SysBot.Pokemon
                     Log("Waiting..");
                 }
                 Log("30 minutes have passed, remaking sandwich.");
+                if (sandwichcount % 4 != 0)
+                {
+                    Log("Resetting game to rid us of any memory leak.");
+                    await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
+                    await Task.Delay(1_000, token).ConfigureAwait(false);
+                    await Click(X, 0_550, token).ConfigureAwait(false);
+                    await Click(DRIGHT, 0_250, token).ConfigureAwait(false);
+                    await Click(DDOWN, 0_250, token).ConfigureAwait(false);
+                    await Click(DDOWN, 0_250, token).ConfigureAwait(false);
+                    await Click(A, 7_000, token).ConfigureAwait(false);
+                }
                 await MakeSandwich(token).ConfigureAwait(false);
             }
         }

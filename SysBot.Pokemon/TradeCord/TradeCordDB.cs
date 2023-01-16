@@ -148,7 +148,7 @@ namespace SysBot.Pokemon
                 pkm.SetRelearnMoves(la.GetSuggestedRelearnMoves(enc));
             }
             pkm.HealPP();
-
+            
             if (enc is not EncounterStatic8b && !pkm.FatefulEncounter)
             {
                 pkm.Nature = Random.Next(25);

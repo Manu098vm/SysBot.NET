@@ -31,7 +31,7 @@ namespace SysBot.Pokemon.SV
                 for (int j = 0; j < table.Length; j++)
                 {
                     if (table[j].Value.Contains(letter))
-                        lowered = lowered.Replace(letter, Convert.ToChar(table[j].Key));
+                        lowered = lowered.Replace(letter.ToString(), table[j].Key);
                 }
             }
             return lowered;

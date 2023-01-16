@@ -20,6 +20,9 @@ namespace SysBot.Tests
 
             result = await BanService.IsRaiderBanned("雪雪雪雪", Url, "TestRoutine", false).ConfigureAwait(false);
             result.Item1.Should().BeTrue();
+
+            result = await BanService.IsRaiderBanned("Jœchl", Url, "TestRoutine", false).ConfigureAwait(false);
+            result.Item1.Should().BeFalse();
         }
     }
 }

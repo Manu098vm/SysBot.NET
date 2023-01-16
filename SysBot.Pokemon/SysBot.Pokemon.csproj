@@ -14,6 +14,7 @@
 		<None Remove="SWSH\BotDen\FlatbuffersResource\shieldEnc.bin" />
 		<None Remove="SWSH\BotDen\FlatbuffersResource\swordEnc.bin" />
 		<None Remove="SWSH\BotLair\MoveInfo.json" />
+		<None Remove="TradeCord\Resources\DexFlavor.txt" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -24,7 +24,7 @@ namespace SysBot.Pokemon
             Settings = hub.Config.RaidSV;
         }
 
-        private const string RaidBotVersion = "Version 0.2.3b";
+        private const string RaidBotVersion = "Version 0.2.3c";
         private int RaidsAtStart;
         private int RaidCount;
         private int ResetCount;
@@ -173,6 +173,16 @@ namespace SysBot.Pokemon
                             Log($"Player {i + 2} matches lobby check for {trainer.OT}.");
                         else Log($"New Player {i + 2}: {trainer.OT} | TID: {trainer.DisplayTID} | NID: {nid}.");
                     }
+                    var nidDupe = lobbyTrainersFinal.Select(x => x.Item1).ToList();
+                    var dupe = lobbyTrainersFinal.Count > 1 && nidDupe.Distinct().Count() == 1;
+                    if (dupe)
+                    {
+                        // We read bad data, reset game to end early and recover.
+                        var msg = "Oops! Something went wrong, resetting to recover.";
+                        await EnqueueEmbed(null, msg, false, false, token).ConfigureAwait(false);
+                        await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
+                        return;
+                    }
 
                     var names = lobbyTrainersFinal.Select(x => x.Item2.OT).ToList();
                     bool hatTrick = lobbyTrainersFinal.Count == 3 && names.Distinct().Count() == 1;
@@ -309,7 +319,7 @@ namespace SysBot.Pokemon
             {
                 await Click(A, 1_000, token).ConfigureAwait(false);
                 x++;
-                if (x == 30)
+                if (x == 45)
                 {
                     Log("Failed to connect to lobby, restarting game incase we were in battle/bad connection.");
                     await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
