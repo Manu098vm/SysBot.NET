@@ -491,6 +491,8 @@ namespace SysBot.Pokemon.Discord
             return false;
         }
 
+
+        // NotTrade Additions
         [Command("arceusEmbed")]
         [Alias("ae")]
         [Summary("Initialize posting of ArceusBot embeds to specified Discord channels.")]
@@ -704,6 +706,110 @@ namespace SysBot.Pokemon.Discord
                 }
                 else await Task.Delay(0_500).ConfigureAwait(false);
             }
+        }
+
+        public static readonly string[] MarkTitle =
+{
+            " the Peckish"," the Sleepy"," the Dozy"," the Early Riser"," the Cloud Watcher"," the Sodden"," the Thunderstruck"," the Snow Frolicker"," the Shivering"," the Parched"," the Sandswept"," the Mist Drifter",
+            " the Chosen One"," the Catch of the Day"," the Curry Connoisseur"," the Sociable"," the Recluse"," the Rowdy"," the Spacey"," the Anxious"," the Giddy"," the Radiant"," the Serene"," the Feisty"," the Daydreamer",
+            " the Joyful"," the Furious"," the Beaming"," the Teary-Eyed"," the Chipper"," the Grumpy"," the Scholar"," the Rampaging"," the Opportunist"," the Stern"," the Kindhearted"," the Easily Flustered"," the Driven",
+            " the Apathetic"," the Arrogant"," the Reluctant"," the Humble"," the Pompous"," the Lively"," the Worn-Out",
+        };
+
+        [Command("SVEmbed")]
+        [Alias("svem", "sve")]
+        [Summary("Initialize posting of SV shiny result embeds to specified Discord channels.")]
+        [RequireSudo]
+        public async Task InitializeEmbedsSV()
+        {
+            if (SysCord<T>.Runner.Hub.Config.StopConditions.ResultsEmbedChannels == string.Empty)
+            {
+                await ReplyAsync("No channels to post embeds in.").ConfigureAwait(false);
+                return;
+            }
+
+            List<ulong> channels = new();
+            foreach (var channel in SysCord<T>.Runner.Hub.Config.StopConditions.ResultsEmbedChannels.Split(',', ' '))
+            {
+                if (ulong.TryParse(channel, out ulong result) && !channels.Contains(result))
+                    channels.Add(result);
+            }
+
+            if (channels.Count == 0)
+            {
+                await ReplyAsync("No valid channels found.").ConfigureAwait(false);
+                return;
+            }
+
+            await ReplyAsync(!EggBotSV.EmbedsInitialized ? "Scarlet | Violet Embed task started!" : "Scarlet | Violet Embed task stopped!").ConfigureAwait(false);
+            if (EggBotSV.EmbedsInitialized)
+                EggBotSV.EmbedSource.Cancel();
+            else _ = Task.Run(async () => await SVEmbedLoop(channels));
+            EggBotSV.EmbedsInitialized ^= true;
+        }
+
+        private async Task SVEmbedLoop(List<ulong> channels)
+        {
+            var ping = SysCord<T>.Runner.Hub.Config.StopConditions.MatchFoundEchoMention;
+            while (!EggBotSV.EmbedSource.IsCancellationRequested)
+            {
+                if (EggBotSV.EmbedMon.Item1 != null)
+                {
+                    bool hasMark = StopConditionSettings.HasMark(EggBotSV.EmbedMon.Item1, out RibbonIndex mark);
+                    string msg = hasMark ? $"{mark.ToString().Replace("Mark", "")}mark" : "";
+                    var url = TradeExtensions<PK9>.PokeImg(EggBotSV.EmbedMon.Item1, false, false);
+                    var markurl = $"https://www.serebii.net/swordshield/ribbons/" + $"{msg.ToLower()}" + ".png";
+                    if (mark == RibbonIndex.MarkPumpedUp)
+                        markurl = $"https://www.serebii.net/swordshield/ribbons/pumped-upmark.png";
+                    if (mark == RibbonIndex.MarkAbsentMinded)
+                        markurl = $"https://www.serebii.net/swordshield/ribbons/absent-mindedmark.png";
+                    if (mark == RibbonIndex.MarkSleepyTime)
+                        markurl = $"https://www.serebii.net/swordshield/ribbons/sleepy-timemark.png";
+                    if (mark == RibbonIndex.MarkZonedOut)
+                        markurl = $"https://www.serebii.net/swordshield/ribbons/zoned-outmark.png";
+
+                    string markEntryText = "";
+                    var index = (int)mark - (int)RibbonIndex.MarkLunchtime;
+                    if (index > 0)
+                        markEntryText = MarkTitle[index];
+                    var gender = EggBotSV.EmbedMon.Item1.Gender == 0 ? " - (M)" : EggBotSV.EmbedMon.Item1.Gender == 1 ? " - (F)" : "";
+
+                    if (!hasMark)
+                        markurl = $"https://i.imgur.com/t2M8qF4.png";
+
+                    var description = $"{(EggBotSV.EmbedMon.Item1.ShinyXor == 0 ? "■" : EggBotSV.EmbedMon.Item1.ShinyXor <= 16 ? "★" : "")} - {SpeciesName.GetSpeciesNameGeneration(EggBotSV.EmbedMon.Item1.Species, 2, 8)}{TradeExtensions<T>.FormOutput(EggBotSV.EmbedMon.Item1.Species, EggBotSV.EmbedMon.Item1.Form, out _)}{markEntryText}{gender}\nIVs: {EggBotSV.EmbedMon.Item1.IV_HP}/{EggBotSV.EmbedMon.Item1.IV_ATK}/{EggBotSV.EmbedMon.Item1.IV_DEF}/{EggBotSV.EmbedMon.Item1.IV_SPA}/{EggBotSV.EmbedMon.Item1.IV_SPD}/{EggBotSV.EmbedMon.Item1.IV_SPE}\n{(StopConditionSettings.HasMark(EggBotSV.EmbedMon.Item1, out RibbonIndex yesmark) ? $"Pokémon Mark: {yesmark.ToString().Replace("Mark", "")}" : "")}";
+                    if (SysCord<T>.Runner.Hub.Config.StopConditions.ShinyTarget == TargetShinyType.NonShiny)
+                        description = $"{SpeciesName.GetSpeciesNameGeneration(EggBotSV.EmbedMon.Item1.Species, 2, 8)}{TradeExtensions<T>.FormOutput(EggBotSV.EmbedMon.Item1.Species, EggBotSV.EmbedMon.Item1.Form, out _)}{markEntryText}\nIVs: {EggBotSV.EmbedMon.Item1.IV_HP}/{EggBotSV.EmbedMon.Item1.IV_ATK}/{EggBotSV.EmbedMon.Item1.IV_DEF}/{EggBotSV.EmbedMon.Item1.IV_SPA}/{EggBotSV.EmbedMon.Item1.IV_SPD}/{EggBotSV.EmbedMon.Item1.IV_SPE}\n{(StopConditionSettings.HasMark(EggBotSV.EmbedMon.Item1, out RibbonIndex ymark) ? $"Pokémon Mark: {ymark.ToString().Replace("Mark", "")}" : "")}";
+
+                    var author = new EmbedAuthorBuilder { IconUrl = markurl, Name = EggBotSV.EmbedMon.Item2 ? "Match found!" : "Unwanted match..." };
+                    var embed = new EmbedBuilder
+                    {
+                        Color = hasMark && EggBotSV.EmbedMon.Item1.FlawlessIVCount >= 1 ? Color.Gold : hasMark ? Color.Blue :
+                        !hasMark && EggBotSV.EmbedMon.Item1.FlawlessIVCount >= 1 ? Color.Teal : Color.Red,
+                        ThumbnailUrl = url
+                    }.WithAuthor(author).WithDescription(description);
+
+                    var guilds = Context.Client.Guilds;
+                    foreach (var guild in guilds)
+                    {
+                        foreach (var channel in channels)
+                        {
+                            var ch = guild.Channels.FirstOrDefault(x => x.Id == channel);
+                            if (ch != default && ch is ISocketMessageChannel sock)
+                            {
+                                try
+                                {
+                                    await sock.SendMessageAsync(EggBotSV.EmbedMon.Item2 ? ping : "", embed: embed.Build()).ConfigureAwait(false);
+                                }
+                                catch { }
+                            }
+                        }
+                    }
+                    EggBotSV.EmbedMon.Item1 = null;
+                }
+                else await Task.Delay(1_000).ConfigureAwait(false);
+            }
+            EggBotSV.EmbedSource = new();
         }
 
         [Command("repeek")]

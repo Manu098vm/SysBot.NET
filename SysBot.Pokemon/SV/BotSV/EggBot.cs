@@ -15,6 +15,10 @@ namespace SysBot.Pokemon
         private readonly EggSettingsSV Settings;
         public ICountSettings Counts => Settings;
 
+        public static CancellationTokenSource EmbedSource = new();
+        public static bool EmbedsInitialized;
+        public static (PK9?, bool) EmbedMon;
+
         public EggBotSV(PokeBotState cfg, PokeTradeHub<PK9> hub) : base(cfg)
         {
             Hub = hub;
@@ -81,6 +85,12 @@ namespace SysBot.Pokemon
         {
             await SetCurrentBox(0, token).ConfigureAwait(false);
             await SwitchConnection.WriteBytesMainAsync(BlankVal, PicnicMenu, token).ConfigureAwait(false);
+
+            if (Hub.Config.EggSV.EggBotMode == EggMode.WaitAndClose && Settings.ContinueAfterMatch == ContinueAfterMatch.Continue)
+            {
+                Log("The Continue setting is not recommended for this mode, attempting to change it to PauseWaitAcknowledge.");
+                Settings.ContinueAfterMatch = ContinueAfterMatch.PauseWaitAcknowledge;
+            }
 
             if (Hub.Config.EggSV.EggBotMode == EggMode.CollectAndDump)
             {
@@ -220,7 +230,7 @@ namespace SysBot.Pokemon
                     }
                 }
                 Log("30 minutes have passed, remaking sandwich.");
-                if (sandwichcount % 4 != 0)
+                if (sandwichcount % 4 == 0)
                 {
                     Log("Resetting game to rid us of any memory leak.");
                     await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
@@ -278,7 +288,7 @@ namespace SysBot.Pokemon
                     Log("Waiting..");
                 }
                 Log("30 minutes have passed, remaking sandwich.");
-                if (sandwichcount % 4 != 0)
+                if (sandwichcount % 4 == 0)
                 {
                     Log("Resetting game to rid us of any memory leak.");
                     await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
@@ -302,7 +312,6 @@ namespace SysBot.Pokemon
             var mode = Settings.ContinueAfterMatch;
             var msg = $"Result found!\n{print}\n" + mode switch
             {
-                ContinueAfterMatch.Continue => "Continuing...",
                 ContinueAfterMatch.PauseWaitAcknowledge => "Waiting for instructions to continue.",
                 ContinueAfterMatch.StopExit => "Stopping routine execution; restart the bot to search again.",
                 _ => throw new ArgumentOutOfRangeException(),
@@ -316,14 +325,19 @@ namespace SysBot.Pokemon
             if (Settings.OneInOneHundredOnly)
             {
                 if ((Species)pk.Species is Species.Dunsparce or Species.Tandemaus && pk.EncryptionConstant % 100 != 0)
+                {
+                    EmbedMon = (pk, false);
                     return true;
+                }
             }
 
             if (mode == ContinueAfterMatch.StopExit)
+            {
+                EmbedMon = (pk, true);
                 return false;
-            if (mode == ContinueAfterMatch.Continue)
-                return true;
+            }
 
+            EmbedMon = (pk, true);
             EchoUtil.Echo(msg);
 
             IsWaiting = true;
