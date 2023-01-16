@@ -175,12 +175,13 @@ namespace SysBot.Pokemon
         private async Task WaitForEggs(CancellationToken token)
         {
             PK9 pkprev = new();
+            var reset = 0;
             while (!token.IsCancellationRequested)
             {
                 var wait = TimeSpan.FromMinutes(30);
                 var endTime = DateTime.Now + wait;
                 var ctr = 0;
-                var waiting = 0;
+                var waiting = 0;                
                 while (DateTime.Now < endTime)
                 {
                     var pk = await ReadPokemonSV(EggData, 344, token).ConfigureAwait(false);
@@ -230,8 +231,9 @@ namespace SysBot.Pokemon
                     }
                 }
                 Log("30 minutes have passed, remaking sandwich.");
-                if (sandwichcount % 4 == 0)
+                if (reset == Settings.ResetGameAfterThisManySandwiches)
                 {
+                    reset = 0;
                     Log("Resetting game to rid us of any memory leak.");
                     await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
                     await Task.Delay(1_000, token).ConfigureAwait(false);
@@ -241,6 +243,7 @@ namespace SysBot.Pokemon
                     await Click(DDOWN, 0_250, token).ConfigureAwait(false);
                     await Click(A, 7_000, token).ConfigureAwait(false);
                 }
+                reset++;
                 await MakeSandwich(token).ConfigureAwait(false);
             }
         }
@@ -248,6 +251,7 @@ namespace SysBot.Pokemon
         private async Task PerformEggRoutine(CancellationToken token)
         {
             PK9 pkprev = new();
+            var reset = 0;
             while (!token.IsCancellationRequested)
             {
                 var wait = TimeSpan.FromMinutes(30);
@@ -288,8 +292,9 @@ namespace SysBot.Pokemon
                     Log("Waiting..");
                 }
                 Log("30 minutes have passed, remaking sandwich.");
-                if (sandwichcount % 4 == 0)
+                if (reset == Settings.ResetGameAfterThisManySandwiches)
                 {
+                    reset = 0;
                     Log("Resetting game to rid us of any memory leak.");
                     await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
                     await Task.Delay(1_000, token).ConfigureAwait(false);
@@ -299,6 +304,7 @@ namespace SysBot.Pokemon
                     await Click(DDOWN, 0_250, token).ConfigureAwait(false);
                     await Click(A, 7_000, token).ConfigureAwait(false);
                 }
+                reset++;
                 await MakeSandwich(token).ConfigureAwait(false);
             }
         }
@@ -306,7 +312,12 @@ namespace SysBot.Pokemon
         private bool CheckEncounter(string print, PK9 pk)
         {
             if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, null))
+            {
+                if (Hub.Config.StopConditions.ShinyTarget is TargetShinyType.AnyShiny or TargetShinyType.StarOnly or TargetShinyType.SquareOnly && pk.IsShiny)
+                    EmbedMon = (pk, false);
+
                 return true;
+            }
 
             // no need to take a video clip of us receiving an egg.
             var mode = Settings.ContinueAfterMatch;
