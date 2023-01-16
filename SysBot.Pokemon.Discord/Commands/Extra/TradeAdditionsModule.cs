@@ -681,10 +681,14 @@ namespace SysBot.Pokemon.Discord
                         CommonEdits.SetShiny(pk, Shiny.Always);
                     if ((Species)pk.Species <= Species.Enamorus)
                         turl = TradeExtensions<PK9>.PokeImg(pk, false, false);
-                    if ((Species)pk.Species is Species.Wooper && pk.Form != 0 && isShiny || (Species)pk.Species is Species.Tauros && pk.Form != 0 && isShiny || (Species)pk.Species > Species.Enamorus && pk.Species != 0 && isShiny)
-                        turl = $"https://raw.githubusercontent.com/zyro670/PokeTextures/main/Placeholder_Sprites/scaled_up_sprites/Shiny/" + $"{pk.Species}{form}" + ".png";
-                    if ((Species)pk.Species is Species.Wooper && pk.Form != 0 && !isShiny || (Species)pk.Species is Species.Tauros && pk.Form != 0 && !isShiny || (Species)pk.Species > Species.Enamorus && pk.Species != 0 && !isShiny)
-                        turl = $"https://raw.githubusercontent.com/zyro670/PokeTextures/main/Placeholder_Sprites/scaled_up_sprites/" + $"{pk.Species}{form}" + ".png";
+                    if ((Species)pk.Species > Species.Enamorus || (Species)pk.Species is Species.Wooper && pk.Form != 0 || (Species)pk.Species is Species.Tauros && pk.Form != 0)
+                    {
+                        if (isShiny)
+                            turl = $"https://raw.githubusercontent.com/zyro670/PokeTextures/main/Placeholder_Sprites/scaled_up_sprites/Shiny/" + $"{pk.Species}{form}" + ".png";
+                        else
+                            turl = $"https://raw.githubusercontent.com/zyro670/PokeTextures/main/Placeholder_Sprites/scaled_up_sprites/" + $"{pk.Species}{form}" + ".png";
+                    }
+
                     _ = new EmbedBuilder();
                     EmbedBuilder? embed = embedInfo.Item2;
                     embed.ThumbnailUrl = turl;
