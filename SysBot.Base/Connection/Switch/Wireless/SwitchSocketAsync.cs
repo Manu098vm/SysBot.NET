@@ -264,5 +264,12 @@ namespace SysBot.Base
 
             return result;
         }
+
+        public async Task<long> GetUnixTime(CancellationToken token)
+        {
+            var result = await ReadBytesFromCmdAsync(SwitchCommand.GetUnixTime(), 8, token).ConfigureAwait(false);
+            Array.Reverse(result);
+            return BitConverter.ToInt64(result, 0);
+        }
     }
 }

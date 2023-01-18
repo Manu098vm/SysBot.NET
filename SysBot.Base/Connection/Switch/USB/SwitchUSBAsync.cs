@@ -139,5 +139,15 @@ namespace SysBot.Base
                 return GetScreenshot();
             }, token);
         }
+
+        public Task<long> GetUnixTime(CancellationToken token)
+        {
+            return Task.Run(() =>
+            {
+                Send(SwitchCommand.GetUnixTime(false));
+                byte[] baseBytes = ReadBulkUSB();
+                return BitConverter.ToInt64(baseBytes, 0);
+            }, token);
+        }
     }
 }
