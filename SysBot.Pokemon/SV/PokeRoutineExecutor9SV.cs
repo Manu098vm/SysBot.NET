@@ -144,7 +144,7 @@ namespace SysBot.Pokemon
 
         public async Task ReOpenGame(PokeTradeHubConfig config, CancellationToken token)
         {
-            Log("Error detected, restarting the game!!");
+            Log("Restarting the game!");
             await CloseGame(config, token).ConfigureAwait(false);
             await StartGame(config, token).ConfigureAwait(false);
         }

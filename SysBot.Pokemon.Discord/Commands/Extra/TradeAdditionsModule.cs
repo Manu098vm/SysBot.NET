@@ -676,14 +676,14 @@ namespace SysBot.Pokemon.Discord
                     };
                     if (pk.Form != 0)
                         form = $"-{pk.Form}";
-                    var isShiny = RaidSettingsSV.RaidSpeciesIsShiny ? CommonEdits.SetIsShiny(pk, true) : CommonEdits.SetIsShiny(pk, false);
+                    _ = RaidSettingsSV.RaidSpeciesIsShiny ? CommonEdits.SetIsShiny(pk, true) : CommonEdits.SetIsShiny(pk, false);
                     if ((Species)pk.Species <= Species.Enamorus)
                         turl = TradeExtensions<PK9>.PokeImg(pk, false, false);
                     if ((Species)pk.Species > Species.Enamorus || (Species)pk.Species is Species.Wooper && pk.Form != 0 || (Species)pk.Species is Species.Tauros && pk.Form != 0)
                     {
-                        if (isShiny)
+                        if (RaidSettingsSV.RaidSpeciesIsShiny)
                             turl = $"https://raw.githubusercontent.com/zyro670/PokeTextures/main/Placeholder_Sprites/scaled_up_sprites/Shiny/" + $"{pk.Species}{form}" + ".png";
-                        else
+                        else if (!RaidSettingsSV.RaidSpeciesIsShiny)
                             turl = $"https://raw.githubusercontent.com/zyro670/PokeTextures/main/Placeholder_Sprites/scaled_up_sprites/" + $"{pk.Species}{form}" + ".png";
                     }
 

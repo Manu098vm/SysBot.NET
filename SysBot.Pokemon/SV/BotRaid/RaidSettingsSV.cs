@@ -44,11 +44,8 @@ namespace SysBot.Pokemon
         [Category(Hosting), Description("Users NIDs here are banned raiders.")]
         public RemoteControlAccessList RaiderBanList { get; set; } = new() { AllowIfEmpty = false };
 
-        [Category(FeatureToggle), Description("If true, the bot will apply rollback correction.")]
-        public bool RollbackTime { get; set; } = true;
-
-        [Category(Hosting), Description("Amount of raids to complete before rolling time back 1 hour.")]
-        public int RollbackTimeAfterThisManyRaids { get; set; } = 10;
+        [Category(FeatureToggle), Description("Set your Switch Date/Time format in the Date/Time settings. The day will automatically rollback by 1 if the Date changes.")]
+        public DTFormat DateTimeFormat { get; set; } = DTFormat.MMDDYY;
 
         [Category(Hosting), Description("Time to scroll down duration in milliseconds for accessing date/time settings during rollover correction. You want to have it overshoot the Date/Time setting by 1, as it will click DUP after scrolling down. [Default: 930ms]")]
         public int HoldTimeForRollover { get; set; } = 930;
@@ -86,6 +83,13 @@ namespace SysBot.Pokemon
                 yield break;
             if (CompletedRaids != 0)
                 yield return $"Started Raids: {CompletedRaids}";
+        }
+
+        public enum DTFormat
+        { 
+            MMDDYY,
+            DDMMYY,
+            YYMMDD,
         }
     }
 }

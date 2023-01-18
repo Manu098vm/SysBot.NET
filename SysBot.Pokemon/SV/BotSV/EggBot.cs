@@ -200,6 +200,12 @@ namespace SysBot.Pokemon
                             endTime = DateTime.Now + wait;
                             waiting = 0;
                             ctr = 0;
+                            if (reset == Settings.ResetGameAfterThisManySandwiches)
+                            {
+                                reset = 0;
+                                await RecoveryReset(token).ConfigureAwait(false);
+                            }
+                            reset++;
                         }
                     }
 
@@ -234,18 +240,23 @@ namespace SysBot.Pokemon
                 if (reset == Settings.ResetGameAfterThisManySandwiches)
                 {
                     reset = 0;
-                    Log("Resetting game to rid us of any memory leak.");
-                    await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
-                    await Task.Delay(1_000, token).ConfigureAwait(false);
-                    await Click(X, 0_550, token).ConfigureAwait(false);
-                    await Click(DRIGHT, 0_250, token).ConfigureAwait(false);
-                    await Click(DDOWN, 0_250, token).ConfigureAwait(false);
-                    await Click(DDOWN, 0_250, token).ConfigureAwait(false);
-                    await Click(A, 7_000, token).ConfigureAwait(false);
+                    await RecoveryReset(token).ConfigureAwait(false);
                 }
                 reset++;
                 await MakeSandwich(token).ConfigureAwait(false);
             }
+        }
+
+        private async Task RecoveryReset(CancellationToken token)
+        {
+            Log("Resetting game to rid us of any memory leak.");
+            await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
+            await Task.Delay(1_000, token).ConfigureAwait(false);
+            await Click(X, 2_000, token).ConfigureAwait(false);
+            await Click(DRIGHT, 0_250, token).ConfigureAwait(false);
+            await Click(DDOWN, 0_250, token).ConfigureAwait(false);
+            await Click(DDOWN, 0_250, token).ConfigureAwait(false);
+            await Click(A, 7_000, token).ConfigureAwait(false);
         }
 
         private async Task PerformEggRoutine(CancellationToken token)
