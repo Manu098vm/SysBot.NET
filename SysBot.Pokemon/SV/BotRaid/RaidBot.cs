@@ -494,7 +494,8 @@ namespace SysBot.Pokemon
             await Click(B, 1_250, token).ConfigureAwait(false);
             await Click(A, 3_000, token).ConfigureAwait(false);
             await Click(A, 1_500, token).ConfigureAwait(false);
-            await Click(B, 1_000, token).ConfigureAwait(false);
+            while (!await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
+                await Click(B, 1_000, token).ConfigureAwait(false);
         }
 
         private async Task InitializeSessionOffsets(CancellationToken token)
