@@ -25,7 +25,7 @@ namespace SysBot.Pokemon
             Settings = hub.Config.RaidSV;
         }
 
-        private const string RaidBotVersion = "Version 0.3.0";
+        private const string RaidBotVersion = "Version 0.3.0a";
         private int RaidsAtStart;
         private int RaidCount;
         private int WinCount;
@@ -86,8 +86,6 @@ namespace SysBot.Pokemon
             StartTime = DateTime.Now;
             var unix = await SwitchConnection.GetUnixTime(token).ConfigureAwait(false);
             StartingDay = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds(unix).ToLocalTime();
-            TodaySeed = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(TeraRaidBlockOffset, 8, token).ConfigureAwait(false), 0);
-            Log($"Starting Day: {StartingDay.Day} with TodaySeed: {TodaySeed:X8}");
             while (!token.IsCancellationRequested)
             {
                 unix = await SwitchConnection.GetUnixTime(token).ConfigureAwait(false);
@@ -102,15 +100,20 @@ namespace SysBot.Pokemon
                     continue;
                 }
 
+                // Initialize offsets at the start of the routine and cache them.
+                await InitializeSessionOffsets(token).ConfigureAwait(false);
+                if (RaidCount == 0)
+                {
+                    TodaySeed = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(TeraRaidBlockOffset, 8, token).ConfigureAwait(false), 0);
+                    Log($"Starting Day: {StartingDay.Day} with TodaySeed: {TodaySeed:X8}");
+                }
+
                 var currentSeed = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(TeraRaidBlockOffset, 8, token).ConfigureAwait(false), 0);
                 if (TodaySeed != currentSeed)
                 {
                     Log($"CurrentSeed {currentSeed:X8} does not match TodaySeed: {TodaySeed:X8} after rolling back 1 day. Stopping routine for lost raid.");
                     return;
                 }
-
-                // Initialize offsets at the start of the routine and cache them.
-                await InitializeSessionOffsets(token).ConfigureAwait(false);
 
                 // Get initial raid counts for comparison later.
                 await CountRaids(null, token).ConfigureAwait(false);
@@ -263,7 +266,7 @@ namespace SysBot.Pokemon
         private async Task CountRaids(List<(ulong, TradeMyStatus)>? trainers, CancellationToken token)
         {
             List<uint> seeds = new();
-            var data = await SwitchConnection.ReadBytesAbsoluteAsync(TeraRaidBlockOffset, 2304, token).ConfigureAwait(false);
+            var data = await SwitchConnection.ReadBytesAbsoluteAsync(TeraRaidBlockOffset + 0x20, 2304, token).ConfigureAwait(false);
             for (int i = 0; i < 69; i++)
             {
                 var seed = BitConverter.ToUInt32(data.Slice(0 + (i * 32), 4));
