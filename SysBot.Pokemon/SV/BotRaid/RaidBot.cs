@@ -25,7 +25,7 @@ namespace SysBot.Pokemon
             Settings = hub.Config.RaidSV;
         }
 
-        private const string RaidBotVersion = "Version 0.3.0b";
+        private const string RaidBotVersion = "Version 0.3.1";
         private int RaidsAtStart;
         private int RaidCount;
         private int WinCount;
@@ -33,7 +33,6 @@ namespace SysBot.Pokemon
         private readonly Dictionary<ulong, int> RaidTracker = new();
         private SAV9SV HostSAV = new();
         private DateTime StartTime = DateTime.Now;
-        private DateTime StartingDay;
 
         private ulong TodaySeed;
         private ulong OverworldOffset;
@@ -84,35 +83,32 @@ namespace SysBot.Pokemon
             bool partyReady;
             List<(ulong, TradeMyStatus)> lobbyTrainers;
             StartTime = DateTime.Now;
-            var unix = await SwitchConnection.GetUnixTime(token).ConfigureAwait(false);
-            StartingDay = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds(unix).ToLocalTime();
+            var dayRoll = 0;
             while (!token.IsCancellationRequested)
             {
-                unix = await SwitchConnection.GetUnixTime(token).ConfigureAwait(false);
-                var currentDay = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds(unix).ToLocalTime();
-
-                if (StartingDay.Day != currentDay.Day) // Compare starting vs current day for den recovery.
-                {
-                    Log($"Current Day: {currentDay.Day} doesn't match Starting Day {StartingDay.Day}, attempting dayroll correction.");
-                    await CloseGame(Hub.Config, token).ConfigureAwait(false);
-                    await RolloverCorrectionSV(token).ConfigureAwait(false);
-                    await StartGame(Hub.Config, token).ConfigureAwait(false);
-                    continue;
-                }
-
                 // Initialize offsets at the start of the routine and cache them.
                 await InitializeSessionOffsets(token).ConfigureAwait(false);
                 if (RaidCount == 0)
                 {
                     TodaySeed = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(TeraRaidBlockOffset, 8, token).ConfigureAwait(false), 0);
-                    Log($"Starting Day: {StartingDay.Day} with TodaySeed: {TodaySeed:X8}");
+                    Log($"Starting routine with Today Seed: {TodaySeed:X8}");
                 }
 
                 var currentSeed = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(TeraRaidBlockOffset, 8, token).ConfigureAwait(false), 0);
                 if (TodaySeed != currentSeed)
                 {
-                    Log($"CurrentSeed {currentSeed:X8} does not match TodaySeed: {TodaySeed:X8} after rolling back 1 day. Stopping routine for lost raid.");
-                    return;
+                    if (dayRoll != 0)
+                    {
+                        Log($"Current Today Seed {currentSeed:X8} does not match Starting Today Seed: {TodaySeed:X8} after rolling back 1 day. Stopping routine for lost raid.");
+                        return;
+                    }
+                    Log($"Current Today Seed {currentSeed:X8} does not match Starting Today Seed: {TodaySeed:X8}, attempting dayroll correction.");
+                    await CloseGame(Hub.Config, token).ConfigureAwait(false);
+                    await RolloverCorrectionSV(token).ConfigureAwait(false);
+                    await StartGame(Hub.Config, token).ConfigureAwait(false);
+
+                    dayRoll++;
+                    continue;
                 }
 
                 // Get initial raid counts for comparison later.
@@ -538,7 +534,9 @@ namespace SysBot.Pokemon
                 if (description.Length > 4096)
                     description = description[..4096];
 
-                var bytes = Settings.TakeScreenshot ? await SwitchConnection.Screengrab(token).ConfigureAwait(false) : Array.Empty<byte>();
+                byte[]? bytes = Array.Empty<byte>();
+                if (Settings.TakeScreenshot)
+                    bytes = await SwitchConnection.Screengrab(token).ConfigureAwait(false) ?? Array.Empty<byte>();
                 var embed = new EmbedBuilder()
                 {
                     Title = disband ? "**Raid was disbanded due to a banned user**" : title,

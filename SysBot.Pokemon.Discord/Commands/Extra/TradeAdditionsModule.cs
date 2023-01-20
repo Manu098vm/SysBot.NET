@@ -241,7 +241,7 @@ namespace SysBot.Pokemon.Discord
             }
 
             var c = bot.Bot.Connection;
-            var bytes = await c.Screengrab(token).ConfigureAwait(false);
+            var bytes = await c.Screengrab(token).ConfigureAwait(false) ?? Array.Empty<byte>();
             if (bytes.Length == 1)
             {
                 await ReplyAsync($"Failed to take a screenshot for bot at {address}. Is the bot connected?").ConfigureAwait(false);
@@ -809,7 +809,7 @@ namespace SysBot.Pokemon.Discord
 
             var c = bot.Bot.Connection;
             c.Reset();
-            var bytes = Task.Run(async () => await c.Screengrab(token).ConfigureAwait(false)).Result;
+            var bytes = Task.Run(async () => await c.Screengrab(token).ConfigureAwait(false)).Result ?? Array.Empty<byte>();
             MemoryStream ms = new(bytes);
             var img = "cap.jpg";
             var embed = new EmbedBuilder { ImageUrl = $"attachment://{img}", Color = Color.Purple }.WithFooter(new EmbedFooterBuilder { Text = $"Captured image from bot at address {address}." });
