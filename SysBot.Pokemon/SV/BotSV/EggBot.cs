@@ -162,7 +162,7 @@ namespace SysBot.Pokemon
             }
             for (int i = 0; i < 10; i++)
                 await Click(A, 0_500, token).ConfigureAwait(false); // Click A alot incase pokemon are not level 100
-            await Click(X, 1_500, token).ConfigureAwait(false);
+            await Click(X, 1_700, token).ConfigureAwait(false);
             if (hasReset) // If we are starting fresh, we need to reposition over the picnic button
             {
                 await Click(DRIGHT, 0_250, token).ConfigureAwait(false);
@@ -222,6 +222,7 @@ namespace SysBot.Pokemon
                         if (!match)
                         {
                             Log("Make sure to pick up your egg in the basket!");
+                            await Click(HOME, 0_500, token).ConfigureAwait(false);
                             return;
                         }
                         pkprev = pk;
@@ -251,6 +252,7 @@ namespace SysBot.Pokemon
         {
             Log("Resetting game to rid us of any memory leak.");
             await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
+            OverworldOffset = await SwitchConnection.PointerAll(Offsets.OverworldPointer, token).ConfigureAwait(false);
             await Task.Delay(1_000, token).ConfigureAwait(false);
             await Click(X, 2_000, token).ConfigureAwait(false);
             await Click(DRIGHT, 0_250, token).ConfigureAwait(false);
@@ -293,7 +295,11 @@ namespace SysBot.Pokemon
 
                         await RetrieveEgg(token).ConfigureAwait(false);
                         if (!match)
+                        {
+                            Log("Egg should be claimed!");
+                            await Click(HOME, 0_500, token).ConfigureAwait(false);
                             return;
+                        }
 
                         pkprev = pk;
                     }
@@ -335,6 +341,7 @@ namespace SysBot.Pokemon
             var msg = $"Result found!\n{print}\n" + mode switch
             {
                 ContinueAfterMatch.PauseWaitAcknowledge => "Waiting for instructions to continue.",
+                ContinueAfterMatch.Continue => "Continuing..",
                 ContinueAfterMatch.StopExit => "Stopping routine execution; restart the bot to search again.",
                 _ => throw new ArgumentOutOfRangeException(),
             };
@@ -361,6 +368,7 @@ namespace SysBot.Pokemon
 
             EmbedMon = (pk, true);
             EchoUtil.Echo(msg);
+            Click(HOME, 0_500, CancellationToken.None).ConfigureAwait(false);
 
             IsWaiting = true;
             while (IsWaiting)

@@ -815,5 +815,18 @@ namespace SysBot.Pokemon.Discord
             var embed = new EmbedBuilder { ImageUrl = $"attachment://{img}", Color = Color.Purple }.WithFooter(new EmbedFooterBuilder { Text = $"Captured image from bot at address {address}." });
             await Context.Channel.SendFileAsync(ms, img, "", false, embed: embed.Build());
         }
+
+        [Command("setCatchLimit")]
+        [Alias("scl")]
+        [Summary("Set the Catch Limit for Raids in SV.")]
+        [RequireSudo]
+        public async Task SetOffsetIncrement([Summary("Set the Catch Limit for Raids in SV.")] int limit)
+        {
+            int parse = SysCord<T>.Runner.Hub.Config.RaidSV.CatchLimit = limit;
+
+            var msg = $"{Context.User.Mention} Catch Limit for Raids has been set to {parse}.";
+            await ReplyAsync(msg).ConfigureAwait(false);
+        }
+
     }
 }
