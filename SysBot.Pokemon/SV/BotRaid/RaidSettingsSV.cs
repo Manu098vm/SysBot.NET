@@ -15,7 +15,7 @@ namespace SysBot.Pokemon
         public string BanListURL { get; set; } = "https://raw.githubusercontent.com/PokemonAutomation/ServerConfigs-PA-SHA/main/PokemonScarletViolet/TeraAutoHost-BanList.json";
 
         [Category(Hosting), Description("Amount of raids before updating the ban list. If you want the global ban list off, set this to -1.")]
-        public int RaidsBetweenUpdate { get; set; } = 10;
+        public int RaidsBetweenUpdate { get; set; } = 3;
 
         [Category(FeatureToggle), Description("Raid embed title.")]
         public string RaidEmbedTitle { get; set; } = "Tera Raid Notification";
