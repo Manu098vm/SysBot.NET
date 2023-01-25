@@ -25,7 +25,7 @@ namespace SysBot.Pokemon
             Settings = hub.Config.RaidSV;
         }
 
-        private const string RaidBotVersion = "Version 0.3.2";
+        private const string RaidBotVersion = "Version 0.3.2a";
         private int RaidsAtStart;
         private int RaidCount;
         private int WinCount;
@@ -375,8 +375,8 @@ namespace SysBot.Pokemon
                 }
                 if (val == Settings.CatchLimit + 2 && Settings.CatchLimit != 0) // Hard pity - ban user
                 {
-                    Log($"Player: {trainer.OT} has been added to the ban list for repeated offenses of the catch limit {val}/{Settings.CatchLimit} for {Settings.RaidSpecies} on {DateTime.Now}.");
-                    RaiderBanList.List.Add(new() { ID = nid, Name = trainer.OT, Comment = $"Player: {trainer.OT} attempted to exceed the catch limit {val}/{Settings.CatchLimit} for {Settings.RaidSpecies} on {DateTime.Now}." });
+                    Log($"{trainer.OT} is banned because they reached the limit and then canceled {val} more raids with repeated attempts to go over the limit for {Settings.RaidSpecies} on {DateTime.Now}.");
+                    RaiderBanList.List.Add(new() { ID = nid, Name = trainer.OT, Comment = $"{trainer.OT} is banned because they reached the limit and then canceled {val} more raids with repeated attempts to go over the limit for {Settings.RaidSpecies} on {DateTime.Now}." });
                     blockResult = false;
                 }
             }
@@ -388,9 +388,9 @@ namespace SysBot.Pokemon
             {
                 var msg = string.Empty;
                 if (!blockResult)
-                    msg = banResultCC.Item1 ? banResultCC.Item2 : $"Banned user {banResultCFW!.Name} found in the host's ban list.\n{banResultCFW.Comment}";
+                    msg = banResultCC.Item1 ? banResultCC.Item2 : $"{banResultCFW!.Name} was found in the host's ban list.\n{banResultCFW.Comment}";
                 else
-                    msg = $"Blocked user {trainer.OT} has attempted to join the raid more than the catch limit. Repeated offenses will result in a ban.";
+                    msg = $"{trainer.OT} has already reached the catch limit. Please do not join again. Repeated attempts to join like this will result in a ban from future raids.";
 
                 Log(msg);
 
@@ -559,7 +559,7 @@ namespace SysBot.Pokemon
                     bytes = await SwitchConnection.Screengrab(token).ConfigureAwait(false) ?? Array.Empty<byte>();
                 var embed = new EmbedBuilder()
                 {
-                    Title = disband ? "**Raid was disbanded due to a bad user**" : title,
+                    Title = disband ? "**Raid canceled**" : title,
                     Description = disband ? message : description,
                     Color = disband ? Color.Red : hatTrick ? Color.Purple : Color.Green,
                     ImageUrl = bytes.Length > 0 ? "attachment://zap.jpg" : default,
