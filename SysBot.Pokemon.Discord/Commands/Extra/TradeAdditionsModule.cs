@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Discord.WebSocket;
+using System.Collections;
 
 namespace SysBot.Pokemon.Discord
 {
@@ -828,5 +829,15 @@ namespace SysBot.Pokemon.Discord
             await ReplyAsync(msg).ConfigureAwait(false);
         }
 
+        [Command("clearRaidSVBans")]
+        [Alias("crb")]
+        [Summary("Clears the RaidSV ban list.")]
+        [RequireSudo]
+        public async Task ClearRaidBansSV()
+        {
+            SysCord<T>.Runner.Hub.Config.RaidSV.RaiderBanList.Clear();
+            var msg = "RaidSV ban list has been cleared.";
+            await ReplyAsync(msg).ConfigureAwait(false);
+        }
     }
 }

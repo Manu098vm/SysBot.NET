@@ -25,7 +25,7 @@ namespace SysBot.Pokemon
             Settings = hub.Config.RaidSV;
         }
 
-        private const string RaidBotVersion = "Version 0.3.1";
+        private const string RaidBotVersion = "Version 0.3.2";
         private int RaidsAtStart;
         private int RaidCount;
         private int WinCount;
@@ -253,15 +253,13 @@ namespace SysBot.Pokemon
                 if (RaidTracker.ContainsKey(nid) && nid != 0)
                 {
                     var entry = RaidTracker[nid];
-                    var penalty = entry + 1;
-                    RaidTracker[nid] = penalty;
-                    Log($"Player: {name} completed the raid with Penalty Count: {penalty}.");
+                    var Count = entry + 1;
+                    RaidTracker[nid] = Count;
+                    Log($"Player: {name} completed the raid with Catch Count: {Count}.");
 
-                    if (penalty > Settings.CatchLimit && !RaiderBanList.Contains(nid) && Settings.CatchLimit != 0)
-                    {
-                        Log($"Player: {name} exceeded the catch limit {penalty}/{Settings.CatchLimit} for {Settings.RaidSpecies} on {DateTime.Now}.");
-                        RaiderBanList.List.Add(new() { ID = nid, Name = name, Comment = $"Player: {name} exceeded the catch limit {penalty}/{Settings.CatchLimit} for {Settings.RaidSpecies} on {DateTime.Now}." });
-                    }
+                    if (Settings.CatchLimit != 0 && Count == Settings.CatchLimit)                 
+                        Log($"Player: {name} has met the catch limit {Count}/{Settings.CatchLimit}, adding to the block list for this session for {Settings.RaidSpecies} on {DateTime.Now}.");
+
                 }
             }
         }
@@ -365,13 +363,35 @@ namespace SysBot.Pokemon
             if (!RaidTracker.ContainsKey(nid))
                 RaidTracker.Add(nid, 0);
 
+            bool blockResult = false;
+            var blockCheck = RaidTracker.ContainsKey(nid);
+            if (blockCheck)
+            {
+                RaidTracker.TryGetValue(nid, out int val);
+                if (val >= Settings.CatchLimit && Settings.CatchLimit != 0) // Soft pity - block user
+                {
+                    blockResult = true;
+                    RaidTracker[nid] = val + 1;
+                }
+                if (val == Settings.CatchLimit + 2 && Settings.CatchLimit != 0) // Hard pity - ban user
+                {
+                    Log($"Player: {trainer.OT} has been added to the ban list for repeated offenses of the catch limit {val}/{Settings.CatchLimit} for {Settings.RaidSpecies} on {DateTime.Now}.");
+                    RaiderBanList.List.Add(new() { ID = nid, Name = trainer.OT, Comment = $"Player: {trainer.OT} attempted to exceed the catch limit {val}/{Settings.CatchLimit} for {Settings.RaidSpecies} on {DateTime.Now}." });
+                    blockResult = false;
+                }
+            }
             var banResultCC = Settings.RaidsBetweenUpdate == -1 ? (false, "") : await BanService.IsRaiderBanned(trainer.OT, Settings.BanListURL, Connection.Label, updateBanList).ConfigureAwait(false);
             var banResultCFW = RaiderBanList.List.FirstOrDefault(x => x.ID == nid);
 
-            bool isBanned = banResultCC.Item1 || banResultCFW != default;
+            bool isBanned = banResultCC.Item1 || banResultCFW != default || blockResult;
             if (isBanned)
             {
-                var msg = banResultCC.Item1 ? banResultCC.Item2 : $"Banned user {banResultCFW!.Name} found in the host's ban list.\n{banResultCFW.Comment}";
+                var msg = string.Empty;
+                if (!blockResult)
+                    msg = banResultCC.Item1 ? banResultCC.Item2 : $"Banned user {banResultCFW!.Name} found in the host's ban list.\n{banResultCFW.Comment}";
+                else
+                    msg = $"Blocked user {trainer.OT} has attempted to join the raid more than the catch limit. Repeated offenses will result in a ban.";
+
                 Log(msg);
 
                 await EnqueueEmbed(null, msg, false, true, token).ConfigureAwait(false);
@@ -539,7 +559,7 @@ namespace SysBot.Pokemon
                     bytes = await SwitchConnection.Screengrab(token).ConfigureAwait(false) ?? Array.Empty<byte>();
                 var embed = new EmbedBuilder()
                 {
-                    Title = disband ? "**Raid was disbanded due to a banned user**" : title,
+                    Title = disband ? "**Raid was disbanded due to a bad user**" : title,
                     Description = disband ? message : description,
                     Color = disband ? Color.Red : hatTrick ? Color.Purple : Color.Green,
                     ImageUrl = bytes.Length > 0 ? "attachment://zap.jpg" : default,
