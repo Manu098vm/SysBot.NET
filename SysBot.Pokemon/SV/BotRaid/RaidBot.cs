@@ -25,7 +25,7 @@ namespace SysBot.Pokemon
             Settings = hub.Config.RaidSV;
         }
 
-        private const string RaidBotVersion = "Version 0.3.2a";
+        private const string RaidBotVersion = "Version 0.3.2b";
         private int RaidsAtStart;
         private int RaidCount;
         private int WinCount;
@@ -553,6 +553,9 @@ namespace SysBot.Pokemon
                 var description = Settings.RaidEmbedDescription.Length > 0 ? string.Join("\n", Settings.RaidEmbedDescription) : "";
                 if (description.Length > 4096)
                     description = description[..4096];
+
+                if (disband) // Wait for trainer to load before disband
+                    await Task.Delay(5_000, token).ConfigureAwait(false);
 
                 byte[]? bytes = Array.Empty<byte>();
                 if (Settings.TakeScreenshot)

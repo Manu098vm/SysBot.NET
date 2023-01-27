@@ -62,7 +62,6 @@ namespace SysBot.Pokemon
         [Category(FeatureToggle), Description("When enabled, the screen will be turned off during normal bot loop operation to save power.")]
         public bool ScreenOff { get; set; }
 
-
         private int _completedRaids;
 
         [Category(Counts), Description("Raids Started")]

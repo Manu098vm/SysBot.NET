@@ -218,7 +218,7 @@ namespace SysBot.Pokemon
                         Settings.AddCompletedEggs();
                         TradeExtensions<PK9>.EncounterLogs(pk, "EncounterLogPretty_Egg.txt");
                         ctr++;
-                        bool match = CheckEncounter(print, pk);
+                        bool match = await CheckEncounter(print, pk).ConfigureAwait(false);
                         if (!match)
                         {
                             Log("Make sure to pick up your egg in the basket!");
@@ -287,7 +287,7 @@ namespace SysBot.Pokemon
                         Settings.AddCompletedEggs();
                         TradeExtensions<PK9>.EncounterLogs(pk, "EncounterLogPretty_Egg.txt");
 
-                        bool match = CheckEncounter(print, pk);
+                        bool match = await CheckEncounter(print, pk).ConfigureAwait(false);
 
                         await Task.Delay(0_500, token).ConfigureAwait(false);
                         await Click(A, 2_500, token).ConfigureAwait(false);
@@ -326,8 +326,10 @@ namespace SysBot.Pokemon
             }
         }
 
-        private bool CheckEncounter(string print, PK9 pk)
+        private async Task<bool> CheckEncounter(string print, PK9 pk)
         {
+            var token = CancellationToken.None;
+
             if (!StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, null))
             {
                 if (Hub.Config.StopConditions.ShinyTarget is TargetShinyType.AnyShiny or TargetShinyType.StarOnly or TargetShinyType.SquareOnly && pk.IsShiny)
@@ -368,12 +370,14 @@ namespace SysBot.Pokemon
 
             EmbedMon = (pk, true);
             EchoUtil.Echo(msg);
-            Click(HOME, 0_500, CancellationToken.None).ConfigureAwait(false);
+            await Click(HOME, 0_500, token).ConfigureAwait(false);
             Log("Claim your egg before closing the picnic!");
 
             IsWaiting = true;
             while (IsWaiting)
-                Task.Delay(1_000, CancellationToken.None).ConfigureAwait(false);
+                await Task.Delay(1_000, token).ConfigureAwait(false);
+
+            await Click(HOME, 1_000, token).ConfigureAwait(false);
             return false;
         }
 
