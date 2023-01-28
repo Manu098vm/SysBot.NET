@@ -219,7 +219,7 @@ namespace SysBot.Pokemon
                         TradeExtensions<PK9>.EncounterLogs(pk, "EncounterLogPretty_Egg.txt");
                         ctr++;
                         bool match = await CheckEncounter(print, pk).ConfigureAwait(false);
-                        if (!match)
+                        if (!match && Settings.ContinueAfterMatch == ContinueAfterMatch.StopExit)
                         {
                             Log("Make sure to pick up your egg in the basket!");
                             await Click(HOME, 0_500, token).ConfigureAwait(false);
@@ -294,7 +294,7 @@ namespace SysBot.Pokemon
                         await Click(A, 1_200, token).ConfigureAwait(false);
 
                         await RetrieveEgg(token).ConfigureAwait(false);
-                        if (!match)
+                        if (!match && Settings.ContinueAfterMatch == ContinueAfterMatch.StopExit)
                         {
                             Log("Egg should be claimed!");
                             await Click(HOME, 0_500, token).ConfigureAwait(false);
