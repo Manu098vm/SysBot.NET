@@ -751,7 +751,7 @@ namespace SysBot.Pokemon.Discord
                 if (EggBotSV.EmbedMon.Item1 != null)
                 {
                     var url = TradeExtensions<PK9>.PokeImg(EggBotSV.EmbedMon.Item1, false, false);
-                    var is1of100 = (Species)EggBotSV.EmbedMon.Item1.Species is Species.Dunsparce or Species.Maushold;
+                    var is1of100 = (Species)EggBotSV.EmbedMon.Item1.Species is Species.Dunsparce or Species.Tandemaus;
                     var spec = string.Empty;
                     if (is1of100)
                     {
