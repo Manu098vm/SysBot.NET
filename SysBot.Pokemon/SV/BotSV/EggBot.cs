@@ -88,8 +88,8 @@ namespace SysBot.Pokemon
 
             if (Hub.Config.EggSV.EggBotMode == EggMode.WaitAndClose && Settings.ContinueAfterMatch == ContinueAfterMatch.Continue)
             {
-                Log("The Continue setting is not recommended for this mode, attempting to change it to PauseWaitAcknowledge.");
-                Settings.ContinueAfterMatch = ContinueAfterMatch.PauseWaitAcknowledge;
+                Log("The Continue setting is not recommended for this mode, please change it to PauseWaitAcknowledge. Close and reopen exe to save changes.");
+                return false;
             }
 
             if (Hub.Config.EggSV.EggBotMode == EggMode.CollectAndDump)
@@ -209,7 +209,7 @@ namespace SysBot.Pokemon
                         }
                     }
 
-                    while (pk != null && (Species)pk.Species != Species.None && pkprev.EncryptionConstant != pk.EncryptionConstant)
+                    while (pk != null && pkprev.EncryptionConstant != pk.EncryptionConstant && (Species)pk.Species != Species.None)
                     {
                         waiting = 0;
                         eggcount++;
@@ -218,6 +218,7 @@ namespace SysBot.Pokemon
                         Settings.AddCompletedEggs();
                         TradeExtensions<PK9>.EncounterLogs(pk, "EncounterLogPretty_Egg.txt");
                         ctr++;
+
                         bool match = await CheckEncounter(print, pk).ConfigureAwait(false);
                         if (!match && Settings.ContinueAfterMatch == ContinueAfterMatch.StopExit)
                         {
@@ -238,7 +239,7 @@ namespace SysBot.Pokemon
                     }
                 }
                 Log("30 minutes have passed, remaking sandwich.");
-                if (reset == Settings.ResetGameAfterThisManySandwiches)
+                if (reset == Settings.ResetGameAfterThisManySandwiches && Settings.ResetGameAfterThisManySandwiches != 0)
                 {
                     reset = 0;
                     await RecoveryReset(token).ConfigureAwait(false);
@@ -279,7 +280,9 @@ namespace SysBot.Pokemon
                         pk = await ReadPokemonSV(EggData, 344, token).ConfigureAwait(false);
                     }
 
-                    while (pk != null && (Species)pk.Species != Species.None && pkprev.EncryptionConstant != pk.EncryptionConstant)
+                    await Task.Delay(1_000, token).ConfigureAwait(false);
+                    pk = await ReadPokemonSV(EggData, 344, token).ConfigureAwait(false);
+                    while (pk != null && pkprev.EncryptionConstant != pk.EncryptionConstant && (Species)pk.Species != Species.None)
                     {
                         eggcount++;
                         var print = Hub.Config.StopConditions.GetSpecialPrintName(pk);
@@ -309,7 +312,7 @@ namespace SysBot.Pokemon
                     Log("Waiting..");
                 }
                 Log("30 minutes have passed, remaking sandwich.");
-                if (reset == Settings.ResetGameAfterThisManySandwiches)
+                /*if (reset == Settings.ResetGameAfterThisManySandwiches && Settings.ResetGameAfterThisManySandwiches != 0) // Need to add navigation back to basket for this, commenting out for now.
                 {
                     reset = 0;
                     Log("Resetting game to rid us of any memory leak.");
@@ -321,7 +324,7 @@ namespace SysBot.Pokemon
                     await Click(DDOWN, 0_250, token).ConfigureAwait(false);
                     await Click(A, 7_000, token).ConfigureAwait(false);
                 }
-                reset++;
+                reset++;*/
                 await MakeSandwich(token).ConfigureAwait(false);
             }
         }
@@ -335,7 +338,7 @@ namespace SysBot.Pokemon
                 if (Hub.Config.StopConditions.ShinyTarget is TargetShinyType.AnyShiny or TargetShinyType.StarOnly or TargetShinyType.SquareOnly && pk.IsShiny)
                     EmbedMon = (pk, false);
 
-                return true;
+                return true; //No match, return true to keep scanning
             }
 
             // no need to take a video clip of us receiving an egg.
@@ -358,11 +361,11 @@ namespace SysBot.Pokemon
                 if ((Species)pk.Species is Species.Dunsparce or Species.Tandemaus && pk.EncryptionConstant % 100 != 0)
                 {
                     EmbedMon = (pk, false);
-                    return true;
+                    return true; // 1/100 condition unsatisfied, continue scanning
                 }
             }
 
-            if (mode == ContinueAfterMatch.StopExit)
+            if (mode == ContinueAfterMatch.StopExit) // Stop & Exit: Condition satisfied.  Stop scanning and disconnect the bot
             {
                 EmbedMon = (pk, true);
                 return false;
@@ -374,7 +377,7 @@ namespace SysBot.Pokemon
             if (mode == ContinueAfterMatch.PauseWaitAcknowledge)
             {
                 await Click(HOME, 0_500, token).ConfigureAwait(false);
-                Log("Claim your egg before closing the picnic!");
+                Log("Claim your egg before closing the picnic! Alternatively you can manually run to collect all present eggs, go back to the HOME screen, type $toss, and let it continue scanning from there.");
 
                 IsWaiting = true;
                 while (IsWaiting)
@@ -400,6 +403,12 @@ namespace SysBot.Pokemon
             return pk;
         }
 
+        private async Task<int> PicnicState(CancellationToken token)
+        {
+            var Data = await SwitchConnection.ReadBytesMainAsync(PicnicMenu, 1, token).ConfigureAwait(false);
+            return Data[0]; // 1 when in picnic, 2 in sandwich menu, 3 when eating, 2 when done eating
+        }
+
         private async Task<bool> IsInPicnic(CancellationToken token)
         {
             var Data = await SwitchConnection.ReadBytesMainAsync(PicnicMenu, 1, token).ConfigureAwait(false);
@@ -415,7 +424,7 @@ namespace SysBot.Pokemon
             await Click(A, 5_000, token).ConfigureAwait(false);
             await Click(X, 1_500, token).ConfigureAwait(false);
 
-            for (int i = 0; i < 0; i++)
+            for (int i = 0; i < 0; i++) // Select first ingredient
             {
                 if (Settings.Item1DUP == true)
                     await Click(DUP, 0_800, token).ConfigureAwait(false);
@@ -426,7 +435,7 @@ namespace SysBot.Pokemon
             await Click(A, 0_800, token).ConfigureAwait(false);
             await Click(PLUS, 0_800, token).ConfigureAwait(false);
 
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < 4; i++) // Select second ingredient
             {
                 if (Settings.Item2DUP == true)
                     await Click(DUP, 0_800, token).ConfigureAwait(false);
@@ -436,7 +445,7 @@ namespace SysBot.Pokemon
 
             await Click(A, 0_800, token).ConfigureAwait(false);
 
-            for (int i = 0; i < 1; i++)
+            for (int i = 0; i < 1; i++) // Select third ingredient
             {
                 if (Settings.Item3DUP == true)
                     await Click(DUP, 0_800, token).ConfigureAwait(false);
@@ -447,24 +456,37 @@ namespace SysBot.Pokemon
             await Click(A, 0_800, token).ConfigureAwait(false);
             await Click(PLUS, 0_800, token).ConfigureAwait(false);
             await Click(A, 8_000, token).ConfigureAwait(false);
-            await SetStick(LEFT, 0, 30000, Settings.HoldUpToIngredients, token).ConfigureAwait(false); // Navigate to ingredients
+            await SetStick(LEFT, 0, 30000, Settings.HoldUpToIngredients, token).ConfigureAwait(false); // Scroll up to the lettuce
             await SetStick(LEFT, 0, 0, 0, token).ConfigureAwait(false);
+
+            for (int i = 0; i < 12; i++) // If everything is properly positioned
+                await Click(A, 0_800, token).ConfigureAwait(false);
+
+            // Sandwich failsafe
+            for (int i = 0; i < 5; i++) //Attempt this several times to ensure it goes through
+                await SetStick(LEFT, 0, 30000, 1_000, token).ConfigureAwait(false); // Scroll to the absolute top
+            await SetStick(LEFT, 0, 0, 0, token).ConfigureAwait(false);   
+
+            while (await PicnicState(token).ConfigureAwait(false) == 2) // Until we start eating the sandwich
+            {
+                await SetStick(LEFT, 0, -5000, 0_300, token).ConfigureAwait(false); // Scroll down slightly and press A a few times; repeat until un-stuck
+                await SetStick(LEFT, 0, 0, 0, token).ConfigureAwait(false);
+                        
+                for (int i = 0; i < 6; i++)
+                    await Click(A, 0_800, token).ConfigureAwait(false);
+            }
+
+            while (await PicnicState(token).ConfigureAwait(false) == 3)  // eating the sandwich
+                await Task.Delay(1_000, token).ConfigureAwait(false);
 
             sandwichcount++;
             Log($"Sandwiches Made: {sandwichcount}");
-            for (int i = 0; i < 5; i++)
-                await Click(A, 0_800, token).ConfigureAwait(false);
 
-            bool inPicnic = await IsInPicnic(token).ConfigureAwait(false);
-
-            while (!inPicnic)
+            while (!await IsInPicnic(token).ConfigureAwait(false)) // Acknowledge the sandwich and return to the picnic
             {
-                await Click(A, 3_000, token).ConfigureAwait(false);
-                inPicnic = await IsInPicnic(token).ConfigureAwait(false);
+                await Click(A, 5_000, token).ConfigureAwait(false); // Wait a long time to give the flag a chance to update and avoid sandwich re-entry
             }
 
-            if (inPicnic)
-            {
                 await Task.Delay(2_500, token).ConfigureAwait(false);
                 await SetStick(LEFT, 0, -10000, 0_500, token).ConfigureAwait(false); // Face down to basket
                 await SetStick(LEFT, 0, 0, 0, token).ConfigureAwait(false);
@@ -472,7 +494,6 @@ namespace SysBot.Pokemon
                 await SetStick(LEFT, 0, 5000, 0_200, token).ConfigureAwait(false); // Face up to basket
                 await SetStick(LEFT, 0, 0, 0, token).ConfigureAwait(false);
             }
-        }
 
         private async Task GrabValues(CancellationToken token)
         {
