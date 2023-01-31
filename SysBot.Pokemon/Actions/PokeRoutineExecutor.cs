@@ -79,7 +79,7 @@ namespace SysBot.Pokemon
 
             string IVList = pk.IV_HP + "." + pk.IV_ATK + "." + pk.IV_DEF + "." + pk.IV_SPA + "." + pk.IV_SPD + "." + pk.IV_SPE;
 
-            string TIDFormatted = pk.Generation >= 7 ? $"{pk.TrainerID7:000000}" : $"{pk.TID:00000}";
+            string TIDFormatted = pk.Generation >= 7 ? $"{pk.TrainerTID7:000000}" : $"{pk.TID16:00000}";
 
             if (pk.Ball != (int)Ball.None)
                 ballFormatted = " - " + GameInfo.Strings.balllist[pk.Ball].Split(' ')[0];

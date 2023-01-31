@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
 
 namespace SysBot.Pokemon.Discord
 {
@@ -144,8 +145,8 @@ namespace SysBot.Pokemon.Discord
 
             if (Info.Hub.Config.TradeCord.TradeCordCooldown > 0)
             {
-                if (TradeCordHelper<T>.UserCommandTimestamps.ContainsKey(id))
-                    TradeCordHelper<T>.UserCommandTimestamps[id].Add(DateTime.UtcNow);
+                if (TradeCordHelper<T>.UserCommandTimestamps.TryGetValue(id, out List<DateTime>? value))
+                    value.Add(DateTime.UtcNow);
                 else TradeCordHelper<T>.UserCommandTimestamps.Add(id, new List<DateTime> { DateTime.UtcNow });
 
                 var count = TradeCordHelper<T>.UserCommandTimestamps[id].Count;
@@ -518,7 +519,7 @@ namespace SysBot.Pokemon.Discord
 
             var ot = pkm.OT_Name;
             var gender = $"{(Gender)pkm.OT_Gender}";
-            var tid = $"{pkm.TrainerID7}";
+            var tid = $"{pkm.TrainerTID7}";
             var sid = $"{pkm.TrainerSID7}";
             var lang = $"{(LanguageID)pkm.Language}";
 
@@ -1051,9 +1052,9 @@ namespace SysBot.Pokemon.Discord
         private bool TradeCordCanCatch(ulong id, out TimeSpan timeRemaining)
         {
             timeRemaining = new();
-            if (TradeCordHelper<T>.TradeCordCooldownDict.ContainsKey(id))
+            if (TradeCordHelper<T>.TradeCordCooldownDict.TryGetValue(id, out DateTime value))
             {
-                var timer = TradeCordHelper<T>.TradeCordCooldownDict[id].AddSeconds(Hub.Config.TradeCord.TradeCordCooldown);
+                var timer = value.AddSeconds(Hub.Config.TradeCord.TradeCordCooldown);
                 timeRemaining = timer - DateTime.Now;
                 if (DateTime.Now < timer)
                     return false;

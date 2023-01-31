@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Collections.Generic;
 using FlatbuffersResource;
 using Google.FlatBuffers;
+using System;
 using System.Linq;
 
 namespace SysBot.Pokemon
@@ -25,7 +26,7 @@ namespace SysBot.Pokemon
             private NestHoleDistributionEncounter8Table raidDistributionEncounterTable;
 
             public SAV8SWSH TrainerInfo { get => trainerInfo ?? new(); set => trainerInfo = value; }
-            public RaidSpawnDetail Den { get => den ?? new(new byte[] { }, 0); set => den = value; }
+            public RaidSpawnDetail Den { get => den ?? new(Array.Empty<byte>(), 0); set => den = value; }
             public EncounterNest8 RaidEncounter { get => raidEnc; set => raidEnc = value; }
             public EncounterNest8Table RaidEncounterTable { get => raidEncounterTable; set => raidEncounterTable = value; }
             public NestHoleDistributionEncounter8 RaidDistributionEncounter { get => distEnc; set => distEnc = value; }
@@ -142,7 +143,7 @@ namespace SysBot.Pokemon
                 var rng = new Xoroshiro128Plus(seed);
                 var gmax = isEvent ? raidInfo.RaidDistributionEncounterTable.Entries(i).Value.IsGigantamax : raidInfo.RaidEncounterTable.Entries(i).Value.IsGigantamax;
                 var form = (byte)(isEvent ? raidInfo.RaidDistributionEncounterTable.Entries(i).Value.AltForm : raidInfo.RaidEncounterTable.Entries(i).Value.AltForm);
-                var speciesName = SpeciesName.GetSpeciesNameGeneration((ushort)speciesID, 2, 8);
+                var speciesName = SpeciesName.GetSpeciesNameGeneration(speciesID, 2, 8);
                 var formStr = TradeExtensions<PK8>.FormOutput(speciesID, form, out _);
 
                 uint EC = (uint)rng.NextInt(0xFFFFFFFF);
@@ -279,9 +280,7 @@ namespace SysBot.Pokemon
 
         private static byte[]? ReadResourceBinary(SAV8SWSH trainerInfo)
         {
-#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-            using Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(trainerInfo.Version == GameVersion.SW ? SwordTable : ShieldTable);
-#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
+            using Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(trainerInfo.Version == GameVersion.SW ? SwordTable : ShieldTable)!;
             if (stream == null)
                 return null;
 

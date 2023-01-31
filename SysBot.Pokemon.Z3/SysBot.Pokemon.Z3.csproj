@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net6.0-windows;</TargetFrameworks>
-		<LangVersion>10</LangVersion>
+		<TargetFrameworks>net7.0-windows;</TargetFrameworks>
+		<LangVersion>11</LangVersion>
 		<Nullable>enable</Nullable>
-		<Platforms>x64;x86</Platforms>
+		<Platforms>x64</Platforms>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="PKHeX.Core" Version="22.12.19" />
+		<PackageReference Include="PKHeX.Core" Version="23.1.30" />
 		<ProjectReference Include="..\SysBot.Pokemon\SysBot.Pokemon.csproj" />
 	</ItemGroup>
 

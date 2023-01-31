@@ -7,11 +7,10 @@ namespace SysBot.Pokemon.Discord
 {
     public static class NetUtil
     {
-        private static readonly HttpClient httpClient = new();
-
         public static async Task<byte[]> DownloadFromUrlAsync(string url)
         {
-            return await httpClient.GetByteArrayAsync(url).ConfigureAwait(false);
+            using var client = new HttpClient();
+            return await client.GetByteArrayAsync(url).ConfigureAwait(false);
         }
 
         public static async Task<Download<PKM>> DownloadPKMAsync(IAttachment att)

@@ -44,9 +44,7 @@ namespace SysBot.Pokemon.YouTube
                     if (await client.Connect().ConfigureAwait(false))
                         await Task.Delay(-1).ConfigureAwait(false);
                 }
-#pragma warning disable CA1031 // Do not catch general exception types
                 catch (Exception ex)
-#pragma warning restore CA1031 // Do not catch general exception types
                 {
                     LogUtil.LogError(ex.Message, nameof(YouTubeBot<T>));
                 }
@@ -92,12 +90,12 @@ namespace SysBot.Pokemon.YouTube
             };
         }
 
-        private static void Logger_LogOccurred(object sender, Log e)
+        private static void Logger_LogOccurred(object? sender, Log e)
         {
             LogUtil.LogError(e.Message, nameof(YouTubeBot<T>));
         }
 
-        private void Client_OnMessagesReceived(object sender, IEnumerable<LiveChatMessage> messages)
+        private void Client_OnMessagesReceived(object? sender, IEnumerable<LiveChatMessage> messages)
         {
             foreach (var message in messages)
             {
@@ -116,12 +114,10 @@ namespace SysBot.Pokemon.YouTube
                         return;
                     client.SendMessage(response);
                 }
-#pragma warning disable CA1031 // Do not catch general exception types
                 catch
                 {
                     // ignored
                 }
-#pragma warning restore CA1031 // Do not catch general exception types
             }
         }
     }

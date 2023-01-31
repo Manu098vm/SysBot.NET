@@ -47,9 +47,7 @@ namespace SysBot.Pokemon.WinForms
             LoadControls();
             Text = $"{Text} ({Config.Mode})";
             Task.Run(BotMonitor);
-#if NET6_0_OR_GREATER
             InitUtil.InitializeStubs(Config.Mode);
-#endif
         }
 
         private static IPokeBotRunner GetRunner(ProgramConfig cfg) => cfg.Mode switch

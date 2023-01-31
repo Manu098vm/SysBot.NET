@@ -40,7 +40,7 @@ namespace SysBot.Pokemon.WinForms
             }
         }
 
-        private void RcMenuOnOpening(object sender, CancelEventArgs e)
+        private void RcMenuOnOpening(object? sender, CancelEventArgs? e)
         {
             if (Runner == null)
                 return;
@@ -101,6 +101,8 @@ namespace SysBot.Pokemon.WinForms
             // Color decay from Green based on time
             const int threshold = 100;
             Color good = Color.Green;
+            if (cfg.Connection.Protocol == SwitchProtocol.USB)
+                good = Color.LightBlue;
             Color bad = Color.Red;
 
             var delta = DateTime.Now - lastTime;
@@ -156,15 +158,15 @@ namespace SysBot.Pokemon.WinForms
                 case BotControlCommand.Stop: bot.Stop(); break;
                 case BotControlCommand.Resume: bot.Resume(); break;
                 case BotControlCommand.Restart:
-                {
-                    var prompt = WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "Are you sure you want to restart the connection?");
-                    if (prompt != DialogResult.Yes)
-                        return;
+                    {
+                        var prompt = WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "Are you sure you want to restart the connection?");
+                        if (prompt != DialogResult.Yes)
+                            return;
 
-                    bot.Bot.Connection.Reset();
-                    bot.Start();
-                    break;
-                }
+                        bot.Bot.Connection.Reset();
+                        bot.Start();
+                        break;
+                    }
                 default:
                     WinFormsUtil.Alert($"{cmd} is not a command that can be sent to the Bot.");
                     return;

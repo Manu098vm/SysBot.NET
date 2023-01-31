@@ -25,10 +25,10 @@ namespace SysBot.Pokemon
 
         public static readonly int[] Amped = { 3, 4, 2, 8, 9, 19, 22, 11, 13, 14, 0, 6, 24 };
         public static readonly int[] LowKey = { 1, 5, 7, 10, 12, 15, 16, 17, 18, 20, 21, 23 };
-        public static readonly int[] ShinyLock = {  (int)Species.Victini, (int)Species.Keldeo, (int)Species.Volcanion, (int)Species.Cosmog, (int)Species.Cosmoem, (int)Species.Magearna, (int)Species.Marshadow, (int)Species.Eternatus,
-                                                    (int)Species.Kubfu, (int)Species.Urshifu, (int)Species.Zarude, (int)Species.Glastrier, (int)Species.Spectrier, (int)Species.Calyrex };
+        public static readonly ushort[] ShinyLock = {  (ushort)Species.Victini, (ushort)Species.Keldeo, (ushort)Species.Volcanion, (ushort)Species.Cosmog, (ushort)Species.Cosmoem, (ushort)Species.Magearna, (ushort)Species.Marshadow, (ushort)Species.Eternatus,
+                                                    (ushort)Species.Kubfu, (ushort)Species.Urshifu, (ushort)Species.Zarude, (ushort)Species.Glastrier, (ushort)Species.Spectrier, (ushort)Species.Calyrex };
 
-        public static bool ShinyLockCheck(int species, string form, string ball = "")
+        public static bool ShinyLockCheck(ushort species, string form, string ball = "")
         {
             if (ShinyLock.Contains(species))
                 return true;
@@ -138,7 +138,7 @@ namespace SysBot.Pokemon
                 PK9 => 30023,
                 _ => 60002, //PK8
             };
-            pk.MetDate = DateTime.Parse("2020/10/20");
+            pk.MetDate = DateOnly.Parse("2020/10/20");
             pk.EggMetDate = pk.MetDate;
             pk.HeldItem = 0;
             pk.CurrentLevel = 1;
@@ -223,7 +223,7 @@ namespace SysBot.Pokemon
 
             lock (_syncLog)
             {
-                bool mark = pk is PK8 pk8 && pk8.HasMark();
+                bool mark = pk is PK8 pk8 && pk8.HasEncounterMark();
                 var content = File.ReadAllText(filepath).Split('\n').ToList();
                 var splitTotal = content[0].Split(',');
                 content.RemoveRange(0, 3);
@@ -281,7 +281,7 @@ namespace SysBot.Pokemon
         {
             var pkMet = (T)pkm.Clone();
             if (pkMet.Version is not (int)GameVersion.GO)
-                pkMet.MetDate = DateTime.Parse("2020/10/20");
+                pkMet.MetDate = DateOnly.Parse("2020/10/20");
 
             var analysis = new LegalityAnalysis(pkMet);
             var pkTrash = (T)pkMet.Clone();
@@ -311,10 +311,10 @@ namespace SysBot.Pokemon
                 var enc = new LegalityAnalysis(mgPkm).EncounterMatch;
                 mgPkm.SetHandlerandMemory(info, enc);
 
-                if (mgPkm.TID is 0 && mgPkm.SID is 0)
+                if (mgPkm.TID16 is 0 && mgPkm.SID16 is 0)
                 {
-                    mgPkm.TID = info.TID;
-                    mgPkm.SID = info.SID;
+                    mgPkm.TID16 = info.TID16;
+                    mgPkm.SID16 = info.SID16;
                 }
 
                 mgPkm.CurrentLevel = mg.LevelMin;
@@ -397,7 +397,7 @@ namespace SysBot.Pokemon
             formString[0] = "";
             if (form >= formString.Length)
                 form = (byte)(formString.Length - 1);
-            return formString[form].Contains("-") ? formString[form] : formString[form] == "" ? "" : $"-{formString[form]}";
+            return formString[form].Contains('-') ? formString[form] : formString[form] == "" ? "" : $"-{formString[form]}";
         }
 
         public static bool DifferentFamily(IReadOnlyList<T> pkms)

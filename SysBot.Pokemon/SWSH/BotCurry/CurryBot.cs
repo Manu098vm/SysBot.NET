@@ -146,23 +146,23 @@ namespace SysBot.Pokemon
             Log("Time to cook!");
             sw.Start();
             while (sw.ElapsedMilliseconds < Settings.FanningDuration - 4_000)
-                Click(A, 0_100, token).Wait();
+                Click(A, 0_100, token).Wait(token);
 
             while (sw.ElapsedMilliseconds < Settings.FanningDuration)
-                Click(A, 0_150, token).Wait();
+                Click(A, 0_150, token).Wait(token);
 
             Log("Stirring the pot!");
             sw.Restart();
             while (sw.ElapsedMilliseconds < Settings.StirringDuration)
             {
-                SetStick(RIGHT, -30_000, 0, 0_050, token).Wait(); // ←
-                SetStick(RIGHT, 0, 30_000, 0_050, token).Wait(); // ↑
-                SetStick(RIGHT, 30_000, 0, 0_050, token).Wait(); // →
-                SetStick(RIGHT, 0, -30_000, 0_050, token).Wait(); // ↓
+                SetStick(RIGHT, -30_000, 0, 0_050, token).Wait(token); // ←
+                SetStick(RIGHT, 0, 30_000, 0_050, token).Wait(token); // ↑
+                SetStick(RIGHT, 30_000, 0, 0_050, token).Wait(token); // →
+                SetStick(RIGHT, 0, -30_000, 0_050, token).Wait(token); // ↓
             }
             sw.Stop();
 
-            await Task.Delay(Settings.SprinkleOfLove).ConfigureAwait(false);
+            await Task.Delay(Settings.SprinkleOfLove, token).ConfigureAwait(false);
             Log("Adding a sprinkle of love!");
             await Click(A, Settings.CurryChowCutscene, token).ConfigureAwait(false); // Delay until we can present our curry.
             await SetStick(RIGHT, 0, 0, 0_100, token).ConfigureAwait(false);
@@ -243,9 +243,7 @@ namespace SysBot.Pokemon
             if (item == default)
                 item = pouch.Items.FirstOrDefault(x => x.Count > 0);
 
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
-            IngredientCount = item.Count;
-#pragma warning restore CS8602 // Dereference of a possibly null reference.
+            IngredientCount = item!.Count;
             var index = pouch.Items.ToList().IndexOf(item);
             ScrollUpIngr = pouch.Items.Length - index < index;
             return ScrollUpIngr ? pouch.Items.Length - index : index;
@@ -269,15 +267,13 @@ namespace SysBot.Pokemon
             if (item == default)
                 item = pouch.Items.FirstOrDefault(x => x.Count >= 10);
 
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
-            BerryCount = item.Count;
-#pragma warning restore CS8602 // Dereference of a possibly null reference.
+            BerryCount = item!.Count;
             var index = pouch.Items.ToList().IndexOf(item);
             ScrollUpBerry = pouch.Items.Length - index < index;
             return ScrollUpBerry ? pouch.Items.Length - index : index;
         }
 
-        private InventoryPouch8 GetItemPouch(byte[] data, InventoryType type, ushort[] items, int maxCount, int offset, int length)
+        private static InventoryPouch8 GetItemPouch(byte[] data, InventoryType type, ushort[] items, int maxCount, int offset, int length)
         {
             var pouch = new InventoryPouch8(type, items, maxCount, offset, length);
             pouch.GetPouch(data);

@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
-		<TargetFrameworks>net6.0-windows</TargetFrameworks>
+		<TargetFrameworks>net7.0-windows</TargetFrameworks>
 		<UseWindowsForms>true</UseWindowsForms>
 		<PackageId>SysBot.Pokemon.WinForms</PackageId>
 		<Company>Project Pokémon</Company>
@@ -12,7 +12,7 @@
 		<ApplicationIcon>icon.ico</ApplicationIcon>
 		<StartupObject>SysBot.Pokemon.WinForms.Program</StartupObject>
 		<AssemblyName>SysBot</AssemblyName>
-		<LangVersion>10</LangVersion>
+		<LangVersion>11</LangVersion>
 		<Version>01.00.00</Version>
 		<Nullable>enable</Nullable>
 		<Platforms>x64</Platforms>
@@ -25,7 +25,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
-		<PackageReference Include="PKHeX.Core" Version="22.12.19" />
+		<PackageReference Include="PKHeX.Core" Version="23.1.30" />
 		<PackageReference Include="System.Resources.Extensions" Version="5.0.0" />
 	</ItemGroup>
 
@@ -38,7 +38,7 @@
 		<ProjectReference Include="..\SysBot.Pokemon.Z3\SysBot.Pokemon.Z3.csproj" />
 	</ItemGroup>
 
-	<ItemGroup Condition="$(TargetFramework.StartsWith('net6')) AND '$(Configuration)' == 'Release'">
+	<ItemGroup Condition="$(TargetFramework.StartsWith('net7')) AND '$(Configuration)' == 'Release'">
 		<PackageReference Include="Costura.Fody" Version="5.7.0">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -46,14 +46,14 @@
 		<PackageReference Include="Fody" Version="6.5.5" />
 	</ItemGroup>
 
-	<ItemGroup Condition="$(TargetFramework.StartsWith('net6'))">
-		<Reference Include="PKHeX.Drawing">
-			<HintPath>deps\PKHeX.Drawing.dll</HintPath>
-		</Reference>
-		<Reference Include="PKHeX.Drawing.PokeSprite">
-			<HintPath>deps\PKHeX.Drawing.PokeSprite.dll</HintPath>
-		</Reference>
-	</ItemGroup>
+		<ItemGroup Condition="$(TargetFramework.StartsWith('net7'))">
+			<Reference Include="PKHeX.Drawing">
+				<HintPath>deps\PKHeX.Drawing.dll</HintPath>
+			</Reference>
+			<Reference Include="PKHeX.Drawing.PokeSprite">
+				<HintPath>deps\PKHeX.Drawing.PokeSprite.dll</HintPath>
+			</Reference>
+		</ItemGroup>
 
 	<ItemGroup>
 		<EmbeddedResource Update="Properties\Resources.resx">
