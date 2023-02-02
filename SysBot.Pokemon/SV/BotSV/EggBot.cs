@@ -202,7 +202,7 @@ namespace SysBot.Pokemon
                                     if (mode == EggMode.WaitAndClose)
                                         await RecoveryReset(token).ConfigureAwait(false);
 
-                                    else if (mode == EggMode.CollectAndDump)
+                                    /*else if (mode == EggMode.CollectAndDump) // commenting out for now since navigation to basket is needed still. 
                                     {
                                         Log("Resetting game to rid us of any memory leak.");
                                         await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
@@ -212,7 +212,7 @@ namespace SysBot.Pokemon
                                         await Click(DDOWN, 0_500, token).ConfigureAwait(false);
                                         await Click(DDOWN, 0_500, token).ConfigureAwait(false);
                                         await Click(A, 7_000, token).ConfigureAwait(false);
-                                    }
+                                    }*/
                                 }
                                 reset++;
                             }
