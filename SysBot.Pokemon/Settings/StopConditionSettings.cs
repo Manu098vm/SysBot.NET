@@ -15,7 +15,7 @@ namespace SysBot.Pokemon
         public int? StopOnForm { get; set; }
 
         [Category(StopConditions), Description("Stop only on Pokémon of the specified gender.")]
-        public Gender TargetGender { get; set; } = Gender.Random;
+        public GenderType TargetGender { get; set; } = GenderType.Any;
 
         [Category(StopConditions), Description("Stop only on Pokémon of the specified nature.")]
         public Nature TargetNature { get; set; } = Nature.Random;
@@ -59,7 +59,7 @@ namespace SysBot.Pokemon
             if (settings.StopOnForm.HasValue && settings.StopOnForm != pk.Form)
                 return false;
 
-            if (settings.TargetGender != Gender.Random && settings.TargetGender != (Gender)pk.Gender)
+            if (settings.TargetGender != GenderType.Any && (int)settings.TargetGender != pk.Gender)
                 return false;
 
             if (settings.TargetNature != Nature.Random && settings.TargetNature != (Nature)pk.Nature)

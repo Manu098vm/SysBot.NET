@@ -87,7 +87,7 @@ namespace SysBot.Pokemon
                     await SetStick(RIGHT, 0, 30_000, 1_000, token).ConfigureAwait(false);
                     await SetStick(RIGHT, 0, 0, 0_100, token).ConfigureAwait(false);
                     Log($"New camper found on curry #{curryCount}.");
-                    TradeExtensions<PK8>.EncounterLogs(camperMon, "EncounterLogPretty_Curry.txt");
+                    TradeExtensions<PK8>.EncounterLogs(camperMon, "EncounterLogPretty_CurrySWSH.txt");
                     if (await HandleEncounter(camperMon, token).ConfigureAwait(false))
                         return;
                 }

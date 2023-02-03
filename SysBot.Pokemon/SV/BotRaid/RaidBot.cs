@@ -25,7 +25,7 @@ namespace SysBot.Pokemon
             Settings = hub.Config.RaidSV;
         }
 
-        private const string RaidBotVersion = "Version 0.3.3a";
+        private const string RaidBotVersion = "Version 0.3.4";
         private int RaidsAtStart;
         private int RaidCount;
         private int WinCount;
@@ -34,7 +34,7 @@ namespace SysBot.Pokemon
         private SAV9SV HostSAV = new();
         private DateTime StartTime = DateTime.Now;
 
-        private ulong TodaySeed;
+        private ulong TodaySeed { get; set; }
         private ulong OverworldOffset;
         private ulong ConnectedOffset;
         private ulong TeraRaidBlockOffset;
@@ -87,75 +87,90 @@ namespace SysBot.Pokemon
             var dayRoll = 0;
             while (!token.IsCancellationRequested)
             {
-                // Initialize offsets at the start of the routine and cache them.
-                await InitializeSessionOffsets(token).ConfigureAwait(false);
-                if (RaidCount == 0)
+                try
                 {
-                    TodaySeed = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(TeraRaidBlockOffset, 8, token).ConfigureAwait(false), 0);
-                    Log($"Today Seed: {TodaySeed:X8}");
-                }
-
-                var currentSeed = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(TeraRaidBlockOffset, 8, token).ConfigureAwait(false), 0);
-                if (TodaySeed != currentSeed)
-                {
-                    var msg = $"Current Today Seed {currentSeed:X8} does not match Starting Today Seed: {TodaySeed:X8} after rolling back 1 day. ";
-                    if (dayRoll != 0)
+                    // Initialize offsets at the start of the routine and cache them.
+                    await InitializeSessionOffsets(token).ConfigureAwait(false);
+                    if (RaidCount == 0)
                     {
-                        Log(msg + "Stopping routine for lost raid.");
-                        return;
+                        TodaySeed = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(TeraRaidBlockOffset, 8, token).ConfigureAwait(false), 0);
+                        Log($"Today Seed: {TodaySeed:X8}");
                     }
-                    Log(msg);
-                    await CloseGame(Hub.Config, token).ConfigureAwait(false);
-                    await RolloverCorrectionSV(token).ConfigureAwait(false);
-                    await StartGame(Hub.Config, token).ConfigureAwait(false);
 
-                    dayRoll++;
-                    continue;
-                }
-
-                // Get initial raid counts for comparison later.
-                await CountRaids(null, token).ConfigureAwait(false);
-
-                // Clear NIDs.
-                await SwitchConnection.WriteBytesAbsoluteAsync(new byte[32], TeraNIDOffsets[0], token).ConfigureAwait(false);
-
-                // Connect online and enter den.
-                if (!await PrepareForRaid(token).ConfigureAwait(false))
-                {
-                    Log("Failed to prepare the raid, rebooting the game.");
-                    await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
-                    continue;
-                }
-
-                // Wait until we're in lobby.
-                if (!await GetLobbyReady(token).ConfigureAwait(false))
-                    continue;
-
-                // Read trainers until someone joins.
-                (partyReady, lobbyTrainers) = await ReadTrainers(token).ConfigureAwait(false);
-                if (!partyReady)
-                {
-                    // Should add overworld recovery with a game restart fallback.
-                    await RegroupFromBannedUser(token).ConfigureAwait(false);
-
-                    if (!await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
+                    var currentSeed = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(TeraRaidBlockOffset, 8, token).ConfigureAwait(false), 0);
+                    if (TodaySeed != currentSeed)
                     {
-                        Log("Something went wrong, attempting to recover.");
+                        var msg = $"Current Today Seed {currentSeed:X8} does not match Starting Today Seed: {TodaySeed:X8} after rolling back 1 day. ";
+                        if (dayRoll != 0)
+                        {
+                            Log(msg + "Stopping routine for lost raid.");
+                            return;
+                        }
+                        Log(msg);
+                        await CloseGame(Hub.Config, token).ConfigureAwait(false);
+                        await RolloverCorrectionSV(token).ConfigureAwait(false);
+                        await StartGame(Hub.Config, token).ConfigureAwait(false);
+
+                        dayRoll++;
+                        continue;
+                    }
+
+                    // Get initial raid counts for comparison later.
+                    await CountRaids(null, token).ConfigureAwait(false);
+
+                    // Clear NIDs.
+                    await SwitchConnection.WriteBytesAbsoluteAsync(new byte[32], TeraNIDOffsets[0], token).ConfigureAwait(false);
+
+                    // Connect online and enter den.
+                    if (!await PrepareForRaid(token).ConfigureAwait(false))
+                    {
+                        Log("Failed to prepare the raid, rebooting the game.");
                         await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
                         continue;
                     }
 
-                    // Clear trainer OTs.
-                    Log("Clearing stored OTs");
-                    for (int i = 0; i < 3; i++)
-                    {
-                        var ptr = new long[] { 0x437ECE0, 0x48, 0xE0 + (i * 0x30), 0x0 };
-                        await SwitchConnection.PointerPoke(new byte[16], ptr, token).ConfigureAwait(false);
-                    }
-                    continue;
-                }
+                    // Wait until we're in lobby.
+                    if (!await GetLobbyReady(token).ConfigureAwait(false))
+                        continue;
 
-                await CompleteRaid(lobbyTrainers, token).ConfigureAwait(false);
+                    // Read trainers until someone joins.
+                    (partyReady, lobbyTrainers) = await ReadTrainers(token).ConfigureAwait(false);
+                    if (!partyReady)
+                    {
+                        // Should add overworld recovery with a game restart fallback.
+                        await RegroupFromBannedUser(token).ConfigureAwait(false);
+
+                        if (!await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
+                        {
+                            Log("Something went wrong, attempting to recover.");
+                            await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
+                            continue;
+                        }
+
+                        // Clear trainer OTs.
+                        Log("Clearing stored OTs");
+                        for (int i = 0; i < 3; i++)
+                        {
+                            var ptr = new long[] { 0x437ECE0, 0x48, 0xE0 + (i * 0x30), 0x0 };
+                            await SwitchConnection.PointerPoke(new byte[16], ptr, token).ConfigureAwait(false);
+                        }
+                        continue;
+                    }
+
+                    await CompleteRaid(lobbyTrainers, token).ConfigureAwait(false);
+                }
+                catch
+                {
+                    var attempts = Hub.Config.Timings.ReconnectAttempts;
+                    var delay = Hub.Config.Timings.ExtraReconnectDelay;
+                    var protocol = Config.Connection.Protocol;
+                    if (!await TryReconnect(attempts, delay, protocol, token).ConfigureAwait(false))
+                        return;
+
+                    Log($"Successful reconnect on lost connection. Attempting full recovery.");
+
+                    await ReOpenGame(Hub.Config, token).ConfigureAwait(false); // Reset game to resync 
+                }
             }
         }
 

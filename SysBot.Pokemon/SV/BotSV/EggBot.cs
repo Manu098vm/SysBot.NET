@@ -228,7 +228,7 @@ namespace SysBot.Pokemon
                         var print = Hub.Config.StopConditions.GetSpecialPrintName(pk);
                         Log($"Encounter: {eggcount}{Environment.NewLine}{print}{Environment.NewLine}");
                         Settings.AddCompletedEggs();
-                        TradeExtensions<PK9>.EncounterLogs(pk, "EncounterLogPretty_Egg.txt");
+                        TradeExtensions<PK9>.EncounterLogs(pk, "EncounterLogPretty_EggSV.txt");
                         ctr++;
 
                         bool match = await CheckEncounter(print, pk).ConfigureAwait(false);
@@ -354,9 +354,9 @@ namespace SysBot.Pokemon
             EchoUtil.Echo(msg);
 
             if (mode == ContinueAfterMatch.PauseWaitAcknowledge)
-            {
-                await Click(HOME, 0_500, token).ConfigureAwait(false);
+            {                
                 Log("Claim your egg before closing the picnic! Alternatively you can manually run to collect all present eggs, go back to the HOME screen, type $toss, and let it continue scanning from there.");
+                await Click(HOME, 0_700, token).ConfigureAwait(false);
 
                 IsWaiting = true;
                 while (IsWaiting)
