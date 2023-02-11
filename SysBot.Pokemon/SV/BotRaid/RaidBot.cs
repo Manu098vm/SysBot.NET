@@ -25,7 +25,7 @@ namespace SysBot.Pokemon
             Settings = hub.Config.RaidSV;
         }
 
-        private const string RaidBotVersion = "Version 0.3.4";
+        private const string RaidBotVersion = "Version 0.3.4a";
         private int RaidsAtStart;
         private int RaidCount;
         private int WinCount;
@@ -34,7 +34,7 @@ namespace SysBot.Pokemon
         private SAV9SV HostSAV = new();
         private DateTime StartTime = DateTime.Now;
 
-        private ulong TodaySeed { get; set; }
+        private ulong TodaySeed;
         private ulong OverworldOffset;
         private ulong ConnectedOffset;
         private ulong TeraRaidBlockOffset;
@@ -479,6 +479,8 @@ namespace SysBot.Pokemon
                         break;
                 }
             }
+
+            await Task.Delay(5_000, token).ConfigureAwait(false);
 
             RaidCount++;
             if (lobbyTrainers.Count == 0)

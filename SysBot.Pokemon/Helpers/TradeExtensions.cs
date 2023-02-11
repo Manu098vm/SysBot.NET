@@ -269,7 +269,72 @@ namespace SysBot.Pokemon
             }
         }
 
+        public static void EncounterScaleLogs(PK9 pk, string filepath = "")
+        {
+            if (filepath == "")
+                filepath = "EncounterScaleLogPretty.txt";
+
+            if (!File.Exists(filepath))
+            {
+                var blank = "Totals: 0 Pokémon, 0 Mini, 0 Jumbo, 0 Miscellaneous\n_________________________________________________\n";
+                File.WriteAllText(filepath, blank);
+            }
+
+            lock (_syncLog)
+            {
+                var content = File.ReadAllText(filepath).Split('\n').ToList();
+                var splitTotal = content[0].Split(',');
+                content.RemoveRange(0, 3);
+
+                bool isMini = pk.Scale == 0;
+                bool isJumbo = pk.Scale == 255;
+                bool isMisc = pk.Scale > 0 && pk.Scale < 255;
+                int pokeTotal = int.Parse(splitTotal[0].Split(' ')[1]) + 1;
+                int miniTotal = int.Parse(splitTotal[1].Split(' ')[1]) + (isMini ? 1 : 0);
+                int jumboTotal = int.Parse(splitTotal[2].Split(' ')[1]) + (isJumbo ? 1 : 0);
+                int otherTotal = int.Parse(splitTotal[3].Split(' ')[1]) + (isMisc ? 1 : 0);
+
+                var form = FormOutput(pk.Species, pk.Form, out _);
+                var speciesName = $"{SpeciesName.GetSpeciesNameGeneration(pk.Species, pk.Language, 9)}{form}".Replace(" ", "");
+                var index = content.FindIndex(x => x.Split(':')[0].Equals(speciesName));
+
+                if (index == -1)
+                    content.Add($"{speciesName}: 1, {(isMini ? 1 : 0)} Mini, {(isJumbo ? 1 : 0)} Jumbo, {(isMisc ? 1 : 0)} Miscellaneous");
+
+                var length = index == -1 ? 1 : 0;
+                for (int i = 0; i < content.Count - length; i++)
+                {
+                    var sanitized = GetSanitizedEncounterScaleArray(content[i]);
+                    if (i == index)
+                    {
+                        int speciesTotal = int.Parse(sanitized[1]) + 1;
+                        int miTotal = int.Parse(sanitized[2]) + (isMini ? 1 : 0);
+                        int juTotal = int.Parse(sanitized[3]) + (isJumbo ? 1 : 0);
+                        int otTotal = int.Parse(sanitized[4]) + (isMisc ? 1 : 0);
+                        content[i] = $"{speciesName}: {speciesTotal}, {miTotal} Mini, {juTotal} Jumbo, {otTotal} Miscellaneous, {GetPercent(pokeTotal, speciesTotal)}%";
+                    }
+                    else content[i] = $"{speciesName}: {sanitized[0]}, {sanitized[1]} Mini, {sanitized[2]} Jumbo, {sanitized[3]} Miscellaneous, {GetPercent(pokeTotal, int.Parse(sanitized[0]))}%";
+                }
+
+                content.Sort();
+                string totalsString =
+                    $"Totals: {pokeTotal} Pokémon, " +
+                    $"{miniTotal} Mini ({GetPercent(pokeTotal, miniTotal)}%), " +
+                    $"{jumboTotal} Jumbo ({GetPercent(pokeTotal, jumboTotal)}%), " +
+                    $"{otherTotal} Miscellaneous ({GetPercent(pokeTotal, otherTotal)}%)" +
+                    "\n_________________________________________________\n";
+                content.Insert(0, totalsString);
+                File.WriteAllText(filepath, string.Join("\n", content));
+            }
+        }
+
         private static string GetPercent(int total, int subtotal) => (100.0 * ((double)subtotal / total)).ToString("N2", NumberFormatInfo.InvariantInfo);
+
+        private static string[] GetSanitizedEncounterScaleArray(string content)
+        {
+            var replace = new Dictionary<string, string> { { ",", "" }, { " Mini", "" }, { " Jumbo", "" }, { " Miscellaneous", "" }, { "%", "" } };
+            return replace.Aggregate(content, (old, cleaned) => old.Replace(cleaned.Key, cleaned.Value)).Split(' ');
+        }
 
         private static string[] GetSanitizedEncounterLineArray(string content)
         {
@@ -354,12 +419,21 @@ namespace SysBot.Pokemon
             if (pkm.Form != 0)
                 pkmform = $"-{pkm.Form}";
 
-            if ((Species)pkm.Species > Species.Enamorus || (Species)pkm.Species == Species.Wooper && pkm.Form != 0 || (Species)pkm.Species == Species.Tauros && pkm.Form != 0)
+            if ((Species)pkm.Species >= Species.Sprigatito || (Species)pkm.Species == Species.Wooper && pkm.Form != 0 || (Species)pkm.Species == Species.Tauros && pkm.Form != 0)
             {
                 if (pkm.IsShiny)
                     newbase = $"https://raw.githubusercontent.com/zyro670/PokeTextures/main/Placeholder_Sprites/scaled_up_sprites/Shiny/" + $"{pkm.Species}{pkmform}" + ".png";
                 else if (!pkm.IsShiny)
                     newbase = $"https://raw.githubusercontent.com/zyro670/PokeTextures/main/Placeholder_Sprites/scaled_up_sprites/" + $"{pkm.Species}{pkmform}" + ".png";
+                return newbase;
+            }
+
+            if ((Species)pkm.Species == Species.Enamorus)
+            {
+                if (!pkm.IsShiny)
+                    newbase = "https://raw.githubusercontent.com/zyro670/HomeImages/master/128x128/poke_capture_0905_000_fd_n_00000000_f_n.png";
+                else
+                    newbase = "https://raw.githubusercontent.com/zyro670/HomeImages/master/128x128/poke_capture_0905_000_fd_n_00000000_f_r.png";
                 return newbase;
             }
 

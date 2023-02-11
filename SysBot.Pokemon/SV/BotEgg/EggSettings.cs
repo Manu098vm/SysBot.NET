@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.ComponentModel;
-using System.Threading;
+﻿using System.ComponentModel;
 using SysBot.Base;
 
 namespace SysBot.Pokemon
@@ -32,11 +30,14 @@ namespace SysBot.Pokemon
         [Category(FeatureToggle), Description("Amount of time to hold L stick up to ingredients for sandwich. [Default: 700ms]")]
         public int HoldUpToIngredients { get; set; } = 700;
 
+        [Category(FeatureToggle), Description("When enabled, the bot will only stop when encounter has a Scale of XXXS or XXXL.")]
+        public bool MinMaxScaleOnly { get; set; } = false;
+
         [Category(FeatureToggle), Description("When enabled, the bot will look for 3 Segment Dunsparce or Family of Three Maus.")]
         public bool OneInOneHundredOnly { get; set; } = true;
 
         [Category(FeatureToggle), Description("Resets game after making this amount of sandwiches to minimize memory leaks.")]
-        public int ResetGameAfterThisManySandwiches { get; set; } = 4;
+        public int ResetGameAfterThisManySandwiches { get; set; } = 2;
 
         [Category(FeatureToggle), Description("When enabled, the screen will be turned off during normal bot loop operation to save power.")]
         public bool ScreenOff { get; set; }

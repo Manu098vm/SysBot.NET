@@ -5,6 +5,9 @@ using ResultsUtil = SysBot.Base.ResultsUtil;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Base.SwitchStick;
 using static SysBot.Pokemon.PokeDataOffsetsLA;
+using Newtonsoft.Json.Linq;
+using System.Drawing;
+using System.Text.RegularExpressions;
 
 namespace SysBot.Pokemon
 {
@@ -75,11 +78,14 @@ namespace SysBot.Pokemon
                     ArceusMode.PlayerCoordScan => PlayerCoordScan(token),
                     ArceusMode.SeedAdvancer => SeedAdvancer(token),
                     ArceusMode.TimeSeedAdvancer => TimeSeedAdvancer(token),
-                    ArceusMode.StaticAlphaScan => ScanForAlphas(token),
+                    ArceusMode.StaticAlphaScan => ScanForSpawners(token),
                     ArceusMode.DistortionSpammer => DistortionSpammer(token),
                     ArceusMode.DistortionReader => DistortionReader(dex, token),
                     ArceusMode.MassiveOutbreakHunter => MassiveOutbreakHunter(dex, token),
                     ArceusMode.MultiSpawnPathSearch => PerformMultiSpawnerScan(dex, token),
+                    ArceusMode.GenieScanner => ScanForSpawners(token),
+                    ArceusMode.ManaphyReset => ManaphyReset(token),
+                    ArceusMode.AdvanceTimeDelay => AdvanceTimeDelay(token),
                     _ => PlayerCoordScan(token),
                 };
                 await task.ConfigureAwait(false);
@@ -114,6 +120,19 @@ namespace SysBot.Pokemon
 
             byte[] timeByte = BitConverter.GetBytes(timeVal);
             await SwitchConnection.WriteBytesAbsoluteAsync(timeByte, timeofs, token).ConfigureAwait(false);
+        }
+
+        private async Task AdvanceTimeDelay(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                Log("Changing time to advance frames...");
+                await TimeTest(token).ConfigureAwait(false);
+                Log("Waiting for confirmation before advancing again...");
+                IsWaitingConfirmation = true;
+                while (IsWaitingConfirmation)
+                    await Task.Delay(0_500, token).ConfigureAwait(false);
+            }
         }
 
         private async Task PlayerCoordScan(CancellationToken token)
@@ -1017,24 +1036,41 @@ namespace SysBot.Pokemon
             Settings.SpecialConditions.CampZoneZ = coordinates.Item3;
         }
 
-        private async Task ScanForAlphas(CancellationToken token)
+        private async Task ScanForSpawners(CancellationToken token)
         {
             Settings.AlphaScanConditions.StopOnMatch = false;
             int attempts = 1;
             for (int i = 0; i < 2; i++)
                 await Click(B, 0_500, token).ConfigureAwait(false);
-            Log("Searching for an Alpha shiny!");
+            Log("Searching for a match!");
             GetDefaultCoords();
             if (!Settings.SpecialConditions.RunToProfessor)
                 await TeleportToCampZone(token);
             while (!token.IsCancellationRequested)
             {
                 Log($"Search #{attempts}");
-                await SpawnerScan(token);
+                if (Settings.BotType == ArceusMode.StaticAlphaScan)
+                    await SpawnerScan(token).ConfigureAwait(false);
+                if (Settings.BotType == ArceusMode.GenieScanner)
+                    await GenieScan(token).ConfigureAwait(false);
                 if (Settings.AlphaScanConditions.StopOnMatch)
                 {
                     Log($"{Hub.Config.StopConditions.MatchFoundEchoMention} a match has been found!");
-                    return;
+                    await Click(HOME, 0_700, token).ConfigureAwait(false);
+                    if (Settings.ContinueAfterMatch == ContinueAfterMatch.PauseWaitAcknowledge)
+                    {
+                        await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + InvincibleTrainer1, token).ConfigureAwait(false);
+                        await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + InvincibleTrainer2, token).ConfigureAwait(false);
+
+                        IsWaiting = true;
+                        while (IsWaiting)
+                            await Task.Delay(1_000, token).ConfigureAwait(false);
+
+                        Settings.AlphaScanConditions.StopOnMatch = false;
+                        await Click(HOME, 1_000, token).ConfigureAwait(false);
+                    }
+                    else
+                        return;
                 }
                 if (!Settings.SpecialConditions.RunToProfessor)
                 {
@@ -1162,6 +1198,122 @@ namespace SysBot.Pokemon
             await SwitchConnection.WriteBytesAbsoluteAsync(X1, ofs, token).ConfigureAwait(false);
 
             await Task.Delay(Settings.SpecialConditions.WaitMsBetweenTeleports, token).ConfigureAwait(false);
+        }
+
+        private async Task GenieScan(CancellationToken token)
+        {
+            await Task.Delay(0_500, token).ConfigureAwait(false);
+            int groupID = Settings.SpecialConditions.ScanLocation switch
+            {
+                ArceusMap.ObsidianFieldlands => 308, //305 lando
+                ArceusMap.CrimsonMirelands => 400, //398 enamo
+                ArceusMap.CobaltCoastlands => 410, //408 thundo
+                ArceusMap.AlabasterIcelands => 300, //297 torn
+                _ => throw new NotImplementedException("Invalid scan location."),
+            };
+            string spawnerID = Settings.SpecialConditions.ScanLocation switch
+            {
+                ArceusMap.ObsidianFieldlands => "CDE0EAB0B0192256",
+                ArceusMap.CrimsonMirelands => "A4592645DC790FDC",
+                ArceusMap.AlabasterIcelands => "AAE2BC4712FD3B40",
+                ArceusMap.CobaltCoastlands => "1996A5F61B798BDF",
+                _ => throw new NotImplementedException("Invalid scan location."),
+            };
+
+            bool isSpawner = false;
+            while (!isSpawner)
+            {
+                var test = new long[] { 0x42a6ee0, 0x330, 0x70 + groupID * 0x440 + 0x20 - 0x50 };
+                var stest = await SwitchConnection.PointerAll(test, token).ConfigureAwait(false);
+                var bytes = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(stest, 8, token).ConfigureAwait(false), 0);
+                isSpawner = $"{bytes:X16}".Equals(spawnerID);
+                if (!isSpawner)
+                {
+                    groupID--;
+                    Log($"Bad SpawnerID {bytes:X16}\nTrying again with SpawnerID: {groupID}.");
+                    continue;
+                }
+                Log($"Checking SpawnerID: {groupID}...");
+                var SpawnerOffpoint = new long[] { 0x42a6ee0, 0x330, 0x70 + groupID * 0x440 + 0x20 };
+                var SpawnerOff = await SwitchConnection.PointerAll(SpawnerOffpoint, token).ConfigureAwait(false);
+                var GeneratorSeed = await SwitchConnection.ReadBytesAbsoluteAsync(SpawnerOff, 8, token).ConfigureAwait(false);
+
+                Log($"SpawnerID {bytes:X16} - Generator Seed: {BitConverter.ToString(GeneratorSeed).Replace("-", "")}");
+                var group_seed = (BitConverter.ToUInt64(GeneratorSeed, 0) - 0x82A2B175229D6A5B) & 0xFFFFFFFFFFFFFFFF;
+                GenerateNextShiny(0, group_seed);
+            }
+        }        
+
+        private async Task ManaphyReset(CancellationToken token)
+        {
+            int count = 1;
+            while (!token.IsCancellationRequested)
+            {
+                Log($"Starting Manaphy scanner...Search #{count}");
+                await Click(A, 0_800, token).ConfigureAwait(false);
+
+                while (!await IsOnOverworldTitle(token).ConfigureAwait(false))
+                    await Click(A, 0_800, token).ConfigureAwait(false);
+
+                await Task.Delay(2_000, token).ConfigureAwait(false);
+
+                for (int i = 409; i < 413; i++)
+                {
+                    string spawnerID = i switch
+                    {
+                        409 => "08398514506FBE25",
+                        410 => "97D85B3BB18FD0AB",
+                        411 => "7C9E6D810B343908",
+                        412 => "162F766DB48FC6D8",
+                        _ => throw new NotImplementedException("Invalid spawner."),
+                    };
+                    var test = new long[] { 0x42a6ee0, 0x330, 0x70 + i * 0x440 + 0x20 - 0x50 };
+                    var stest = await SwitchConnection.PointerAll(test, token).ConfigureAwait(false);
+                    var bytes = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(stest, 8, token).ConfigureAwait(false), 0);
+                    bool isSpawner = $"{bytes:X16}".Equals(spawnerID);
+                    if (!isSpawner)
+                    {
+                        i--;
+                        Log($"Bad SpawnerID {bytes:X16}\nTrying again with SpawnerID: {i}.");
+                        continue;
+                    }
+                    Log($"Checking SpawnerID: {i}...");
+                    var SpawnerOffpoint = new long[] { 0x42a6ee0, 0x330, 0x70 + i * 0x440 + 0x20 };
+                    var SpawnerOff = await SwitchConnection.PointerAll(SpawnerOffpoint, token).ConfigureAwait(false);
+                    var GeneratorSeed = await SwitchConnection.ReadBytesAbsoluteAsync(SpawnerOff, 8, token).ConfigureAwait(false);
+
+                    Log($"SpawnerID {bytes:X16} - Generator Seed: {BitConverter.ToString(GeneratorSeed).Replace("-", "")}");
+                    var group_seed = (BitConverter.ToUInt64(GeneratorSeed, 0) - 0x82A2B175229D6A5B) & 0xFFFFFFFFFFFFFFFF;
+                    if (i == 409)
+                        GenerateCaveFamily(true, group_seed);
+                    else
+                        GenerateCaveFamily(false, group_seed);
+
+                    if (Settings.AlphaScanConditions.StopOnMatch)
+                    {
+                        Log($"{Hub.Config.StopConditions.MatchFoundEchoMention} a match has been found!");
+                        await Click(HOME, 0_700, token).ConfigureAwait(false);
+                        if (Settings.ContinueAfterMatch == ContinueAfterMatch.PauseWaitAcknowledge)
+                        {
+                            await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + InvincibleTrainer1, token).ConfigureAwait(false);
+                            await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0xD65F03C0), MainNsoBase + InvincibleTrainer2, token).ConfigureAwait(false);
+
+                            IsWaiting = true;
+                            while (IsWaiting)
+                                await Task.Delay(1_000, token).ConfigureAwait(false);
+
+                            Settings.AlphaScanConditions.StopOnMatch = false;
+                            await Click(HOME, 1_000, token).ConfigureAwait(false);
+                        }
+                        else
+                            return;
+                    }
+                }
+                count++;
+
+                await CloseGame(Hub.Config, token).ConfigureAwait(false);
+                await StartGame(Hub.Config, token).ConfigureAwait(false);
+            }
         }
 
         private async Task SpawnerScan(CancellationToken token)
@@ -1483,8 +1635,40 @@ namespace SysBot.Pokemon
             return (pk, gen.shiny, logs);
         }
 
-        private ulong GenerateNextShiny(int spawnerid, ulong seed)
+        private void GenerateCaveFamily(bool mana, ulong seed)
         {
+            PA8 pk = new();
+            var mainrng = new Xoroshiro128Plus(seed);
+            for (int i = 0; i < Settings.SpecialConditions.MaxAdvancesToSearch; i++)
+            {
+                var generator_seed = mainrng.Next();
+                mainrng.Next();
+                var rng = new Xoroshiro128Plus(generator_seed);
+                rng.Next();
+                var givs = mana ? 3 : 0;
+                var gen = GenerateFromSeed(rng.Next(), 1, givs, 0);
+                if (mana)
+                    pk.Species = (ushort)Species.Manaphy;
+                if (!mana)
+                    pk.Species = (ushort)Species.Phione;
+                pk.EncryptionConstant = gen.EC;
+                pk.PID = gen.PID;
+                int[] pkIVList = gen.IVs;
+                pk.IVs = pkIVList;
+                pk.Nature = (int)gen.nature;
+                Log($"\n{(Species)pk.Species}\nEC: {pk.EncryptionConstant:X8}\nPID: {pk.PID:X8}\nIVs: {string.Join("/", pk.IVs)}\nNature: {(Nature)pk.Nature}\nGenerator Seed: {generator_seed:X16}");
+
+                if (Settings.SearchForIVs.Length != 0 && Settings.SearchForIVs.SequenceEqual(pk.IVs))
+                {
+                    Settings.AlphaScanConditions.StopOnMatch = true;
+                    EmbedMons.Add((pk, true));
+                }
+            }
+        }
+
+        private (ulong, PA8) GenerateNextShiny(int spawnerid, ulong seed)
+        {
+            PA8 pk = new();
             int hits = 0;
             ulong newseed = 0;
             var mainrng = new Xoroshiro128Plus(seed);
@@ -1498,33 +1682,87 @@ namespace SysBot.Pokemon
                 mainrng.Next();
                 mainrng = new Xoroshiro128Plus(mainrng.Next());
             }
-
-            string species = Settings.SpecialConditions.ScanLocation switch
+            
+            if (Settings.BotType == ArceusMode.GenieScanner)
             {
-                ArceusMap.ObsidianFieldlands => ObsidianTitle[spawnerid],
-                ArceusMap.CrimsonMirelands => CrimsonTitle[spawnerid],
-                ArceusMap.CoronetHighlands => CoronetTitle[spawnerid],
-                ArceusMap.CobaltCoastlands => CobaltTitle[spawnerid],
-                ArceusMap.AlabasterIcelands => AlabasterTitle[spawnerid],
-                _ => throw new NotImplementedException("Invalid spawner ID or location."),
-            };
-
-            for (int i = 0; i < Settings.AlphaScanConditions.MaxAdvancesToSearch; i++)
-            {
-                var generator_seed = mainrng.Next();
-                mainrng.Next();
-                var rng = new Xoroshiro128Plus(generator_seed);
-                rng.Next();
-
-                var gen = GenerateFromSeed(rng.Next(), (int)Settings.AlphaScanConditions.StaticAlphaShinyRolls, givs, 0);
-                if (gen.shiny)
+                for (int i = 0; i < Settings.SpecialConditions.MaxAdvancesToSearch; i++)
                 {
-                    if (Settings.SpeciesToHunt.Length != 0 && !Settings.SpeciesToHunt.Contains(species))
-                        break;
-
-                    if (Settings.SearchForIVs.Length != 0)
+                    Species geniename = Settings.SpecialConditions.ScanLocation switch
                     {
-                        if (Settings.SearchForIVs.SequenceEqual(gen.IVs))
+                        ArceusMap.ObsidianFieldlands => Species.Landorus,
+                        ArceusMap.CrimsonMirelands => Species.Enamorus,
+                        ArceusMap.CobaltCoastlands => Species.Thundurus,
+                        ArceusMap.AlabasterIcelands => Species.Tornadus,
+                        _ => throw new NotImplementedException("Invalid location."),
+                    };
+
+                    var generator_seed = mainrng.Next();
+                    mainrng.Next();
+                    var rng = new Xoroshiro128Plus(generator_seed);
+                    rng.Next();
+
+                    var gen = GenerateFromSeed(rng.Next(), 1, 0, 0);
+                    pk.Species = (ushort)geniename;
+                    pk.EncryptionConstant = gen.EC;
+                    pk.PID = gen.PID;
+                    int[] pkIVList = gen.IVs;
+                    pk.IVs = pkIVList;
+                    pk.Nature = (int)gen.nature;
+                    Log($"\nAdvance: {i} - {geniename}\nEC: {pk.EncryptionConstant:X8}\nPID: {pk.PID:X8}\nIVs: {string.Join("/", pk.IVs)}\nNature: {(Nature)pk.Nature}\nGenerator Seed: {generator_seed:X16}");
+
+                    if (Settings.SearchForIVs.Length != 0 && Settings.SearchForIVs.SequenceEqual(pk.IVs))
+                    {
+                        Settings.AlphaScanConditions.StopOnMatch = true;
+                        EmbedMons.Add((pk, true));
+                        return (newseed, pk);
+                    }
+                    mainrng = new Xoroshiro128Plus(mainrng.Next());
+                }
+
+            }
+            else if (Settings.BotType != ArceusMode.GenieScanner)
+            {
+                string species = Settings.SpecialConditions.ScanLocation switch
+                {
+                    ArceusMap.ObsidianFieldlands => ObsidianTitle[spawnerid],
+                    ArceusMap.CrimsonMirelands => CrimsonTitle[spawnerid],
+                    ArceusMap.CoronetHighlands => CoronetTitle[spawnerid],
+                    ArceusMap.CobaltCoastlands => CobaltTitle[spawnerid],
+                    ArceusMap.AlabasterIcelands => AlabasterTitle[spawnerid],
+                    _ => throw new NotImplementedException("Invalid spawner ID or location."),
+                };
+
+                for (int i = 0; i < Settings.SpecialConditions.MaxAdvancesToSearch; i++)
+                {
+                    var generator_seed = mainrng.Next();
+                    mainrng.Next();
+                    var rng = new Xoroshiro128Plus(generator_seed);
+                    rng.Next();
+
+                    var gen = GenerateFromSeed(rng.Next(), (int)Settings.AlphaScanConditions.StaticAlphaShinyRolls, givs, 0);
+                    Log($"\nAdvances: {i}\nAlpha: {species} - {gen.shinyXor} | SpawnerID: {spawnerid}\nEC: {gen.EC:X8}\nPID: {gen.PID:X8}\nIVs: {string.Join("/", gen.IVs)}\nNature: {gen.Item8}\nSeed: {gen.Item9:X16}");
+                    if (gen.shiny)
+                    {
+                        if (Settings.SpeciesToHunt.Length != 0 && !Settings.SpeciesToHunt.Contains(species))
+                            break;
+
+                        if (Settings.SearchForIVs.Length != 0)
+                        {
+                            if (Settings.SearchForIVs.SequenceEqual(gen.IVs))
+                            {
+                                Log($"\nAdvances: {i}\nAlpha: {species} - {gen.shinyXor} | SpawnerID: {spawnerid}\nEC: {gen.EC:X8}\nPID: {gen.PID:X8}\nIVs: {string.Join("/", gen.IVs)}\nNature: {gen.Item8}\nSeed: {gen.Item9:X16}");
+                                newseed = generator_seed;
+                                Settings.AlphaScanConditions.StopOnMatch = true;
+                                hits++;
+
+                                if (hits == 3)
+                                {
+                                    Log($"First three shiny results for {species} found.");
+                                    break;
+                                }
+                            }
+                        }
+                        if (Settings.SearchForIVs.Length == 0)
                         {
                             Log($"\nAdvances: {i}\nAlpha: {species} - {gen.shinyXor} | SpawnerID: {spawnerid}\nEC: {gen.EC:X8}\nPID: {gen.PID:X8}\nIVs: {string.Join("/", gen.IVs)}\nNature: {gen.Item8}\nSeed: {gen.Item9:X16}");
                             newseed = generator_seed;
@@ -1538,26 +1776,13 @@ namespace SysBot.Pokemon
                             }
                         }
                     }
-                    if (Settings.SearchForIVs.Length == 0)
-                    {
-                        Log($"\nAdvances: {i}\nAlpha: {species} - {gen.shinyXor} | SpawnerID: {spawnerid}\nEC: {gen.EC:X8}\nPID: {gen.PID:X8}\nIVs: {string.Join("/", gen.IVs)}\nNature: {gen.Item8}\nSeed: {gen.Item9:X16}");
-                        newseed = generator_seed;
-                        Settings.AlphaScanConditions.StopOnMatch = true;
-                        hits++;
-
-                        if (hits == 3)
-                        {
-                            Log($"First three shiny results for {species} found.");
-                            break;
-                        }
-                    }
+                    mainrng = new Xoroshiro128Plus(mainrng.Next());
+                    if (i == Settings.SpecialConditions.MaxAdvancesToSearch - 1 && !gen.shiny)
+                        Log($"No results within {Settings.SpecialConditions.MaxAdvancesToSearch} advances for {species} | SpawnerID: {spawnerid}.");
                 }
-                mainrng = new Xoroshiro128Plus(mainrng.Next());
-                if (i == Settings.AlphaScanConditions.MaxAdvancesToSearch - 1 && !gen.shiny)
-                    Log($"No results within {Settings.AlphaScanConditions.MaxAdvancesToSearch} advances for {species} | SpawnerID: {spawnerid}.");
             }
 
-            return newseed;
+            return (newseed, pk);
         }
 
         private async Task PerformOutbreakScan(PokedexSaveData dex, CancellationToken token)

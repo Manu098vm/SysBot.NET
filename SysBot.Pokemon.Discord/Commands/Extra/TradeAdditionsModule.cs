@@ -552,7 +552,7 @@ namespace SysBot.Pokemon.Discord
 
                         string stats;
                         if (Hub.Config.ArceusLA.SpeciesToHunt.Length == 0 || mon.IVTotal != 0)
-                            stats = $"{(mon.ShinyXor == 0 ? "■ - " : mon.ShinyXor <= 16 ? "★ - " : "")}{SpeciesName.GetSpeciesNameGeneration(mon.Species, 2, 8)}{TradeExtensions<T>.FormOutput(mon.Species, mon.Form, out _)}\nIVs: {string.Join("/", mon.IVs)}";
+                            stats = $"{(mon.ShinyXor == 0 ? "■ - " : mon.ShinyXor <= 16 ? "★ - " : "")}{SpeciesName.GetSpeciesNameGeneration(mon.Species, 2, 8)}{TradeExtensions<T>.FormOutput(mon.Species, mon.Form, out _)}\nIVs: {string.Join("/", mon.IVs)}\nNature: {(Nature)mon.Nature}";
                         else
                         {
                             stats = "Hunting for a special Alpha!";
@@ -561,6 +561,11 @@ namespace SysBot.Pokemon.Discord
 
                         if (mon.IsAlpha)
                             shinyurl = "https://cdn.discordapp.com/emojis/944278189000228894.webp?size=96&quality=lossless";
+
+                        if (mons[i].Item2)
+                            shinyurl = "https://i.imgur.com/T8vEiIk.jpg";
+                        else
+                            shinyurl = $"https://i.imgur.com/t2M8qF4.png";
 
                         var author = new EmbedAuthorBuilder { IconUrl = shinyurl, Name = msg };
                         var footer = new EmbedFooterBuilder
@@ -572,6 +577,8 @@ namespace SysBot.Pokemon.Discord
                                 ArceusMode.MassiveOutbreakHunter when (Species)mon.Species is Species.Shieldon or Species.Bastiodon or Species.Cranidos or Species.Rampardos or Species.Scizor or Species.Sneasel or
                                 Species.Weavile or Species.Magnemite or Species.Magneton or Species.Magnezone or Species.Sylveon or Species.Leafeon or Species.Glaceon or Species.Flareon or Species.Jolteon or Species.Vaporeon
                                 or Species.Umbreon or Species.Espeon => "Found in a space-time distortion.",
+                                ArceusMode.GenieScanner => "Found a genie in a cloud",
+                                ArceusMode.ManaphyReset => "Found a in a cave",
                                 _ => "Found in a massive mass outbreak.",
                             }
                         };
@@ -770,12 +777,12 @@ namespace SysBot.Pokemon.Discord
                                 spec = "\nFamily of 4";
                         }
                     }
-
+                    var size = $"\nScale: {PokeSizeDetailedUtil.GetSizeRating(EggBotSV.EmbedMon.Item1.Scale)}";
                     var gender = EggBotSV.EmbedMon.Item1.Gender == 0 ? " - (M)" : EggBotSV.EmbedMon.Item1.Gender == 1 ? " - (F)" : "";
 
-                    var description = $"{(EggBotSV.EmbedMon.Item1.ShinyXor == 0 ? "■ - " : EggBotSV.EmbedMon.Item1.ShinyXor <= 16 ? "★ - " : "")}{SpeciesName.GetSpeciesNameGeneration(EggBotSV.EmbedMon.Item1.Species, 2, 8)}{TradeExtensions<T>.FormOutput(EggBotSV.EmbedMon.Item1.Species, EggBotSV.EmbedMon.Item1.Form, out _)}{gender}{spec}\nIVs: {EggBotSV.EmbedMon.Item1.IV_HP}/{EggBotSV.EmbedMon.Item1.IV_ATK}/{EggBotSV.EmbedMon.Item1.IV_DEF}/{EggBotSV.EmbedMon.Item1.IV_SPA}/{EggBotSV.EmbedMon.Item1.IV_SPD}/{EggBotSV.EmbedMon.Item1.IV_SPE}";
+                    var description = $"{(EggBotSV.EmbedMon.Item1.ShinyXor == 0 ? "■ - " : EggBotSV.EmbedMon.Item1.ShinyXor <= 16 ? "★ - " : "")}{SpeciesName.GetSpeciesNameGeneration(EggBotSV.EmbedMon.Item1.Species, 2, 8)}{TradeExtensions<T>.FormOutput(EggBotSV.EmbedMon.Item1.Species, EggBotSV.EmbedMon.Item1.Form, out _)}{gender}{spec}\nIVs: {EggBotSV.EmbedMon.Item1.IV_HP}/{EggBotSV.EmbedMon.Item1.IV_ATK}/{EggBotSV.EmbedMon.Item1.IV_DEF}/{EggBotSV.EmbedMon.Item1.IV_SPA}/{EggBotSV.EmbedMon.Item1.IV_SPD}/{EggBotSV.EmbedMon.Item1.IV_SPE}{size}";
                     if (SysCord<T>.Runner.Hub.Config.StopConditions.ShinyTarget == TargetShinyType.NonShiny)
-                        description = $"{SpeciesName.GetSpeciesNameGeneration(EggBotSV.EmbedMon.Item1.Species, 2, 8)}{TradeExtensions<T>.FormOutput(EggBotSV.EmbedMon.Item1.Species, EggBotSV.EmbedMon.Item1.Form, out _)}{gender}{spec}\nIVs: {EggBotSV.EmbedMon.Item1.IV_HP}/{EggBotSV.EmbedMon.Item1.IV_ATK}/{EggBotSV.EmbedMon.Item1.IV_DEF}/{EggBotSV.EmbedMon.Item1.IV_SPA}/{EggBotSV.EmbedMon.Item1.IV_SPD}/{EggBotSV.EmbedMon.Item1.IV_SPE}";
+                        description = $"{SpeciesName.GetSpeciesNameGeneration(EggBotSV.EmbedMon.Item1.Species, 2, 8)}{TradeExtensions<T>.FormOutput(EggBotSV.EmbedMon.Item1.Species, EggBotSV.EmbedMon.Item1.Form, out _)}{gender}{spec}\nIVs: {EggBotSV.EmbedMon.Item1.IV_HP}/{EggBotSV.EmbedMon.Item1.IV_ATK}/{EggBotSV.EmbedMon.Item1.IV_DEF}/{EggBotSV.EmbedMon.Item1.IV_SPA}/{EggBotSV.EmbedMon.Item1.IV_SPD}/{EggBotSV.EmbedMon.Item1.IV_SPE}{size}";
 
                     var markurl = string.Empty;
                     if (EggBotSV.EmbedMon.Item2)

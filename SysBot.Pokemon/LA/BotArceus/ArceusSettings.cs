@@ -9,6 +9,9 @@ namespace SysBot.Pokemon
         private const string Counts = nameof(Counts);
         public override string ToString() => "Arceus Bot Settings";
 
+        [Category(Arceus), Description("When enabled, the bot will continue after finding a suitable match.")]
+        public ContinueAfterMatch ContinueAfterMatch { get; set; } = ContinueAfterMatch.StopExit;
+
         [Category(Arceus), Description("The method by which the bot will scan overworld Pokémon.")]
         public ArceusMode BotType { get; set; } = ArceusMode.PlayerCoordScan;
 
@@ -108,10 +111,7 @@ namespace SysBot.Pokemon
             public ArceusAutoFill AutoFillCoords { get; set; } = ArceusAutoFill.CampZone;
 
             [Category(Arceus), Description("Enter number of shiny rolls for Static Alphas.")]
-            public ShinyRolls StaticAlphaShinyRolls { get; set; } = ShinyRolls.PerfectCharm;
-
-            [Category(Arceus), Description("Enter number of advances to search.")]
-            public int MaxAdvancesToSearch { get; set; } = 50;
+            public ShinyRolls StaticAlphaShinyRolls { get; set; } = ShinyRolls.PerfectCharm;            
 
             [Category(Arceus), Description("Enter number of advances to do.")]
             public int Advances { get; set; } = 1;
@@ -145,6 +145,9 @@ namespace SysBot.Pokemon
 
             [Category(Arceus), Description("Select the Location of the map you are hunting for. Ignore this setting if you are running MMOHunter")]
             public ArceusMap ScanLocation { get; set; } = ArceusMap.ObsidianFieldlands;
+
+            [Category(Arceus), Description("Enter number of advances to search.")]
+            public int MaxAdvancesToSearch { get; set; } = 50;
 
             [Category(Arceus), Description("Wait time between teleporting and scanning.")]
             public int WaitMsBetweenTeleports { get; set; } = 1000;
