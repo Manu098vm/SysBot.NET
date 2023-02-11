@@ -8,6 +8,11 @@ using static SysBot.Pokemon.PokeDataOffsetsLA;
 using Newtonsoft.Json.Linq;
 using System.Drawing;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using System.Threading;
+using System.Collections.Generic;
+using System;
+using System.Linq;
 
 namespace SysBot.Pokemon
 {
@@ -1247,9 +1252,10 @@ namespace SysBot.Pokemon
         private async Task ManaphyReset(CancellationToken token)
         {
             int count = 1;
+            Log($"Starting Manaphy Scanner...");
             while (!token.IsCancellationRequested)
             {
-                Log($"Starting Manaphy scanner...Search #{count}");
+                Log($"Search #{count}");
                 await Click(A, 0_800, token).ConfigureAwait(false);
 
                 while (!await IsOnOverworldTitle(token).ConfigureAwait(false))
@@ -1701,7 +1707,7 @@ namespace SysBot.Pokemon
                     var rng = new Xoroshiro128Plus(generator_seed);
                     rng.Next();
 
-                    var gen = GenerateFromSeed(rng.Next(), 1, 0, 0);
+                    var gen = GenerateFromSeed(rng.Next(), 1, 3, 0);
                     pk.Species = (ushort)geniename;
                     pk.EncryptionConstant = gen.EC;
                     pk.PID = gen.PID;

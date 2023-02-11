@@ -86,7 +86,11 @@ namespace SysBot.Pokemon
                     return true;
 
                 // Disallow receiving duplicate legends (prevents people farming the bot)
-                if (Legal.Legends.Contains(poke.Species) || Legal.SubLegends.Contains(poke.Species))
+                if (Legal.Legends.Contains(poke.Species))
+                    return false;
+                if (Legal.Mythicals.Contains(poke.Species))
+                    return false;
+                if (Legal.SubLegends.Contains(poke.Species))
                     return false;
 
                 return true;

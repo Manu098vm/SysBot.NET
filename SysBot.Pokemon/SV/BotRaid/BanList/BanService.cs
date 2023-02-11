@@ -2,6 +2,11 @@
 using Newtonsoft.Json;
 using System.Data;
 using SysBot.Base;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Net.Http;
+using System;
+using System.Linq;
 
 namespace SysBot.Pokemon.SV
 {

@@ -1,5 +1,9 @@
 ﻿using PKHeX.Core;
 using SysBot.Base;
+using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Base.SwitchStick;
 using static SysBot.Pokemon.EggSettingsSV;
@@ -58,32 +62,9 @@ namespace SysBot.Pokemon
                     if (!await InnerLoop(token).ConfigureAwait(false))
                         break;
                 }
-                catch
+                catch (Exception e)
                 {
-                    var attempts = Hub.Config.Timings.ReconnectAttempts;
-                    var delay = Hub.Config.Timings.ExtraReconnectDelay;
-                    var protocol = Config.Connection.Protocol;
-                    if (!await TryReconnect(attempts, delay, protocol, token).ConfigureAwait(false))
-                        return;
-
-                    Log($"Successful reconnect on lost connection. Attempting full recovery.");
-
-                    if (Settings.EggBotMode == EggMode.WaitAndClose)
-                    {
-                        await ReOpenGame(Hub.Config, token).ConfigureAwait(false); // Reset game to resync 
-                        await InitializeHardware(Hub.Config.EggSWSH, token).ConfigureAwait(false);
-
-                        Log("Identifying trainer data of the host console.");
-                        await IdentifyTrainer(token).ConfigureAwait(false);
-                        OverworldOffset = await SwitchConnection.PointerAll(Offsets.OverworldPointer, token).ConfigureAwait(false);
-                        await SetupBoxState(token).ConfigureAwait(false);
-                        Log("Starting main EggBot loop.");
-                        await Click(X, 1_700, token).ConfigureAwait(false);
-                        await Click(DRIGHT, 0_250, token).ConfigureAwait(false);
-                        await Click(DDOWN, 0_250, token).ConfigureAwait(false);
-                        await Click(DDOWN, 0_250, token).ConfigureAwait(false);
-                        await Click(A, 7_000, token).ConfigureAwait(false); // First picnic might take longer.
-                    }
+                    Log(e.Message);
                 }
             }
 
@@ -508,29 +489,5 @@ namespace SysBot.Pokemon
                 }
             }
         }
-
-        private async Task TestWagon(CancellationToken token)
-        {
-            long[] ptr = new long[] { 0x43F3DF8, 0x68, 0xE0, 0x7A };
-            var bytes = await SwitchConnection.PointerAll(ptr, token).ConfigureAwait(false);
-            byte[] results = await SwitchConnection.ReadBytesAbsoluteAsync(bytes, 80, token).ConfigureAwait(false);
-            var rest = BitConverter.ToString(results);
-            Log($"Test bytes: {rest}");
-
-            byte[] val = new byte[WagonWrite.Length / 2];
-
-            for (int i = 0; i < WagonWrite.Length; i += 2)
-                val[i / 2] = Convert.ToByte(WagonWrite.Substring(i, 2), 16);
-
-            //var val = ulong.Parse(WagonWrite.Replace(" ", ""), NumberStyles.AllowHexSpecifier);
-            //byte[] v1 = BitConverter.GetBytes(val);
-            await SwitchConnection.WriteBytesAbsoluteAsync(val, bytes, token).ConfigureAwait(false);
-
-            results = await SwitchConnection.ReadBytesAbsoluteAsync(bytes, 80, token).ConfigureAwait(false);
-            rest = BitConverter.ToString(results);
-            Log($"Test2 bytes: {rest}");
-        }
-
-        public string WagonWrite = "04000800080000000A0000001000000000000A001200040008000C000A000000000070410000A0401000000000000A001000040008000C000A000000000000410000C04000004040";
     }
 }

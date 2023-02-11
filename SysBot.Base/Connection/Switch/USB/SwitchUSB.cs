@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using LibUsbDotNet;
 using LibUsbDotNet.Main;
@@ -77,7 +78,7 @@ namespace SysBot.Base
         {
             lock (_registry)
             {
-                foreach (UsbRegistry ur in UsbDevice.AllLibUsbDevices)
+                foreach (UsbRegistry ur in UsbDevice.AllLibUsbDevices.Cast<UsbRegistry>())
                 {
                     if (ur.Vid != 0x057E)
                         continue;

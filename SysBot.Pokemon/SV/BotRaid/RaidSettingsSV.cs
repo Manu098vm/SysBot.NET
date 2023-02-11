@@ -1,6 +1,9 @@
 ﻿using PKHeX.Core;
 using System.ComponentModel;
 using SysBot.Base;
+using System.Threading;
+using System.Collections.Generic;
+using System;
 
 namespace SysBot.Pokemon
 {

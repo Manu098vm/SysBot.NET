@@ -1,5 +1,8 @@
 ﻿using PKHeX.Core;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 
 namespace SysBot.Pokemon
 {
@@ -175,7 +178,7 @@ namespace SysBot.Pokemon
 
         public string GetSpecialPrintName(PKM pk)
         {
-            var set = $"{(pk.ShinyXor == 0 ? "■ - " : pk.ShinyXor <= 16 ? "★ - " : "")}{SpeciesName.GetSpeciesNameGeneration(pk.Species, 2, 8)}{TradeExtensions<PK9>.FormOutput(pk.Species, pk.Form, out _)}\nEC: {pk.EncryptionConstant:X8} | PID: {pk.PID:X8}\nNature: {(Nature)pk.Nature} | Gender: {(Gender)pk.Gender}\nIVs: {pk.IV_HP}/{pk.IV_ATK}/{pk.IV_DEF}/{pk.IV_SPA}/{pk.IV_SPD}/{pk.IV_SPE}";
+            var set = $"{(pk.ShinyXor == 0 ? "■ - " : pk.ShinyXor <= 16 ? "★ - " : "")}{SpeciesName.GetSpeciesNameGeneration(pk.Species, 2, 9)}{TradeExtensions<PK9>.FormOutput(pk.Species, pk.Form, out _)}\nEC: {pk.EncryptionConstant:X8} | PID: {pk.PID:X8}\nNature: {(Nature)pk.Nature} | Gender: {(Gender)pk.Gender}\nIVs: {pk.IV_HP}/{pk.IV_ATK}/{pk.IV_DEF}/{pk.IV_SPA}/{pk.IV_SPD}/{pk.IV_SPE}";
             if (pk is IRibbonIndex r)
             {
                 var rstring = GetMarkName(r);

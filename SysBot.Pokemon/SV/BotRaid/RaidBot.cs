@@ -1,8 +1,14 @@
 using Discord;
 using PKHeX.Core;
 using SysBot.Pokemon.SV;
+using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Pokemon.RaidSettingsSV;
 
@@ -592,7 +598,7 @@ namespace SysBot.Pokemon
                 {
                     Title = disband ? $"**Raid canceled: [{TeraRaidCode}]**" : title,
                     Description = disband ? message : description,
-                    Color = disband ? Color.Red : hatTrick ? Color.Purple : Color.Green,
+                    Color = disband ? Discord.Color.Red : hatTrick ? Discord.Color.Purple : Discord.Color.Green,
                     ImageUrl = bytes.Length > 0 ? "attachment://zap.jpg" : default,
                 }.WithFooter(new EmbedFooterBuilder()
                 {
