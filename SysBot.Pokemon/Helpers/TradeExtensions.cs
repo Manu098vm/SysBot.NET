@@ -315,9 +315,9 @@ namespace SysBot.Pokemon
                         int miTotal = int.Parse(sanitized[2]) + (isMini ? 1 : 0);
                         int juTotal = int.Parse(sanitized[3]) + (isJumbo ? 1 : 0);
                         int otTotal = int.Parse(sanitized[4]) + (isMisc ? 1 : 0);
-                        content[i] = $"{speciesName}: {speciesTotal}, {miTotal} Mini, {juTotal} Jumbo, {otTotal} Miscellaneous, {GetPercent(pokeTotal, speciesTotal)}%";
+                        content[i] = $"{speciesName}: {speciesTotal}, {miTotal} Mini, {juTotal} Jumbo, {otTotal} Miscellaneous";
                     }
-                    else content[i] = $"{speciesName}: {sanitized[0]}, {sanitized[1]} Mini, {sanitized[2]} Jumbo, {sanitized[3]} Miscellaneous, {GetPercent(pokeTotal, int.Parse(sanitized[0]))}%";
+                    else content[i] = $"{sanitized[0]} {sanitized[1]}, {sanitized[2]} Mini, {sanitized[3]} Jumbo, {sanitized[4]} Miscellaneous";
                 }
 
                 content.Sort();
