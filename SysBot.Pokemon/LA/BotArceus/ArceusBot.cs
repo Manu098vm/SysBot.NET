@@ -5,9 +5,6 @@ using ResultsUtil = SysBot.Base.ResultsUtil;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Base.SwitchStick;
 using static SysBot.Pokemon.PokeDataOffsetsLA;
-using Newtonsoft.Json.Linq;
-using System.Drawing;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Collections.Generic;
@@ -1084,13 +1081,18 @@ namespace SysBot.Pokemon
                     await ResetStick(token).ConfigureAwait(false); // reset
                     await Click(A, 1_000, token).ConfigureAwait(false);
                     await Click(A, 1_000, token).ConfigureAwait(false);
-                    await Click(A, 10_000, token).ConfigureAwait(false);
+
+                    while (!await IsOnOverworldTitle(token).ConfigureAwait(false))
+                        await Click(A, 1_000, token).ConfigureAwait(false);
+
                     await TeleportToSpawnZone(token);
                     await SetStick(LEFT, 0, -30_000, 1_000, token).ConfigureAwait(false); // reset face downward
                     await ResetStick(token).ConfigureAwait(false); // reset
                     for (int i = 0; i < 2; i++)
                         await Click(A, 1_000, token).ConfigureAwait(false);
-                    await Click(A, 10_000, token).ConfigureAwait(false);
+
+                    while (!await IsOnOverworldTitle(token).ConfigureAwait(false))
+                        await Click(A, 1_000, token).ConfigureAwait(false);
                 }
                 else if (Settings.SpecialConditions.RunToProfessor)
                 {

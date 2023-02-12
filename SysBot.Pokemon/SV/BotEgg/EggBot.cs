@@ -46,7 +46,7 @@ namespace SysBot.Pokemon
 
         public override async Task MainLoop(CancellationToken token)
         {
-            await InitializeHardware(Hub.Config.EggSWSH, token).ConfigureAwait(false);
+            await InitializeHardware(Hub.Config.EggSV, token).ConfigureAwait(false);
 
             Log("Identifying trainer data of the host console.");
             await IdentifyTrainer(token).ConfigureAwait(false);
@@ -476,13 +476,13 @@ namespace SysBot.Pokemon
             {
                 while (!text.SequenceEqual(TextVal)) // No egg
                 {
-                    await Click(A, 1_000, token).ConfigureAwait(false);
+                    await Click(A, 1_500, token).ConfigureAwait(false);
 
                     var dumpmon = await ReadBoxPokemonSV(b1s1, 344, token).ConfigureAwait(false);
                     if (dumpmon != null && (Species)dumpmon.Species != Species.None)
                     {
                         DumpPokemon(DumpSetting.DumpFolder, "eggs", dumpmon);
-                        await Task.Delay(1_000, token).ConfigureAwait(false);
+                        await Task.Delay(1_500, token).ConfigureAwait(false);
                         await SetBoxPokemonEgg(Blank, InjectBox, InjectSlot, token).ConfigureAwait(false);
                     }
                     text = await SwitchConnection.ReadBytesAbsoluteAsync(ofs, 4, token).ConfigureAwait(false);
