@@ -302,7 +302,10 @@ namespace SysBot.Pokemon
             }
 
             if (Settings.MinMaxScaleOnly && pk.Scale > 0 && pk.Scale < 255)
+            {
+                EmbedMon = (pk, false);
                 return true;
+            }
             
             // no need to take a video clip of us receiving an egg.
             var mode = Settings.ContinueAfterMatch;
