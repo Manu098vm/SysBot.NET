@@ -183,7 +183,7 @@ namespace SysBot.Pokemon
                 while (DateTime.Now < endTime)
                 {
                     var pk = await ReadPokemonSV(EggData, 344, token).ConfigureAwait(false);
-                    while (pkprev.EncryptionConstant == pk.EncryptionConstant || pk == null || (Species)pk.Species == Species.None)
+                    while (pk == null || pkprev.EncryptionConstant == pk.EncryptionConstant || (Species)pk.Species == Species.None)
                     {
                         waiting++;
                         await Task.Delay(1_500, token).ConfigureAwait(false);
@@ -212,8 +212,12 @@ namespace SysBot.Pokemon
 
                     await Task.Delay(1_000, token).ConfigureAwait(false);
                     pk = await ReadPokemonSV(EggData, 344, token).ConfigureAwait(false);
-                    while (pk != null && pkprev.EncryptionConstant != pk.EncryptionConstant && (Species)pk.Species != Species.None)
-                    {
+                    while (pk != null && (Species)pk.Species != Species.None && pkprev.EncryptionConstant != pk.EncryptionConstant)
+                    {                        
+                        pk = await ReadPokemonSV(EggData, 344, token).ConfigureAwait(false); // Read egg again
+                        if (pk == null || pkprev.EncryptionConstant == pk.EncryptionConstant || (Species)pk.Species == Species.None)
+                            break;
+
                         waiting = 0;
                         eggcount++;
                         var print = Hub.Config.StopConditions.GetSpecialPrintName(pk);
