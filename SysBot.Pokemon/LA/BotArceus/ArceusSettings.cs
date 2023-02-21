@@ -21,9 +21,6 @@ namespace SysBot.Pokemon
         [Category(Arceus), Description("Will hunt for the desired outbreak species if not empty. Separate species with a comma. Ex: Eevee,Rotom,Voltorb")]
         public string SpeciesToHunt { get; set; } = string.Empty;
 
-        [Category(Arceus), Description("If you have a desired IV spread enter it here, else leave empty. (EX: 31/31/31/31/31/0 for a 5IV 0SPE spread.")]
-        public int[] SearchForIVs { get; set; } = Array.Empty<int>();
-
         [Category(Arceus), Description("Special Conditions"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
         public SpecialFiltersCategory SpecialConditions { get; set; } = new();
 

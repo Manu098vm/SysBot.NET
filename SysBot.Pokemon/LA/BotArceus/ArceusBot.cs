@@ -17,6 +17,8 @@ namespace SysBot.Pokemon
     {
         private readonly PokeTradeHub<PA8> Hub;
         private readonly IDumper DumpSetting;
+        private readonly int[] DesiredMinIVs;
+        private readonly int[] DesiredMaxIVs;
         private readonly ArceusBotSettings Settings;
         public static bool EmbedsInitialized { get; set; }
         public static readonly List<(PA8?, bool)> EmbedMons = new();
@@ -28,6 +30,7 @@ namespace SysBot.Pokemon
             Hub = hub;
             Settings = Hub.Config.ArceusLA;
             DumpSetting = Hub.Config.Folder;
+            StopConditionSettings.InitializeTargetIVs(Hub.Config, out DesiredMinIVs, out DesiredMaxIVs);
         }
 
         private ulong MainNsoBase;
@@ -1212,25 +1215,25 @@ namespace SysBot.Pokemon
             await Task.Delay(0_500, token).ConfigureAwait(false);
             int groupID = Settings.SpecialConditions.ScanLocation switch
             {
-                ArceusMap.ObsidianFieldlands => 308, //305 lando
-                ArceusMap.CrimsonMirelands => 400, //398 enamo
-                ArceusMap.CobaltCoastlands => 410, //408 thundo
-                ArceusMap.AlabasterIcelands => 300, //297 torn
+                ArceusMap.ObsidianFieldlands => 310, //305 lando
+                ArceusMap.CrimsonMirelands => 402, //398 enamo
+                ArceusMap.CobaltCoastlands => 412, //408 thundo
+                ArceusMap.AlabasterIcelands => 302, //297 torn
                 _ => throw new NotImplementedException("Invalid scan location."),
             };
             string spawnerID = Settings.SpecialConditions.ScanLocation switch
             {
-                ArceusMap.ObsidianFieldlands => "CDE0EAB0B0192256",
-                ArceusMap.CrimsonMirelands => "A4592645DC790FDC",
-                ArceusMap.AlabasterIcelands => "AAE2BC4712FD3B40",
-                ArceusMap.CobaltCoastlands => "1996A5F61B798BDF",
+                ArceusMap.ObsidianFieldlands => "88AF9BCFDD5FCD8F",
+                ArceusMap.CrimsonMirelands => "A468ADF5964CCE65",
+                ArceusMap.AlabasterIcelands => "B8B7D33AB95F7A11",
+                ArceusMap.CobaltCoastlands => "08398514506FBE25",
                 _ => throw new NotImplementedException("Invalid scan location."),
             };
 
             bool isSpawner = false;
             while (!isSpawner)
             {
-                var test = new long[] { 0x42a6ee0, 0x330, 0x70 + groupID * 0x440 + 0x20 - 0x50 };
+                var test = new long[] { 0x42a6ee0, 0x330, 0x70 + groupID * 0x440 + 0x20 + 0x3F0 };
                 var stest = await SwitchConnection.PointerAll(test, token).ConfigureAwait(false);
                 var bytes = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(stest, 8, token).ConfigureAwait(false), 0);
                 isSpawner = $"{bytes:X16}".Equals(spawnerID);
@@ -1269,13 +1272,13 @@ namespace SysBot.Pokemon
                 {
                     string spawnerID = i switch
                     {
-                        409 => "08398514506FBE25",
-                        410 => "97D85B3BB18FD0AB",
-                        411 => "7C9E6D810B343908",
-                        412 => "162F766DB48FC6D8",
+                        409 => "97D85B3BB18FD0AB",
+                        410 => "7C9E6D810B343908",
+                        411 => "162F766DB48FC6D8",
+                        412 => "E1CBACBBA2D63665",
                         _ => throw new NotImplementedException("Invalid spawner."),
                     };
-                    var test = new long[] { 0x42a6ee0, 0x330, 0x70 + i * 0x440 + 0x20 - 0x50 };
+                    var test = new long[] { 0x42a6ee0, 0x330, 0x70 + i * 0x440 + 0x20 + 0x3F0 };
                     var stest = await SwitchConnection.PointerAll(test, token).ConfigureAwait(false);
                     var bytes = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(stest, 8, token).ConfigureAwait(false), 0);
                     bool isSpawner = $"{bytes:X16}".Equals(spawnerID);
@@ -1666,7 +1669,7 @@ namespace SysBot.Pokemon
                 pk.Nature = (int)gen.nature;
                 Log($"\n{(Species)pk.Species}\nEC: {pk.EncryptionConstant:X8}\nPID: {pk.PID:X8}\nIVs: {string.Join("/", pk.IVs)}\nNature: {(Nature)pk.Nature}\nGenerator Seed: {generator_seed:X16}");
 
-                if (Settings.SearchForIVs.Length != 0 && Settings.SearchForIVs.SequenceEqual(pk.IVs))
+                if (StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, null))
                 {
                     Settings.AlphaScanConditions.StopOnMatch = true;
                     EmbedMons.Add((pk, true));
@@ -1718,7 +1721,7 @@ namespace SysBot.Pokemon
                     pk.Nature = (int)gen.nature;
                     Log($"\nAdvance: {i} - {geniename}\nEC: {pk.EncryptionConstant:X8}\nPID: {pk.PID:X8}\nIVs: {string.Join("/", pk.IVs)}\nNature: {(Nature)pk.Nature}\nGenerator Seed: {generator_seed:X16}");
 
-                    if (Settings.SearchForIVs.Length != 0 && Settings.SearchForIVs.SequenceEqual(pk.IVs))
+                    if (StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, null))
                     {
                         Settings.AlphaScanConditions.StopOnMatch = true;
                         EmbedMons.Add((pk, true));
@@ -1754,23 +1757,7 @@ namespace SysBot.Pokemon
                         if (Settings.SpeciesToHunt.Length != 0 && !Settings.SpeciesToHunt.Contains(species))
                             break;
 
-                        if (Settings.SearchForIVs.Length != 0)
-                        {
-                            if (Settings.SearchForIVs.SequenceEqual(gen.IVs))
-                            {
-                                Log($"\nAdvances: {i}\nAlpha: {species} - {gen.shinyXor} | SpawnerID: {spawnerid}\nEC: {gen.EC:X8}\nPID: {gen.PID:X8}\nIVs: {string.Join("/", gen.IVs)}\nNature: {gen.Item8}\nSeed: {gen.Item9:X16}");
-                                newseed = generator_seed;
-                                Settings.AlphaScanConditions.StopOnMatch = true;
-                                hits++;
-
-                                if (hits == 3)
-                                {
-                                    Log($"First three shiny results for {species} found.");
-                                    break;
-                                }
-                            }
-                        }
-                        if (Settings.SearchForIVs.Length == 0)
+                        if (StopConditionSettings.EncounterFound(pk, DesiredMinIVs, DesiredMaxIVs, Hub.Config.StopConditions, null))
                         {
                             Log($"\nAdvances: {i}\nAlpha: {species} - {gen.shinyXor} | SpawnerID: {spawnerid}\nEC: {gen.EC:X8}\nPID: {gen.PID:X8}\nIVs: {string.Join("/", gen.IVs)}\nNature: {gen.Item8}\nSeed: {gen.Item9:X16}");
                             newseed = generator_seed;

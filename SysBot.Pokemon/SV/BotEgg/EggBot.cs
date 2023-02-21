@@ -221,8 +221,7 @@ namespace SysBot.Pokemon
                         waiting = 0;
                         eggcount++;
                         var print = Hub.Config.StopConditions.GetSpecialPrintName(pk);
-                        var size = PokeSizeDetailedUtil.GetSizeRating(pk.Scale);
-                        Log($"Encounter: {eggcount}{Environment.NewLine}{print}{Environment.NewLine}Scale: {size}");
+                        Log($"Encounter: {eggcount}{Environment.NewLine}{print}{Environment.NewLine}Scale: {PokeSizeDetailedUtil.GetSizeRating(pk.Scale)}");
                         Settings.AddCompletedEggs();
                         TradeExtensions<PK9>.EncounterLogs(pk, "EncounterLogPretty_EggSV.txt");
                         TradeExtensions<PK9>.EncounterScaleLogs(pk, "EncounterLogScalePretty.txt");
@@ -236,7 +235,7 @@ namespace SysBot.Pokemon
                             await Click(A, 2_500, token).ConfigureAwait(false);
                             await Click(A, 1_200, token).ConfigureAwait(false);
 
-                            await RetrieveEgg(token).ConfigureAwait(false);
+                            await RetrieveEgg(match, token).ConfigureAwait(false);
                         }
                         if (!match && Settings.ContinueAfterMatch == ContinueAfterMatch.StopExit)
                         {
@@ -472,7 +471,7 @@ namespace SysBot.Pokemon
             await Click(A, 0_500, token).ConfigureAwait(false);
         }
 
-        private async Task RetrieveEgg(CancellationToken token)
+        private async Task RetrieveEgg(bool match, CancellationToken token)
         {
             var b1s1 = await GetPointerAddress(B1S1, token).ConfigureAwait(false);
             var ofs = await GetPointerAddress(TextBox, token).ConfigureAwait(false);
@@ -490,7 +489,8 @@ namespace SysBot.Pokemon
                     {
                         DumpPokemon(DumpSetting.DumpFolder, "eggs", dumpmon);
                         await Task.Delay(1_500, token).ConfigureAwait(false);
-                        await SetBoxPokemonEgg(Blank, InjectBox, InjectSlot, token).ConfigureAwait(false);
+                        if (match == true)
+                            await SetBoxPokemonEgg(Blank, InjectBox, InjectSlot, token).ConfigureAwait(false);
                     }
                     text = await SwitchConnection.ReadBytesAbsoluteAsync(ofs, 4, token).ConfigureAwait(false);
                 }
