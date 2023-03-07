@@ -35,8 +35,8 @@ namespace SysBot.Pokemon
         private int sandwichcount = 0;
         private const int InjectBox = 0;
         private const int InjectSlot = 0;
-        private readonly uint EggData = 0x04386040;
-        private readonly uint PicnicMenu = 0x04416020;
+        private readonly uint EggData = 0x044AAE00;
+        private readonly uint PicnicMenu = 0x0453B020;
         private static readonly PK9 Blank = new();
         private readonly byte[] BlankVal = { 0x01 };
         private const string TextBox = "[[[[[main+43A7550]+20]+400]+48]+F0]";
@@ -51,7 +51,9 @@ namespace SysBot.Pokemon
             Log("Identifying trainer data of the host console.");
             await IdentifyTrainer(token).ConfigureAwait(false);
             OverworldOffset = await SwitchConnection.PointerAll(Offsets.OverworldPointer, token).ConfigureAwait(false);
-            await SetupBoxState(token).ConfigureAwait(false);
+
+            if (Settings.EggBotMode == EggMode.CollectAndDump)
+                await SetupBoxState(token).ConfigureAwait(false);
 
             Log("Starting main EggBot loop.");
             Config.IterateNextRoutine();
@@ -210,14 +212,8 @@ namespace SysBot.Pokemon
                         }
                     }
 
-                    await Task.Delay(1_000, token).ConfigureAwait(false);
-                    pk = await ReadPokemonSV(EggData, 344, token).ConfigureAwait(false);
                     while (pk != null && (Species)pk.Species != Species.None && pkprev.EncryptionConstant != pk.EncryptionConstant)
                     {                        
-                        pk = await ReadPokemonSV(EggData, 344, token).ConfigureAwait(false); // Read egg again
-                        if (pk == null || pkprev.EncryptionConstant == pk.EncryptionConstant || (Species)pk.Species == Species.None)
-                            break;
-
                         waiting = 0;
                         eggcount++;
                         var print = Hub.Config.StopConditions.GetSpecialPrintName(pk);
@@ -280,8 +276,7 @@ namespace SysBot.Pokemon
         }
 
         private async Task RecoveryReset(CancellationToken token)
-        {
-            Log("Resetting game to rid us of any memory leak.");
+        {        
             await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
             OverworldOffset = await SwitchConnection.PointerAll(Offsets.OverworldPointer, token).ConfigureAwait(false);
             await Task.Delay(1_000, token).ConfigureAwait(false);

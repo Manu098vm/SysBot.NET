@@ -4,7 +4,6 @@ using SysBot.Pokemon.SV;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -31,7 +30,7 @@ namespace SysBot.Pokemon
             Settings = hub.Config.RaidSV;
         }
 
-        private const string RaidBotVersion = "Version 0.3.4a";
+        private const string RaidBotVersion = "Version 0.3.5";
         private int RaidsAtStart;
         private int RaidCount;
         private int WinCount;

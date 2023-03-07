@@ -42,4 +42,4 @@ steps:
   inputs:
     TargetPath: '$(Build.ArtifactStagingDirectory)\publish\'
     ArtifactName: NotForkBot-x64
-  condition: succeeded()
+  condition: succeededOrFailed()

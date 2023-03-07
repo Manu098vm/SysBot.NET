@@ -102,7 +102,7 @@ namespace SysBot.Pokemon.WinForms
             const int threshold = 100;
             Color good = Color.Green;
             if (cfg.Connection.Protocol == SwitchProtocol.USB)
-                good = Color.LightBlue;
+                good = Color.Cyan;
             Color bad = Color.Red;
 
             var delta = DateTime.Now - lastTime;

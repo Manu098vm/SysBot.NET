@@ -7,6 +7,7 @@ using PKHeX.Core;
 using SysBot.Base;
 using static SysBot.Pokemon.PokeDataOffsetsSV;
 using static SysBot.Base.SwitchButton;
+using static System.Buffers.Binary.BinaryPrimitives;
 
 namespace SysBot.Pokemon
 {
@@ -303,5 +304,70 @@ namespace SysBot.Pokemon
             pkm.ResetPartyStats();
             await SwitchConnection.WriteBytesAbsoluteAsync(pkm.EncryptedPartyData, ofs, token).ConfigureAwait(false);
         }
+
+        public async Task SVSaveGameOverworld(CancellationToken token)
+        {
+            Log("Saving the game...");
+            await Click(X, 2_000, token).ConfigureAwait(false);
+            await Click(R, 1_800, token).ConfigureAwait(false);
+            await Click(A, 5_000, token).ConfigureAwait(false);
+            await Click(B, 1_000, token).ConfigureAwait(false);
+        }
+
+        // Save Block Additions from TeraFinder/RaidCrawler/sv-livemap
+
+        public async Task<byte[]> ReadBlock(DataBlock block, CancellationToken token)
+        {
+            return await ReadEncryptedBlock(block, token).ConfigureAwait(false);
+        }
+
+        private async Task<byte[]> ReadEncryptedBlock(DataBlock block, CancellationToken token)
+        {
+            var address = await GetBlockAddress(block, token).ConfigureAwait(false);
+            var header = await SwitchConnection.ReadBytesAbsoluteAsync(address, 5, token).ConfigureAwait(false);
+            header = DecryptBlock(block.Key, header);
+            var size = ReadUInt32LittleEndian(header.AsSpan()[1..]);
+            var data = await SwitchConnection.ReadBytesAbsoluteAsync(address, 5 + (int)size, token);
+            var res = DecryptBlock(block.Key, data)[5..];
+            return res;
+        }
+
+        private static IEnumerable<long> PreparePointer(IEnumerable<long> pointer)
+        {
+            var count = pointer.Count();
+            var p = new long[count + 1];
+            for (var i = 0; i < pointer.Count(); i++)
+                p[i] = pointer.ElementAt(i);
+            p[count - 1] += 8;
+            p[count] = 0x0;
+            return p;
+        }
+
+        private async Task<ulong> GetBlockAddress(DataBlock block, CancellationToken token)
+        {
+            var read_key = ReadUInt32LittleEndian(await SwitchConnection.PointerPeek(4, block.Pointer!, token).ConfigureAwait(false));
+            if (read_key == block.Key)
+                return await SwitchConnection.PointerAll(PreparePointer(block.Pointer!), token).ConfigureAwait(false);
+            var direction = block.Key > read_key ? 1 : -1;
+            var base_offset = block.Pointer![block.Pointer.Count - 1];
+            for (var offset = base_offset; offset < base_offset + 0x1000 && offset > base_offset - 0x1000; offset += direction * 0x20)
+            {
+                var pointer = block.Pointer!.ToArray();
+                pointer[^1] = offset;
+                read_key = ReadUInt32LittleEndian(await SwitchConnection.PointerPeek(4, pointer, token).ConfigureAwait(false));
+                if (read_key == block.Key)
+                    return await SwitchConnection.PointerAll(PreparePointer(pointer), token).ConfigureAwait(false);
+            }
+            throw new ArgumentOutOfRangeException("Save block not found in range +- 0x1000");
+        }
+
+        private byte[] DecryptBlock(uint key, byte[] block)
+        {
+            var rng = new SCXorShift32(key);
+            for (int i = 0; i < block.Length; i++)
+                block[i] = (byte)(block[i] ^ rng.Next());
+            return block;
+        }
+
     }
 }
