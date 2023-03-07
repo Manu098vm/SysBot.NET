@@ -58,10 +58,6 @@ namespace SysBot.Pokemon
 
         [Category(BotEncounter)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
-        public OverworldSettingsSV OverworldSV { get; set; } = new();
-
-        [Category(BotEncounter)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
         public EggSettingsSV EggSV { get; set; } = new();
 
         [Category(BotEncounter)]
@@ -107,6 +103,10 @@ namespace SysBot.Pokemon
         [Category(BotEncounter)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public RollingRaidSettings RollingRaidSWSH { get; set; } = new();
+
+        [Category(BotEncounter)]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
+        public OverworldSettingsSV OverworldSV { get; set; } = new();
 
         // Integration
 
