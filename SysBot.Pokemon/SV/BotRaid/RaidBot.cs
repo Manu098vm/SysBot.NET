@@ -156,7 +156,7 @@ namespace SysBot.Pokemon
                         Log("Clearing stored OTs");
                         for (int i = 0; i < 3; i++)
                         {
-                            var ptr = new long[] { 0x437ECE0, 0x48, 0xE0 + (i * 0x30), 0x0 };
+                            var ptr = new long[] { 0x44A3528, 0x48, 0xE0 + (i * 0x30), 0x0 };
                             await SwitchConnection.PointerPoke(new byte[16], ptr, token).ConfigureAwait(false);
                         }
                         continue;
@@ -457,7 +457,7 @@ namespace SysBot.Pokemon
                         nid = BitConverter.ToUInt64(data, 0);
                     }
 
-                    var pointer = new long[] { 0x437ECE0, 0x48, 0xE0 + (i * 0x30), 0x0 };
+                    var pointer = new long[] { 0x44A3528, 0x48, 0xE0 + (i * 0x30), 0x0 };
                     var trainer = await GetTradePartnerMyStatus(pointer, token).ConfigureAwait(false);
 
                     while (trainer.OT.Length == 0 && (DateTime.Now < endTime))
