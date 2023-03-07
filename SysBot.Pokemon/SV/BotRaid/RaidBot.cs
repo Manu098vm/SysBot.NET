@@ -334,7 +334,8 @@ namespace SysBot.Pokemon
                     return false;
             }
 
-            await Click(B, 0_500, token).ConfigureAwait(false);
+            for (int i = 0; i < 5; i++)
+                await Click(B, 0_500, token).ConfigureAwait(false);
 
             // If not in the overworld, we've been attacked so quit earlier.
             if (!await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
@@ -371,7 +372,7 @@ namespace SysBot.Pokemon
 
         private async Task<string> GetRaidCode(CancellationToken token)
         {
-            var data = await SwitchConnection.PointerPeek(8, Offsets.TeraRaidCodePointer, token).ConfigureAwait(false);
+            var data = await SwitchConnection.PointerPeek(6, Offsets.TeraRaidCodePointer, token).ConfigureAwait(false);
             TeraRaidCode = Encoding.ASCII.GetString(data);
             Log($"Raid Code: {TeraRaidCode}");
             return $"\n{TeraRaidCode}\n";
