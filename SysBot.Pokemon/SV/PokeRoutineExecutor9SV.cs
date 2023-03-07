@@ -316,6 +316,17 @@ namespace SysBot.Pokemon
 
         // Save Block Additions from TeraFinder/RaidCrawler/sv-livemap
 
+        public class DataBlock
+        {
+            public string? Name { get; set; }
+            public uint Key { get; set; }
+            public SCTypeCode Type { get; set; }
+            public SCTypeCode SubType { get; set; }
+            public IReadOnlyList<long>? Pointer { get; set; }
+            public bool IsEncrypted { get; set; }
+            public int Size { get; set; }
+        }
+
         public async Task<byte[]> ReadBlock(DataBlock block, CancellationToken token)
         {
             return await ReadEncryptedBlock(block, token).ConfigureAwait(false);
