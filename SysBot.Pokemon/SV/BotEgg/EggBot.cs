@@ -39,8 +39,8 @@ namespace SysBot.Pokemon
         private readonly uint PicnicMenu = 0x0453B020;
         private static readonly PK9 Blank = new();
         private readonly byte[] BlankVal = { 0x01 };
-        private const string TextBox = "[[[[[main+43A7550]+20]+400]+48]+F0]";
-        private const string B1S1 = "[[[main+43A77C8]+108]+9B0]";
+        private const string TextBox = "[[[[[main+44CEE30]+10]+3D8]+4C8]+30]";
+        private const string B1S1 = "[[[main+44A98C8]+130]+9B0]";
         private byte[]? TextVal = Array.Empty<byte>();
         private ulong OverworldOffset;
 
