@@ -300,7 +300,7 @@ namespace SysBot.Pokemon
 
         public async Task SetBoxPokemonEgg(PK9 pkm, int box, int slot, CancellationToken token)
         {
-            var ofs = await GetPointerAddress("[[[main+43A77C8]+108]+9B0]", token).ConfigureAwait(false);
+            var ofs = await GetPointerAddress("[[[main+44A98C8]+130]+9B0]", token).ConfigureAwait(false);
             pkm.ResetPartyStats();
             await SwitchConnection.WriteBytesAbsoluteAsync(pkm.EncryptedPartyData, ofs, token).ConfigureAwait(false);
         }
@@ -369,7 +369,7 @@ namespace SysBot.Pokemon
                 if (read_key == block.Key)
                     return await SwitchConnection.PointerAll(PreparePointer(pointer), token).ConfigureAwait(false);
             }
-            throw new ArgumentOutOfRangeException("Save block not found in range +- 0x1000");
+            throw new ArgumentOutOfRangeException("Save block not found in range +- 0x1000. Restart the game and try again.");
         }
 
         private byte[] DecryptBlock(uint key, byte[] block)
