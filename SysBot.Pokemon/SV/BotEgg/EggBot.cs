@@ -87,7 +87,7 @@ namespace SysBot.Pokemon
         {
 
             await SetCurrentBox(0, token).ConfigureAwait(false);
-            await SwitchConnection.WriteBytesMainAsync(BlankVal, Offsets.LoadedIntoDesiredState, token).ConfigureAwait(false);
+            await SwitchConnection.WriteBytesMainAsync(BlankVal, Offsets.LoadedIntoRaid, token).ConfigureAwait(false);
 
             var mode = Settings.EggBotMode;
             if (mode == EggMode.WaitAndClose && Settings.ContinueAfterMatch == ContinueAfterMatch.Continue)
@@ -368,13 +368,13 @@ namespace SysBot.Pokemon
 
         private async Task<int> PicnicState(CancellationToken token)
         {
-            var Data = await SwitchConnection.ReadBytesMainAsync(Offsets.LoadedIntoDesiredState, 1, token).ConfigureAwait(false);
+            var Data = await SwitchConnection.ReadBytesMainAsync(Offsets.LoadedIntoRaid, 1, token).ConfigureAwait(false);
             return Data[0]; // 1 when in picnic, 2 in sandwich menu, 3 when eating, 2 when done eating
         }
 
         private async Task<bool> IsInPicnic(CancellationToken token)
         {
-            var Data = await SwitchConnection.ReadBytesMainAsync(Offsets.LoadedIntoDesiredState, 1, token).ConfigureAwait(false);
+            var Data = await SwitchConnection.ReadBytesMainAsync(Offsets.LoadedIntoRaid, 1, token).ConfigureAwait(false);
             return Data[0] == 0x01; // 1 when in picnic, 2 in sandwich menu, 3 when eating, 2 when done eating
         }
 
