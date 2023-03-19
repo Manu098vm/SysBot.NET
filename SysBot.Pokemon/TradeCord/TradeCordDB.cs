@@ -22,7 +22,7 @@ namespace SysBot.Pokemon
             var nature = pkm.Nature;
             pkm.Nature = pkm.Species switch
             {
-                (int)Species.Toxtricity => pkm.Form > 0 ? TradeExtensions<PK8>.LowKey[Random.Next(TradeExtensions<PK8>.LowKey.Length)] : TradeExtensions<PK8>.Amped[Random.Next(TradeExtensions<PK8>.Amped.Length)],
+                (ushort)Species.Toxtricity => pkm.Form > 0 ? TradeExtensions<PK8>.LowKey[Random.Next(TradeExtensions<PK8>.LowKey.Length)] : TradeExtensions<PK8>.Amped[Random.Next(TradeExtensions<PK8>.Amped.Length)],
                 _ => Random.Next(25),
             };
 
@@ -195,11 +195,11 @@ namespace SysBot.Pokemon
             {
                 while (true)
                 {
-                    TradeExtensions<PK8>.FormOutput(speciesID, 0, out string[] formsR);
+                    TradeExtensions<T>.FormOutput(speciesID, 0, out string[] formsR);
                     formID = (byte)Random.Next(formsR.Length);
                     if (BaseCanBeEgg(speciesID, formID, out formID, out baseSpecies) && baseSpecies > 0)
                     {
-                        formName = TradeExtensions<PK8>.FormOutput(baseSpecies, formID, out _);
+                        formName = TradeExtensions<T>.FormOutput(baseSpecies, formID, out _);
                         speciesID = baseSpecies;
                         break;
                     }
@@ -823,6 +823,12 @@ namespace SysBot.Pokemon
                 else return true;
             }
             return false;
+        }
+
+        public string[] TrainerInfoToStringArray(TCTrainerInfo info, GameVersion game)
+        {
+            var tr = new SimpleTrainerInfo(game) { TID16 = info.TID16, SID16 = info.SID16 };
+            return new string[] { $"OT: {info.OTName}\n", $"OTGender: {info.OTGender}\n", $"TID: {tr.GetTrainerTID7()}\n", $"SID: {tr.GetTrainerSID7()}\n", $"Language: {info.Language}\n" };
         }
     }
 }

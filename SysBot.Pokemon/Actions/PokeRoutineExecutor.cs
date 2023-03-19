@@ -90,9 +90,9 @@ namespace SysBot.Pokemon
 
             string OTInfo = string.IsNullOrEmpty(pk.OT_Name) ? "" : $" - {pk.OT_Name} - {TIDFormatted}{ballFormatted}";
 
-            if (pk is PK8)
+            if (pk is PK8 || pk is PK9)
             {
-                bool hasMark = StopConditionSettings.HasMark((PK8)pk, out RibbonIndex mark);
+                bool hasMark = StopConditionSettings.HasMark((PK9)pk, out RibbonIndex mark);
                 if (hasMark)
                     marktype = hasMark ? $"{mark.ToString().Replace("Mark", "")}Mark - " : "";
             }

@@ -7,41 +7,41 @@ namespace SysBot.Pokemon
 {
     public class EggSettingsSV : IBotStateSettings, ICountSettings
     {
-        private const string FeatureToggle = nameof(FeatureToggle);
+        private const string EggFetch = nameof(EggFetch);
         private const string Counts = nameof(Counts);
-        public override string ToString() => "Egg Bot Settings";
+        public override string ToString() => "EggBotSV Settings";
 
-        [Category(FeatureToggle), Description("When enabled, the bot will continue after finding a suitable match.")]
+        [Category(EggFetch), Description("When enabled, the bot will continue after finding a suitable match.")]
         public ContinueAfterMatch ContinueAfterMatch { get; set; } = ContinueAfterMatch.StopExit;
 
-        [Category(FeatureToggle), Description("Choose your method of collecting eggs. CollectAndDump is traditional collect eggs from basket. WaitAndClose will watch for 10 eggs to spawn then close and reopen picnic to reset them. Make sure no bonus is active or any eggs are in basket if using WaitAndClose mode.")]
+        [Category(EggFetch), Description("Choose your method of collecting eggs. CollectAndDump is traditional collect eggs from basket. WaitAndClose will watch for 10 eggs to spawn then close and reopen picnic to reset them. Make sure no bonus is active or any eggs are in basket if using WaitAndClose mode.")]
         public EggMode EggBotMode { get; set; } = EggMode.WaitAndClose;
 
-        [Category(FeatureToggle), Description("When enabled, the bot will make a sandwich on start.")]
+        [Category(EggFetch), Description("When enabled, the bot will make a sandwich on start.")]
         public bool EatFirst { get; set; } = true;
 
-        [Category(FeatureToggle), Description("When enabled, the bot will click DUP on Item 1.")]
+        [Category(EggFetch), Description("When enabled, the bot will click DUP on Item 1.")]
         public bool Item1DUP { get; set; } = false;
 
-        [Category(FeatureToggle), Description("When enabled, the bot will click DUP on Item 2.")]
+        [Category(EggFetch), Description("When enabled, the bot will click DUP on Item 2.")]
         public bool Item2DUP { get; set; } = true;
 
-        [Category(FeatureToggle), Description("When enabled, the bot will click DUP on Item 3.")]
+        [Category(EggFetch), Description("When enabled, the bot will click DUP on Item 3.")]
         public bool Item3DUP { get; set; } = true;
 
-        [Category(FeatureToggle), Description("Amount of time to hold L stick up to ingredients for sandwich. [Default: 700ms]")]
+        [Category(EggFetch), Description("Amount of time to hold L stick up to ingredients for sandwich. [Default: 700ms]")]
         public int HoldUpToIngredients { get; set; } = 700;
 
-        [Category(FeatureToggle), Description("When enabled, the bot will only stop when encounter has a Scale of XXXS or XXXL.")]
+        [Category(EggFetch), Description("When enabled, the bot will only stop when encounter has a Scale of XXXS or XXXL.")]
         public bool MinMaxScaleOnly { get; set; } = false;
 
-        [Category(FeatureToggle), Description("When enabled, the bot will look for 3 Segment Dunsparce or Family of Three Maus.")]
+        [Category(EggFetch), Description("When enabled, the bot will look for 3 Segment Dunsparce or Family of Three Maus.")]
         public bool OneInOneHundredOnly { get; set; } = true;
 
-        [Category(FeatureToggle), Description("Resets game after making this amount of sandwiches to minimize memory leaks.")]
+        [Category(EggFetch), Description("Resets game after making this amount of sandwiches to minimize memory leaks.")]
         public int ResetGameAfterThisManySandwiches { get; set; } = 2;
 
-        [Category(FeatureToggle), Description("When enabled, the screen will be turned off during normal bot loop operation to save power.")]
+        [Category(EggFetch), Description("When enabled, the screen will be turned off during normal bot loop operation to save power.")]
         public bool ScreenOff { get; set; }
 
         private int _completedEggs;

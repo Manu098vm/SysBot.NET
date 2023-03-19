@@ -310,8 +310,8 @@ namespace SysBot.Pokemon
             Log("Saving the game...");
             await Click(X, 2_000, token).ConfigureAwait(false);
             await Click(R, 1_800, token).ConfigureAwait(false);
-            await Click(A, 5_000, token).ConfigureAwait(false);
-            await Click(B, 1_000, token).ConfigureAwait(false);
+            await Click(A, 7_000, token).ConfigureAwait(false);
+            await Click(B, 1_500, token).ConfigureAwait(false);
         }
 
         // Save Block Additions from TeraFinder/RaidCrawler/sv-livemap

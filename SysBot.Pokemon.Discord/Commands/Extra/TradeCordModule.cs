@@ -111,12 +111,10 @@ namespace SysBot.Pokemon.Discord
                     {
                         try
                         {
-                            await UserExtensions.SendMessageAsync(user, "", false, embed: embed.Build()).ConfigureAwait(false);
+                            await UserExtensions.SendMessageAsync(user, embed: embed.Build()).ConfigureAwait(false);
+                            await Task.Delay(100).ConfigureAwait(false);
                         }
-                        catch
-                        {
-                            await ReplyAsync($"<@!{id}>, I can't notify you via DM if you have DMs disabled!");
-                        }
+                        catch (Exception) { }
                     }
                 }
             }
@@ -519,8 +517,8 @@ namespace SysBot.Pokemon.Discord
 
             var ot = pkm.OT_Name;
             var gender = $"{(Gender)pkm.OT_Gender}";
-            var tid = $"{pkm.TrainerTID7}";
-            var sid = $"{pkm.TrainerSID7}";
+            var tid = $"{pkm.TID16}";
+            var sid = $"{pkm.SID16}";
             var lang = $"{(LanguageID)pkm.Language}";
 
             var ctx = new TradeCordHelper<T>.TC_CommandContext { Username = Context.User.Username, ID = Context.User.Id, Context = TCCommandContext.TrainerInfoSet };

@@ -36,7 +36,6 @@ namespace SysBot.Pokemon
         private const int InjectBox = 0;
         private const int InjectSlot = 0;
         private readonly uint EggData = 0x044AAE00;
-        private readonly uint PicnicMenu = 0x0453B020;
         private static readonly PK9 Blank = new();
         private readonly byte[] BlankVal = { 0x01 };
         private const string TextBox = "[[[[[main+44CEE30]+10]+3D8]+4C8]+30]";
@@ -88,7 +87,7 @@ namespace SysBot.Pokemon
         {
 
             await SetCurrentBox(0, token).ConfigureAwait(false);
-            await SwitchConnection.WriteBytesMainAsync(BlankVal, PicnicMenu, token).ConfigureAwait(false);
+            await SwitchConnection.WriteBytesMainAsync(BlankVal, Offsets.LoadedIntoDesiredState, token).ConfigureAwait(false);
 
             var mode = Settings.EggBotMode;
             if (mode == EggMode.WaitAndClose && Settings.ContinueAfterMatch == ContinueAfterMatch.Continue)
@@ -369,53 +368,38 @@ namespace SysBot.Pokemon
 
         private async Task<int> PicnicState(CancellationToken token)
         {
-            var Data = await SwitchConnection.ReadBytesMainAsync(PicnicMenu, 1, token).ConfigureAwait(false);
+            var Data = await SwitchConnection.ReadBytesMainAsync(Offsets.LoadedIntoDesiredState, 1, token).ConfigureAwait(false);
             return Data[0]; // 1 when in picnic, 2 in sandwich menu, 3 when eating, 2 when done eating
         }
 
         private async Task<bool> IsInPicnic(CancellationToken token)
         {
-            var Data = await SwitchConnection.ReadBytesMainAsync(PicnicMenu, 1, token).ConfigureAwait(false);
+            var Data = await SwitchConnection.ReadBytesMainAsync(Offsets.LoadedIntoDesiredState, 1, token).ConfigureAwait(false);
             return Data[0] == 0x01; // 1 when in picnic, 2 in sandwich menu, 3 when eating, 2 when done eating
         }
 
         private async Task MakeSandwich(CancellationToken token)
         {
             await Click(MINUS, 0_500, token).ConfigureAwait(false);
-            await SetStick(LEFT, 0, 30000, 0_700, token).ConfigureAwait(false); // Face up to table
+            await SetStick(LEFT, 0, 32323, 0_700, token).ConfigureAwait(false); // Face up to table
             await SetStick(LEFT, 0, 0, 0, token).ConfigureAwait(false);
             await Click(A, 1_500, token).ConfigureAwait(false);
-            await Click(A, 5_000, token).ConfigureAwait(false);
-            await Click(X, 1_500, token).ConfigureAwait(false);
+            await Click(A, 8_000, token).ConfigureAwait(false);
+            await Click(X, 2_500, token).ConfigureAwait(false);
 
             for (int i = 0; i < 0; i++) // Select first ingredient
-            {
-                if (Settings.Item1DUP == true)
-                    await Click(DUP, 0_800, token).ConfigureAwait(false);
-                else
-                    await Click(DDOWN, 0_800, token).ConfigureAwait(false);
-            }
+                await Click(Settings.Item1DUP ? DUP : DDOWN, 0_500, token).ConfigureAwait(false);
 
             await Click(A, 0_800, token).ConfigureAwait(false);
             await Click(PLUS, 0_800, token).ConfigureAwait(false);
 
             for (int i = 0; i < 4; i++) // Select second ingredient
-            {
-                if (Settings.Item2DUP == true)
-                    await Click(DUP, 0_800, token).ConfigureAwait(false);
-                else
-                    await Click(DDOWN, 0_800, token).ConfigureAwait(false);
-            }
+                await Click(Settings.Item2DUP ? DUP : DDOWN, 0_500, token).ConfigureAwait(false);
 
             await Click(A, 0_800, token).ConfigureAwait(false);
 
-            for (int i = 0; i < 1; i++) // Select third ingredient
-            {
-                if (Settings.Item3DUP == true)
-                    await Click(DUP, 0_800, token).ConfigureAwait(false);
-                else
-                    await Click(DDOWN, 0_800, token).ConfigureAwait(false);
-            }
+            for (int i = 0; i < 1; i++) // Select third ingredient            
+                await Click(Settings.Item3DUP ? DUP : DDOWN, 0_500, token).ConfigureAwait(false);
 
             await Click(A, 0_800, token).ConfigureAwait(false);
             await Click(PLUS, 0_800, token).ConfigureAwait(false);

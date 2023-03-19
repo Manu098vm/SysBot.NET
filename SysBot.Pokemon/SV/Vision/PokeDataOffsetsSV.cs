@@ -28,6 +28,10 @@ namespace SysBot.Pokemon
         public IReadOnlyList<long> TeraRaidBlockPointer { get; } = new long[] { 0x44A98C8, 0x180, 0x40 };
 
         public ulong TeraLobby { get; } = 0x0415F430;
-        public ulong LoadedIntoRaid { get; } = 0x0453B020;
+        public ulong LoadedIntoDesiredState { get; } = 0x0453B020;
+
+        public IReadOnlyList<long> CollisionPointer { get; } = new long[] { 0x44CCA90, 0xAD8, 0x160, 0x60, 0x100 };
+
+        public IReadOnlyList<long> SaveBlockPointer { get; } = new long[] { 0x44AAC88, 0xE0, 0x80, 0x8, 0x00};
     }
 }

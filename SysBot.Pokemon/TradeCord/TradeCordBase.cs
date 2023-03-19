@@ -380,8 +380,23 @@ namespace SysBot.Pokemon
             {
                 info.OTName = reader["ot"].ToString()!;
                 info.OTGender = reader["ot_gender"].ToString()!;
-                info.TID = (int)reader["tid"];
-                info.SID = (int)reader["sid"];
+                try
+                {
+                    info.TID16 = Convert.ToUInt16(reader["tid"]);
+                    info.SID16 = Convert.ToUInt16(reader["sid"]);
+                }
+                catch (Exception)
+                {
+                    uint tid7 = uint.Parse(reader["tid"].ToString()!);
+                    uint sid7 = uint.Parse(reader["sid"].ToString()!);
+
+                    ushort tid16 = (ushort)((sid7 * 1000000 + tid7) % 65536);
+                    ushort sid16 = (ushort)((sid7 * 1000000 + tid7) / 65536);
+
+                    info.TID16 = tid16;
+                    info.SID16 = sid16;
+                }
+
                 info.Language = reader["language"].ToString()!;
             }
             return info;
@@ -710,8 +725,11 @@ namespace SysBot.Pokemon
                 for (int g = 0; g < group.Length; g++)
                 {
                     var pk = group[g];
-                    if (!FormInfo.IsFusedForm(pk.Species, pk.Form, pk.Format) && !FormInfo.IsBattleOnlyForm(pk.Species, pk.Form, pk.Format))
-                        forms.Add(pk.Form);
+                    if (FormInfo.IsFusedForm(pk.Species, pk.Form, pk.Format) || FormInfo.IsBattleOnlyForm(pk.Species, pk.Form, pk.Format)
+                        || FormInfo.IsLordForm(pk.Species, pk.Form, pk.Context) || FormInfo.IsUntradable(pk.Species, pk.Form, pk is IFormArgument arg ? arg.FormArgument : 0, pk.Format))
+                        continue;
+
+                    forms.Add(pk.Form);
                 }
 
                 dex.Add(group[0].Species, forms);
@@ -724,7 +742,7 @@ namespace SysBot.Pokemon
             baseSpecies = 0;
             baseForm = 0;
             var name = SpeciesName.GetSpeciesNameGeneration(species, 2, 8);
-            var formStr = TradeExtensions<PK8>.FormOutput(species, form, out _);
+            var formStr = TradeExtensions<T>.FormOutput(species, form, out _);
             if (name.Contains("Nidoran"))
                 name = name.Remove(name.Length - 1);
 
@@ -736,13 +754,13 @@ namespace SysBot.Pokemon
                 return false;
 
             var table = EvolutionTree.GetEvolutionTree(pkm.Context);
-            var evos = table.GetValidPreEvolutions(pkm, 100, 8, true);
+            var evos = table.GetValidPreEvolutions(pkm, 100);
             var encs = EncounterGenerator.GetGenerator(Game).GetPossible(pkm, evos, Game, EncounterTypeGroup.Egg).ToArray();
-            if (encs.Length is 0 || !Breeding.CanHatchAsEgg(species) || !Breeding.CanHatchAsEgg(species, form, EntityContext.Gen8))
+            if (encs.Length is 0 || !Breeding.CanHatchAsEgg(species) || !Breeding.CanHatchAsEgg(species, form, pkm.Context))
                 return false;
 
             baseSpecies = encs[^1].Species;
-            if (GameData.GetPersonal(Game).GetFormEntry(baseSpecies, form).IsFormWithinRange(form) && Breeding.CanHatchAsEgg(baseSpecies, form, EntityContext.Gen8))
+            if (GameData.GetPersonal(Game).GetFormEntry(baseSpecies, form).IsFormWithinRange(form) && Breeding.CanHatchAsEgg(baseSpecies, form, pkm.Context))
                 baseForm = (byte)(species is (ushort)Darmanitan && form <= 1 ? 0 : form);
             else baseForm = encs[^1].Form;
             return true;
@@ -1319,11 +1337,10 @@ namespace SysBot.Pokemon
 
         public class TCTrainerInfo
         {
-            public string[] ToStringArray() => new string[] { $"OT: {OTName}\n", $"OTGender: {OTGender}\n", $"TID: {TID}\n", $"SID: {SID}\n", $"Language: {Language}\n" };
             public string OTName { get; set; } = "Carp";
             public string OTGender { get; set; } = "Male";
-            public int TID { get; set; } = 12345;
-            public int SID { get; set; } = 54321;
+            public ushort TID16 { get; set; } = 12345;
+            public ushort SID16 { get; set; } = 54321;
             public string Language { get; set; } = "English";
         }
 
