@@ -60,9 +60,9 @@ namespace SysBot.Pokemon
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public OverworldSettingsSV OverworldSV { get; set; } = new();
 
-        [Category(BotEncounter)]
+        /*[Category(BotEncounter)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
-        public EncounterSettingsSV EncounterSV { get; set; } = new();
+        public EncounterSettingsSV EncounterSV { get; set; } = new();*/
 
         [Category(BotEncounter)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
