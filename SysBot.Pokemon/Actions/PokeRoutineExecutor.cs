@@ -4,6 +4,8 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System;
+using System.Globalization;
 
 namespace SysBot.Pokemon
 {
@@ -129,10 +131,26 @@ namespace SysBot.Pokemon
                     if (Connection.Connected)
                         break;
 
-                    await Task.Delay(30_000 + (int)extraDelay, token).ConfigureAwait(false);
+                    await Task.Delay(30_000 + extraDelay, token).ConfigureAwait(false);
                 }
             }
             return Connection.Connected;
+        }
+        public async Task VerifyBotbaseVersion(CancellationToken token)
+        {
+            var data = await SwitchConnection.GetBotbaseVersion(token).ConfigureAwait(false);
+            var version = decimal.TryParse(data, CultureInfo.InvariantCulture, out var v) ? v : 0;
+            if (version < BotbaseVersion)
+            {
+                var protocol = Config.Connection.Protocol;
+                var msg = protocol is SwitchProtocol.WiFi ? "sys-botbase" : "usb-botbase";
+                msg += $" version is not supported. Expected version {BotbaseVersion} or greater, and current version is {version}. Please download the latest version from: ";
+                if (protocol is SwitchProtocol.WiFi)
+                    msg += "https://github.com/olliz0r/sys-botbase/releases/latest";
+                else
+                    msg += "https://github.com/Koi-3088/usb-botbase/releases/latest";
+                throw new Exception(msg);
+            }
         }
     }
 }

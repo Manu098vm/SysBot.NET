@@ -235,7 +235,7 @@ namespace SysBot.Base
             }
         }
 
-        protected byte[]? GetScreenshot()
+        protected byte[] PixelPeekUSB()
         {
             Thread.Sleep(1);
             lock (_sync)

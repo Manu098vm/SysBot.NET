@@ -7,6 +7,7 @@ namespace SysBot.Pokemon
     /// </summary>
     public class PokeDataOffsetsSV
     {
+        public const string SVGameVersion = "1.2.0";
         public const string ScarletID = "0100A3D008C5C000";
         public const string VioletID = "01008F6008C5E000";
         public IReadOnlyList<long> BoxStartPokemonPointer { get; } = new long[] { 0x44A98C8, 0x130, 0x9B0, 0x0 };
@@ -28,10 +29,10 @@ namespace SysBot.Pokemon
         public IReadOnlyList<long> TeraRaidBlockPointer { get; } = new long[] { 0x44A98C8, 0x180, 0x40 };
 
         public ulong TeraLobby { get; } = 0x0415F430;
-        public ulong LoadedIntoRaid { get; } = 0x0453B020;
+        public ulong LoadedIntoDesiredState { get; } = 0x0453B020;
 
         public IReadOnlyList<long> CollisionPointer { get; } = new long[] { 0x44CCA90, 0xAD8, 0x160, 0x60, 0x100 };
 
-        public IReadOnlyList<long> SaveBlockPointer { get; } = new long[] { 0x44AAC88, 0xE0, 0x80, 0x8, 0x00};
+        public IReadOnlyList<long> SaveBlockPointer { get; } = new long[] { 0x449EEE8, 0xD8, 0x0, 0x0, 0x30, 0x8, 0x00};
     }
 }

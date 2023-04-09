@@ -46,7 +46,9 @@ namespace SysBot.Pokemon
             }
 
             pkm.SetSuggestedMoves();
-            pkm.SetRelearnMoves(la.GetSuggestedRelearnMoves(enc));
+            Span<ushort> relearn = stackalloc ushort[4];
+            la.GetSuggestedRelearnMoves(relearn, enc);
+            pkm.SetRelearnMoves(relearn);
             pkm.HealPP();
 
             if (!GalarFossils.Contains(pkm.Species) && !pkm.FatefulEncounter)
@@ -145,7 +147,9 @@ namespace SysBot.Pokemon
             if (!la.Valid)
             {
                 pkm.SetSuggestedMoves();
-                pkm.SetRelearnMoves(la.GetSuggestedRelearnMoves(enc));
+                Span<ushort> relearn = stackalloc ushort[4];
+                la.GetSuggestedRelearnMoves(relearn, enc);
+                pkm.SetRelearnMoves(relearn);
             }
             pkm.HealPP();
 
@@ -320,7 +324,10 @@ namespace SysBot.Pokemon
 
             var la = new LegalityAnalysis(shedinja);
             var enc = la.Info.EncounterMatch;
-            shedinja.SetRelearnMoves(la.GetSuggestedRelearnMoves(enc));
+
+            Span<ushort> relearn = stackalloc ushort[4];
+            la.GetSuggestedRelearnMoves(relearn, enc);
+            shedinja.SetRelearnMoves(relearn);
 
             msg = string.Empty;
             la = new LegalityAnalysis(shedinja);
@@ -488,7 +495,11 @@ namespace SysBot.Pokemon
                 if (result.EvoType is EvolutionType.LevelUpKnowMove || applyMoves)
                     EdgeCaseRelearnMoves(pk, la);
                 else if (pk.FatefulEncounter)
-                    pk.RelearnMoves = (ushort[])la.EncounterMatch.GetSuggestedRelearn(pk);
+                {
+                    Span<ushort> relearn = stackalloc ushort[4];
+                    la.GetSuggestedRelearnMoves(relearn, enc);
+                    pk.SetRelearnMoves(relearn);
+                }
             }
 
             la = new LegalityAnalysis(pk);
@@ -509,8 +520,14 @@ namespace SysBot.Pokemon
             if (typeof(T) == typeof(PK8) && (pk.Met_Location is 162 or 244))
                 return;
 
-            pk.Moves = la.GetMoveSet();
-            pk.RelearnMoves = (ushort[])la.GetSuggestedRelearnMoves(la.EncounterMatch);
+            Span<ushort> relearn = stackalloc ushort[4];
+            la.GetSuggestedRelearnMoves(relearn, la.EncounterMatch);
+            pk.SetRelearnMoves(relearn);
+
+            Span<ushort> moves = stackalloc ushort[4];
+            la.GetMoveSet(moves);
+            pk.SetMoves(moves);
+
             var indexEmpty = pk.RelearnMoves.ToList().IndexOf(0);
             if (indexEmpty is not -1)
             {

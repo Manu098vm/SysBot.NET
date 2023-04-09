@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Threading;
 using SysBot.Base;
@@ -7,68 +8,100 @@ namespace SysBot.Pokemon
 {
     public class OverworldSettingsSV : IBotStateSettings, ICountSettings
     {
-        private const string FeatureToggle = nameof(FeatureToggle);
+        private const string Overworld = nameof(Overworld);
         private const string Counts = nameof(Counts);
-        public override string ToString() => "OverworldSV Bot Settings";
+        public override string ToString() => "OverworldBotSV Settings";
 
-        [Category(FeatureToggle), Description("When enabled, the bot will continue after finding a suitable match.")]
+        [Category(Overworld), Description("When enabled, the bot will continue after finding a suitable match.")]
         public ContinueAfterMatch ContinueAfterMatch { get; set; } = ContinueAfterMatch.PauseWaitAcknowledge;
 
-        [Category(FeatureToggle), Description("When enabled, the bot will attempt to set up a picnic to reset encounters. Set to true if hunting in Area Zero.")]
-        public bool AreaZeroHunting { get; set; } = false;
+        [Category(Overworld), Description("If not blank will check for a match from Stop Conditions plus the Species listed here. Do not include spaces for Species name and separate species with a comma. Ex: IronThorns,Cetoddle,Pikachu,RoaringMoon")]
+        public string SpeciesToHunt { get; set; } = string.Empty;
 
-        [Category(FeatureToggle), Description("Select which research station to go to if hunting in Area Zero.")]
-        public ResearchStation StationSelection { get; set; } = ResearchStation.Station1;
+        [Category(Overworld), Description("When enabled, the bot will stop on any Special Marks Only, ignoring Uncommon, all Time, and all Weather marks.")]
+        public bool SpecialMarksOnly { get; set; } = false;
 
-        [Category(FeatureToggle), Description("When enabled, the bot will attempt to set up a picnic to reset encounters. Set to false if hunting in Area Zero.")]
-        public bool CanWePicnic { get; set; } = true;
+        [Category(Overworld), Description("Select which location you are scanning.")]
+        public Location LocationSelection { get; set; } = Location.NonAreaZero;
 
-        [Category(FeatureToggle), Description("When enabled, the bot will make a sandwich on start.")]
-        public bool EatFirst { get; set; } = true;
-
-        [Category(FeatureToggle), Description("When enabled, the bot will click DUP on Item 1.")]
-        public bool Item1DUP { get; set; } = false;
-
-        //[Category(FeatureToggle), Description("Which item to use for ingredient 1.")]
-      //  public PicnicIngredients Ingredient1 { get; set; } = PicnicIngredients.Baguette;
-
-        [Category(FeatureToggle), Description("Amount of clicks to get to Item 1.")]
-        public int Item1Clicks { get; set; } = 0;
-
-        [Category(FeatureToggle), Description("When enabled, the bot will click DUP on Item 2.")]
-        public bool Item2DUP { get; set; } = true;
-
-      //  [Category(FeatureToggle), Description("Which item to use for ingredient 2.")]
-       // public PicnicIngredients Ingredient2 { get; set; } = PicnicIngredients.Baguette;
-
-        [Category(FeatureToggle), Description("Amount of clicks to get to Item 2.")]
-        public int Item2Clicks { get; set; } = 0;
-
-        [Category(FeatureToggle), Description("When enabled, the bot will click DUP on Item 3.")]
-        public bool Item3DUP { get; set; } = true;
-
-      //  [Category(FeatureToggle), Description("Which item to use for ingredient 3.")]
-       // public PicnicIngredients Ingredient3 { get; set; } = PicnicIngredients.Baguette;
-
-        [Category(FeatureToggle), Description("Amount of clicks to get to Item 3.")]
-        public int Item3Clicks { get; set; } = 0;
-
-        [Category(FeatureToggle), Description("Amount of ingredients to hold.")]
-        public int AmountOfIngredientsToHold { get; set; } = 1;
-
-        [Category(FeatureToggle), Description("Amount of time to hold L stick up to ingredients for sandwich. [Default: 700ms]")]
-        public int HoldUpToIngredients { get; set; } = 700;
-
-        [Category(FeatureToggle), Description("Set to true if we have a union circle active.")]
-        public bool UnionCircleActive { get; set; } = false;
-
-        [Category(FeatureToggle), Description("When enabled, the bot will only stop when encounter has a Scale of XXXS or XXXL.")]
+        [Category(Overworld), Description("When enabled, the bot will only stop when encounter has a Scale of XXXS or XXXL.")]
         public bool MinMaxScaleOnly { get; set; } = false;
 
-        [Category(FeatureToggle), Description("When enabled, the screen will be turned off during normal bot loop operation to save power.")]
+        [Category(Overworld), Description("Picnic Filters"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
+        public PicnicFiltersCategory PicnicFilters { get; set; } = new();
+
+        [Category(Overworld), Description("Movement Filters"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
+        public MovementFiltersCategory MovementFilters { get; set; } = new();
+
+        [Category(Overworld), Description("When enabled, the screen will be turned off during normal bot loop operation to save power.")]
         public bool ScreenOff { get; set; }
 
+        [Category(Overworld)]
+        [TypeConverter(typeof(PicnicFiltersCategoryConverter))]
+        public class PicnicFiltersCategory
+        {
+            public override string ToString() => "Picnic Conditions";
+
+            [Category(Overworld), Description("When enabled, the bot will click DUP on Item 1.")]
+            public bool Item1DUP { get; set; } = false;
+
+            [Category(Overworld), Description("Amount of clicks to get to Item 1.")]
+            public int Item1Clicks { get; set; } = 0;
+
+            [Category(Overworld), Description("When enabled, the bot will click DUP on Item 2.")]
+            public bool Item2DUP { get; set; } = true;
+
+            [Category(Overworld), Description("Amount of clicks to get to Item 2.")]
+            public int Item2Clicks { get; set; } = 0;
+
+            [Category(Overworld), Description("When enabled, the bot will click DUP on Item 3.")]
+            public bool Item3DUP { get; set; } = true;
+
+            [Category(Overworld), Description("Amount of clicks to get to Item 3.")]
+            public int Item3Clicks { get; set; } = 0;
+
+            [Category(Overworld), Description("Amount of ingredients to hold.")]
+            public int AmountOfIngredientsToHold { get; set; } = 3;
+
+            [Category(Overworld), Description("Amount of time to hold L stick up to ingredients for sandwich. [Default: 630ms]")]
+            public int HoldUpToIngredients { get; set; } = 630;
+
+        }
+
+        [Category(Overworld)]
+        [TypeConverter(typeof(MovementFiltersCategoryConverter))]
+        public class MovementFiltersCategory
+        {
+            public override string ToString() => "Movement Conditions";
+
+            [Category(Overworld), Description("Indicates how long the character will move north before every scan.")]
+            public int MoveUpMs { get; set; } = 3000;
+
+            [Category(Overworld), Description("Indicates how long the character will move south before every scan.")]
+            public int MoveDownMs { get; set; } = 3000;
+
+        }
+
+        private sealed class PicnicFiltersCategoryConverter : TypeConverter
+        {
+            public override bool GetPropertiesSupported(ITypeDescriptorContext? context) => true;
+
+            public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext? context, object? value, Attribute[]? attributes) => TypeDescriptor.GetProperties(typeof(PicnicFiltersCategory));
+
+            public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType) => destinationType != typeof(string) && base.CanConvertTo(context, destinationType);
+        }
+
+        private sealed class MovementFiltersCategoryConverter : TypeConverter
+        {
+            public override bool GetPropertiesSupported(ITypeDescriptorContext? context) => true;
+
+            public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext? context, object? value, Attribute[]? attributes) => TypeDescriptor.GetProperties(typeof(MovementFiltersCategory));
+
+            public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType) => destinationType != typeof(string) && base.CanConvertTo(context, destinationType);
+        }
+
         private int _completedScans;
+        private int _completedShinyScans;
 
         [Category(Counts), Description("Encounters Scanned")]
         public int CompletedScans
@@ -77,10 +110,19 @@ namespace SysBot.Pokemon
             set => _completedScans = value;
         }
 
+        [Category(Counts), Description("Shiny Encounters Scanned")]
+        public int CompletedShinyScans
+        {
+            get => _completedShinyScans;
+            set => _completedShinyScans = value;
+        }
+
         [Category(Counts), Description("When enabled, the counts will be emitted when a status check is requested.")]
         public bool EmitCountsOnStatusCheck { get; set; }
 
-        public int AddCompletedEggs() => Interlocked.Increment(ref _completedScans);
+        public int AddCompletedScans() => Interlocked.Increment(ref _completedScans);
+
+        public int AddShinyScans() => Interlocked.Increment(ref _completedShinyScans);
 
         public IEnumerable<string> GetNonZeroCounts()
         {
@@ -88,14 +130,20 @@ namespace SysBot.Pokemon
                 yield break;
             if (CompletedScans != 0)
                 yield return $"Encounters Scanned: {CompletedScans}";
+            if (CompletedShinyScans != 0)
+                yield return $"Shiny Encounters Scanned: {CompletedShinyScans}";
         }
 
-        public enum ResearchStation
+        public enum Location
         {
-            Station1 = 1,
-            Station2 = 2,
-            Station3 = 3,
-            Station4 = 4,
+            NonAreaZero = 0,
+            ResearchStation1 = 1,
+            ResearchStation2 = 2,
+            ResearchStation3 = 3,
+            ResearchStation4 = 4,
+            SecretCave = 5,
+            TownBorder = 6,
         }
+
     }
 }

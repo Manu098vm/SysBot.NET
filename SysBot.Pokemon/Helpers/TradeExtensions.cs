@@ -206,7 +206,10 @@ namespace SysBot.Pokemon
             var enc = la.EncounterMatch;
             pk.CurrentFriendship = enc is EncounterStatic s ? s.EggCycles : pk.PersonalInfo.HatchCycles;
 
-            pk.RelearnMoves = (ushort[])enc.GetSuggestedRelearn(pk);
+            Span<ushort> relearn = stackalloc ushort[4];
+            la.GetSuggestedRelearnMoves(relearn, enc);
+            pk.SetRelearnMoves(relearn);
+
             pk.SetSuggestedMoves();
             pk.Move1_PPUps = pk.Move2_PPUps = pk.Move3_PPUps = pk.Move4_PPUps = 0;
             pk.SetMaximumPPCurrent(pk.Moves);

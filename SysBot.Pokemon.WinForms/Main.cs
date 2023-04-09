@@ -98,7 +98,8 @@ namespace SysBot.Pokemon.WinForms
             LogUtil.Forwarders.Add(AppendLog);
             if (Config.Mode is not ProgramMode.LA)
                 Tab_Results.Dispose();
-            else ResultsUtil.Forwarders.Add(AppendResults);
+            else 
+                ResultsUtil.Forwarders.Add(AppendResults);
         }
 
         private void AppendLog(string message, string identity)

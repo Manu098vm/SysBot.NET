@@ -8,8 +8,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Discord.WebSocket;
-using System.Collections;
-using System.Reflection;
 
 namespace SysBot.Pokemon.Discord
 {
@@ -243,7 +241,7 @@ namespace SysBot.Pokemon.Discord
             }
 
             var c = bot.Bot.Connection;
-            var bytes = await c.Screengrab(token).ConfigureAwait(false) ?? Array.Empty<byte>();
+            var bytes = await c.PixelPeek(token).ConfigureAwait(false) ?? Array.Empty<byte>();
             if (bytes.Length == 1)
             {
                 await ReplyAsync($"Failed to take a screenshot for bot at {address}. Is the bot connected?").ConfigureAwait(false);
@@ -609,226 +607,6 @@ namespace SysBot.Pokemon.Discord
             ArceusBot.EmbedSource = new();
         }
 
-        [Command("raidEmbedSV")]
-        [Alias("resv")]
-        [Summary("Initialize posting of RaidBotSV embeds to specified Discord channels.")]
-        [RequireSudo]
-        public async Task InitializeRaidEmbedsSV()
-        {
-            if (RaidSettingsSV.RaidEmbedChannelsSV == string.Empty)
-            {
-                await ReplyAsync("No channels to post embeds in.").ConfigureAwait(false);
-                return;
-            }
-
-            List<ulong> channels = new();
-            List<ITextChannel> embedChannels = new();
-
-            if (!RaidSV.RaidSVEmbedsInitialized)
-            {
-                var chStrings = RaidSettingsSV.RaidEmbedChannelsSV.Split(',');
-                foreach (var channel in chStrings)
-                {
-                    if (ulong.TryParse(channel, out ulong result) && !channels.Contains(result))
-                        channels.Add(result);
-                }
-
-                if (channels.Count == 0)
-                {
-                    await ReplyAsync("No valid channels found.").ConfigureAwait(false);
-                    return;
-                }
-
-                foreach (var guild in Context.Client.Guilds)
-                {
-                    foreach (var id in channels)
-                    {
-                        var channel = guild.Channels.FirstOrDefault(x => x.Id == id);
-                        if (channel is not null && channel is ITextChannel ch)
-                            embedChannels.Add(ch);
-                    }
-                }
-
-                if (embedChannels.Count == 0)
-                {
-                    await ReplyAsync("No matching guild channels found.").ConfigureAwait(false);
-                    return;
-                }
-            }
-
-            RaidSV.RaidSVEmbedsInitialized ^= true;
-            await ReplyAsync(!RaidSV.RaidSVEmbedsInitialized ? "Raid Embed task stopped!" : "Raid Embed task started!").ConfigureAwait(false);
-
-            if (!RaidSV.RaidSVEmbedsInitialized)
-            {
-                RaidSV.RaidSVEmbedSource.Cancel();
-                return;
-            }
-
-            RaidSV.RaidSVEmbedSource = new();
-            _ = Task.Run(async () => await RaidSVEmbedLoop(embedChannels).ConfigureAwait(false));
-        }
-
-        private static async Task RaidSVEmbedLoop(List<ITextChannel> channels)
-        {
-            while (!RaidSV.RaidSVEmbedSource.IsCancellationRequested)
-            {
-                if (RaidSV.EmbedQueue.TryDequeue(out var embedInfo))
-                {
-                    var img = "zap.jpg";
-                    var turl = string.Empty;
-                    var form = string.Empty;                    
-                    PK9 pk = new()
-                    {
-                        Species = (ushort)RaidSettingsSV.RaidSpecies,
-                        Form = (byte)RaidSettingsSV.RaidSpeciesForm
-                    };
-                    if (pk.Form != 0)
-                        form = $"-{pk.Form}";
-                    _ = RaidSettingsSV.RaidSpeciesIsShiny ? CommonEdits.SetIsShiny(pk, true) : CommonEdits.SetIsShiny(pk, false);
-                    if ((Species)pk.Species <= Species.Enamorus)
-                        turl = TradeExtensions<PK9>.PokeImg(pk, false, false);
-                    if ((Species)pk.Species > Species.Enamorus || (Species)pk.Species is Species.Wooper && pk.Form != 0 || (Species)pk.Species is Species.Tauros && pk.Form != 0)
-                    {
-                        if (RaidSettingsSV.RaidSpeciesIsShiny)
-                            turl = $"https://raw.githubusercontent.com/zyro670/PokeTextures/main/Placeholder_Sprites/scaled_up_sprites/Shiny/" + $"{pk.Species}{form}" + ".png";
-                        else if (!RaidSettingsSV.RaidSpeciesIsShiny)
-                            turl = $"https://raw.githubusercontent.com/zyro670/PokeTextures/main/Placeholder_Sprites/scaled_up_sprites/" + $"{pk.Species}{form}" + ".png";
-                    }
-
-                    _ = new EmbedBuilder();
-                    EmbedBuilder? embed = embedInfo.Item2;
-                    embed.ThumbnailUrl = turl;
-                    foreach (var channel in channels)
-                    {
-                        if (embedInfo.Item1 != null)
-                        {
-                            MemoryStream? ms = new(embedInfo.Item1);
-                            try
-                            {
-                                if (!RaidSettingsSV.TakeScreenshot)
-                                    await channel.SendMessageAsync(null, false, embed: embed.Build()).ConfigureAwait(false);
-                                else
-                                    await channel.SendFileAsync(ms, img, "", false, embed: embed.Build()).ConfigureAwait(false);
-                            }
-                            catch { }
-                        }
-                    }
-                }
-                else await Task.Delay(0_500).ConfigureAwait(false);
-            }
-        }
-
-        [Command("SVEgg")]
-        [Alias("sve")]
-        [Summary("Initialize posting of SV shiny result embeds to specified Discord channels.")]
-        [RequireSudo]
-        public async Task InitializeEmbedsSV()
-        {
-            if (SysCord<T>.Runner.Hub.Config.StopConditions.ResultsEmbedChannels == string.Empty)
-            {
-                await ReplyAsync("No channels to post embeds in.").ConfigureAwait(false);
-                return;
-            }
-
-            List<ulong> channels = new();
-            foreach (var channel in SysCord<T>.Runner.Hub.Config.StopConditions.ResultsEmbedChannels.Split(',', ' '))
-            {
-                if (ulong.TryParse(channel, out ulong result) && !channels.Contains(result))
-                    channels.Add(result);
-            }
-
-            if (channels.Count == 0)
-            {
-                await ReplyAsync("No valid channels found.").ConfigureAwait(false);
-                return;
-            }
-
-            await ReplyAsync(!EggBotSV.EmbedsInitialized ? "Scarlet | Violet Egg Embed task started!" : "Scarlet | Violet Egg Embed task stopped!").ConfigureAwait(false);
-            if (EggBotSV.EmbedsInitialized)
-                EggBotSV.EmbedSource.Cancel();
-            else _ = Task.Run(async () => await SVEmbedLoop(channels));
-            EggBotSV.EmbedsInitialized ^= true;
-        }
-
-        private async Task SVEmbedLoop(List<ulong> channels)
-        {
-            var ping = SysCord<T>.Runner.Hub.Config.StopConditions.MatchFoundEchoMention;
-            while (!EggBotSV.EmbedSource.IsCancellationRequested)
-            {
-                if (EggBotSV.EmbedMon.Item1 != null)
-                {
-                    var url = TradeExtensions<PK9>.PokeImg(EggBotSV.EmbedMon.Item1, false, false);
-                    var is1of100 = (Species)EggBotSV.EmbedMon.Item1.Species is Species.Dunsparce or Species.Tandemaus;
-                    var spec = string.Empty;
-                    if (is1of100)
-                    {
-                        if (EggBotSV.EmbedMon.Item1.EncryptionConstant % 100 == 0)
-                        {
-                            if ((Species)EggBotSV.EmbedMon.Item1.Species is Species.Dunsparce)
-                                spec = "\n3 Segment";
-                            else
-                                spec = "\nFamily of 3";
-                        }
-                        if (EggBotSV.EmbedMon.Item1.EncryptionConstant % 100 != 0)
-                        {
-                            if ((Species)EggBotSV.EmbedMon.Item1.Species is Species.Dunsparce)
-                                spec = "\n2 Segment";
-                            else
-                                spec = "\nFamily of 4";
-                        }
-                    }
-                    var size = $"\nScale: {PokeSizeDetailedUtil.GetSizeRating(EggBotSV.EmbedMon.Item1.Scale)}";
-                    var gender = EggBotSV.EmbedMon.Item1.Gender == 0 ? " - (M)" : EggBotSV.EmbedMon.Item1.Gender == 1 ? " - (F)" : "";
-
-                    var description = $"{(EggBotSV.EmbedMon.Item1.ShinyXor == 0 ? "■ - " : EggBotSV.EmbedMon.Item1.ShinyXor <= 16 ? "★ - " : "")}{SpeciesName.GetSpeciesNameGeneration(EggBotSV.EmbedMon.Item1.Species, 2, 8)}{TradeExtensions<T>.FormOutput(EggBotSV.EmbedMon.Item1.Species, EggBotSV.EmbedMon.Item1.Form, out _)}{gender}{spec}\nIVs: {EggBotSV.EmbedMon.Item1.IV_HP}/{EggBotSV.EmbedMon.Item1.IV_ATK}/{EggBotSV.EmbedMon.Item1.IV_DEF}/{EggBotSV.EmbedMon.Item1.IV_SPA}/{EggBotSV.EmbedMon.Item1.IV_SPD}/{EggBotSV.EmbedMon.Item1.IV_SPE}{size}";
-                    if (SysCord<T>.Runner.Hub.Config.StopConditions.ShinyTarget == TargetShinyType.NonShiny)
-                        description = $"{SpeciesName.GetSpeciesNameGeneration(EggBotSV.EmbedMon.Item1.Species, 2, 8)}{TradeExtensions<T>.FormOutput(EggBotSV.EmbedMon.Item1.Species, EggBotSV.EmbedMon.Item1.Form, out _)}{gender}{spec}\nIVs: {EggBotSV.EmbedMon.Item1.IV_HP}/{EggBotSV.EmbedMon.Item1.IV_ATK}/{EggBotSV.EmbedMon.Item1.IV_DEF}/{EggBotSV.EmbedMon.Item1.IV_SPA}/{EggBotSV.EmbedMon.Item1.IV_SPD}/{EggBotSV.EmbedMon.Item1.IV_SPE}{size}";
-
-                    var markurl = string.Empty;
-                    if (EggBotSV.EmbedMon.Item2)
-                        markurl = "https://i.imgur.com/T8vEiIk.jpg";
-                    else
-                        markurl = $"https://i.imgur.com/t2M8qF4.png";
-
-                    var author = new EmbedAuthorBuilder { IconUrl = markurl, Name = EggBotSV.EmbedMon.Item2 ? "Match found!" : "Unwanted match..." };
-                    var embed = new EmbedBuilder
-                    {
-                        Color = EggBotSV.EmbedMon.Item2 ? Color.Teal : Color.Red,
-                        ThumbnailUrl = url
-                    }.WithAuthor(author).WithDescription(description);
-
-                    var guilds = Context.Client.Guilds;
-                    foreach (var guild in guilds)
-                    {
-                        foreach (var channel in channels)
-                        {
-                            var ch = guild.Channels.FirstOrDefault(x => x.Id == channel);
-                            if (ch != default && ch is ISocketMessageChannel sock)
-                            {
-                                try
-                                {
-                                    await sock.SendMessageAsync(EggBotSV.EmbedMon.Item2 ? ping : "", embed: embed.Build()).ConfigureAwait(false);
-                                }
-                                catch { }
-                            }
-                        }
-                    }
-                    EggBotSV.EmbedMon.Item1 = null;
-                }
-                else await Task.Delay(1_000).ConfigureAwait(false);
-            }
-            EggBotSV.EmbedSource = new();
-        }
-
-        public static readonly string[] MarkTitle =
-{
-            " the Peckish"," the Sleepy"," the Dozy"," the Early Riser"," the Cloud Watcher"," the Sodden"," the Thunderstruck"," the Snow Frolicker"," the Shivering"," the Parched"," the Sandswept"," the Mist Drifter",
-            " the Chosen One"," the Catch of the Day"," the Curry Connoisseur"," the Sociable"," the Recluse"," the Rowdy"," the Spacey"," the Anxious"," the Giddy"," the Radiant"," the Serene"," the Feisty"," the Daydreamer",
-            " the Joyful"," the Furious"," the Beaming"," the Teary-Eyed"," the Chipper"," the Grumpy"," the Scholar"," the Rampaging"," the Opportunist"," the Stern"," the Kindhearted"," the Easily Flustered"," the Driven",
-            " the Apathetic"," the Arrogant"," the Reluctant"," the Humble"," the Pompous"," the Lively"," the Worn-Out",
-        };
-
         [Command("repeek")]
         [Summary("Take and send a screenshot from the specified Switch.")]
         [RequireOwner]
@@ -846,7 +624,7 @@ namespace SysBot.Pokemon.Discord
 
             var c = bot.Bot.Connection;
             c.Reset();
-            var bytes = Task.Run(async () => await c.Screengrab(token).ConfigureAwait(false)).Result ?? Array.Empty<byte>();
+            var bytes = Task.Run(async () => await c.PixelPeek(token).ConfigureAwait(false)).Result ?? Array.Empty<byte>();
             MemoryStream ms = new(bytes);
             var img = "cap.jpg";
             var embed = new EmbedBuilder { ImageUrl = $"attachment://{img}", Color = Color.Purple }.WithFooter(new EmbedFooterBuilder { Text = $"Captured image from bot at address {address}." });

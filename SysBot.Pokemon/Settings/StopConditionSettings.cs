@@ -185,8 +185,20 @@ namespace SysBot.Pokemon
                 if (!string.IsNullOrEmpty(rstring))
                     set += $"\nPokémon found to have **{GetMarkName(r)}**!";
             }
+            if (pk is PK9 pk9)
+            {
+                set += $"\nScale: {PokeSizeDetailedUtil.GetSizeRating(pk9.Scale)}";
+            }
             return set;
         }
+
+        public readonly string[] MarkTitle =
+{
+            " the Peckish"," the Sleepy"," the Dozy"," the Early Riser"," the Cloud Watcher"," the Sodden"," the Thunderstruck"," the Snow Frolicker"," the Shivering"," the Parched"," the Sandswept"," the Mist Drifter",
+            " the Chosen One"," the Catch of the Day"," the Curry Connoisseur"," the Sociable"," the Recluse"," the Rowdy"," the Spacey"," the Anxious"," the Giddy"," the Radiant"," the Serene"," the Feisty"," the Daydreamer",
+            " the Joyful"," the Furious"," the Beaming"," the Teary-Eyed"," the Chipper"," the Grumpy"," the Scholar"," the Rampaging"," the Opportunist"," the Stern"," the Kindhearted"," the Easily Flustered"," the Driven",
+            " the Apathetic"," the Arrogant"," the Reluctant"," the Humble"," the Pompous"," the Lively"," the Worn-Out",
+        };
 
         public static void ReadUnwantedMarks(StopConditionSettings settings, out IReadOnlyList<string> marks) =>
             marks = settings.UnwantedMarks.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();

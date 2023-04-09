@@ -34,7 +34,7 @@
         /// <summary> Triggers encounters until the criteria is satisfied. </summary>
         EncounterLine = 1_000,
 
-        /// <summary> Triggers encounters with Eternatus until the criteria is satisfied. </summary>
+        /// <summary> Triggers encounters with static Pokémon until the criteria is satisfied. </summary>
         Reset = 1_001,
 
         /// <summary> Triggers encounters with Sword &amp; Shield box legend until the criteria is satisfied. </summary>
@@ -60,21 +60,23 @@
         /// <summary> Easily and quickly resets various in-game flags. </summary>
         BoolBot = 6005,
 
-        /// <summary> Easily and quickly resets various in-game flags. </summary>
+        /// <summary> Make curry and hunt for an encounter from camp. </summary>
         CurryBot = 6006,
 
         /// <summary> Resets Swords Of Justice via the camp method. </summary>
         SoJCamp = 6007,
 
-        /// <summary> Resets Swords Of Justice via the camp method. </summary>
+        /// <summary> Performs and rolls group battles as a host. </summary>
         RollingRaid = 6008,
 
-        /// <summary> Resets Swords Of Justice via the camp method. </summary>
+        /// <summary> Dump trade method for permutations in Legends Arceus. </summary>
         EtumrepDump = 6009,
 
+        /// <summary> Perform various ways to encounter Pokémon in Legends Arceus. </summary>
         ArceusBot = 9001,
 
-        EncounterBotSV = 9002,
+        /// <summary> Perform various ways to encounter Pokémon in Scarlet and Violet. </summary>
+        OverworldBot = 9002,
     }
 
     public static class PokeRoutineTypeExtensions

@@ -12,7 +12,7 @@ namespace SysBot.Pokemon
         private const string Hosting = nameof(Hosting);
         private const string Counts = nameof(Counts);
         private const string FeatureToggle = nameof(FeatureToggle);
-        public override string ToString() => "Raid Bot Settings";
+        public override string ToString() => "RaidBotSV Settings";
 
         [Category(FeatureToggle), Description("URL to Pokémon Automation's Tera Ban List json (or one matching the required structure).")]
         public string BanListURL { get; set; } = "https://raw.githubusercontent.com/PokemonAutomation/ServerConfigs-PA-SHA/main/PokemonScarletViolet/TeraAutoHost-BanList.json";
@@ -20,22 +20,19 @@ namespace SysBot.Pokemon
         [Category(Hosting), Description("Amount of raids before updating the ban list. If you want the global ban list off, set this to -1.")]
         public int RaidsBetweenUpdate { get; set; } = 3;
 
-        [Category(FeatureToggle), Description("Raid embed title.")]
+        [Category(Hosting), Description("Raid embed title.")]
         public string RaidEmbedTitle { get; set; } = "Tera Raid Notification";
 
-        [Category(FeatureToggle), Description("Raid embed description.")]
-        public string[] RaidEmbedDescription { get; set; } = Array.Empty<string>();
+        [Category(Hosting), Description("Raid embed description. Enter your description, species, form, and if shiny here. To do a line break use \">>\"")]
+        public List<RaidParameters> RaidEmbedParameters { get; set; } = new();
 
-        [Category(Hosting), Description("Input the Species to post a Thumbnail in the embeds. Ignored if 0.")]
-        public Species RaidSpecies { get; set; } = Species.None;
+        [Category(Hosting), Description("When enabled, the bot will restore current day seed to tomorrow's day seed.")]
+        public bool KeepDaySeed { get; set; } = false;
 
-        [Category(Hosting), Description("If the species does not have an alternate form, leave at 0.")]
-        public int RaidSpeciesForm { get; set; } = 0;
+        [Category(FeatureToggle), Description("Raid seeds to rotate. Leave empty to ignore this.")]
+        public uint[] RaidSeedRotation { get; set; } = Array.Empty<uint>();
 
-        [Category(Hosting), Description("If the species is shiny set to true. False for non-shiny.")]
-        public bool RaidSpeciesIsShiny { get; set; } = true;
-
-        [Category(FeatureToggle), Description("If true, the bot will use a random code for the raid.")]
+        [Category(Hosting), Description("If true, the bot will use a random code for the raid.")]
         public bool CodeTheRaid { get; set; } = true;
 
         [Category(Hosting), Description("Catch limit per player before they get added to the ban list automatically. If set to 0 this setting will be ignored.")]
@@ -43,6 +40,9 @@ namespace SysBot.Pokemon
 
         [Category(Hosting), Description("Minimum amount of seconds to wait before starting a raid.")]
         public int TimeToWait { get; set; } = 90;
+
+        [Category(FeatureToggle), Description("If true, the bot will attempt take screenshots for the Raid Embeds. If you experience crashes often about \"Size/Parameter\" try setting this to false.")]
+        public bool TakeScreenshot { get; set; } = true;
 
         [Category(Hosting), Description("Users NIDs here are banned raiders.")]
         public RemoteControlAccessList RaiderBanList { get; set; } = new() { AllowIfEmpty = false };
@@ -53,14 +53,8 @@ namespace SysBot.Pokemon
         [Category(Hosting), Description("Time to scroll down duration in milliseconds for accessing date/time settings during rollover correction. You want to have it overshoot the Date/Time setting by 1, as it will click DUP after scrolling down. [Default: 930ms]")]
         public int HoldTimeForRollover { get; set; } = 930;
 
-        [Category(FeatureToggle), Description("If true, start the bot when you are on the HOME screen with the game closed. The bot will only run the rollover routine so you can try to configure accurate timing.")]
+        [Category(Hosting), Description("If true, start the bot when you are on the HOME screen with the game closed. The bot will only run the rollover routine so you can try to configure accurate timing.")]
         public bool ConfigureRolloverCorrection { get; set; } = false;
-
-        [Category(FeatureToggle), Description("If true, the bot will attempt take screenshots for the Raid Embeds. If you experience crashes often about \"Size/Parameter\" try setting this to false.")]
-        public bool TakeScreenshot { get; set; } = true;
-
-        [Category(Hosting), Description("Enter Discord channel ID(s) to post raid embeds to. Feature has to be initialized via \"$resv\" after every client restart. Separate channels with a comma.")]
-        public string RaidEmbedChannelsSV { get; set; } = string.Empty;
 
         [Category(FeatureToggle), Description("When enabled, the screen will be turned off during normal bot loop operation to save power.")]
         public bool ScreenOff { get; set; }
@@ -93,5 +87,14 @@ namespace SysBot.Pokemon
             DDMMYY,
             YYMMDD,
         }
-    }
+
+        public class RaidParameters
+        {
+            public override string ToString() => "Raid Parameters";
+            public string RaidDescription { get; set; } = string.Empty;
+            public Species RaidSpecies { get; set; } = Species.None;
+            public int RaidSpeciesForm { get; set; } = 0;
+            public bool RaidSpeciesIsShiny { get; set; } = true;
+        }
+    }    
 }
