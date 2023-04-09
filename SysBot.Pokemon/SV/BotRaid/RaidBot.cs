@@ -391,7 +391,7 @@ namespace SysBot.Pokemon
             await Click(A, 3_000, token).ConfigureAwait(false);
             await Click(A, 3_000, token).ConfigureAwait(false);
 
-            if (!Settings.CodeTheRaid || RaidCount % 5 >= 1)
+            if (!Settings.CodeTheRaid)
                 await Click(DDOWN, 1_000, token).ConfigureAwait(false);
 
             await Click(A, 8_000, token).ConfigureAwait(false);
