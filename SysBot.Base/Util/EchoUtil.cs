@@ -9,7 +9,7 @@ namespace SysBot.Base
     {
         public static readonly List<Action<string>> Forwarders = new();
         public static readonly List<Action<string, Embed>> EmbedForwarders = new();
-        public static readonly List<Action<MemoryStream, string, EmbedBuilder>> RaidForwarders = new();
+        public static readonly List<Action<byte[], string, EmbedBuilder>> RaidForwarders = new();
 
         public static void Echo(string message)
         {
@@ -67,7 +67,7 @@ namespace SysBot.Base
             LogUtil.LogInfo(message, "Echo");
         }
 
-        public static void RaidEmbed(MemoryStream bytes, string fileName, EmbedBuilder embeds)
+        public static void RaidEmbed(byte[] bytes, string fileName, EmbedBuilder embeds)
         {
             foreach (var fwd in RaidForwarders)
             {

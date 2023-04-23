@@ -28,6 +28,9 @@ namespace SysBot.Pokemon
         [Category(DenSkip), Description("Beam type for seed search.")]
         public BeamType DenBeamType { get; set; } = BeamType.CommonWish;
 
+        [Category(DenSkip), Description("Console language. Needed in order to read distribution raid data correctly.")]
+        public ConsoleLanguageParameter ConsoleLanguage { get; set; } = ConsoleLanguageParameter.English;
+
         [Category(DenSkip), Description("Search criteria for target Pokémon."), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
         public DenFiltersCategory DenFilters { get; set; } = new();
 

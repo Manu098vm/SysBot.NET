@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Threading;
 using SysBot.Base;
+using static SysBot.Pokemon.RaidSettingsSV;
 
 namespace SysBot.Pokemon
 {
@@ -24,14 +25,29 @@ namespace SysBot.Pokemon
         [Category(Overworld), Description("Select which location you are scanning.")]
         public Location LocationSelection { get; set; } = Location.NonAreaZero;
 
-        [Category(Overworld), Description("When enabled, the bot will only stop when encounter has a Scale of XXXS or XXXL.")]
-        public bool MinMaxScaleOnly { get; set; } = false;
+        [Category(Overworld), Description("When enabled, the bot will stop when encounter has a Scale of XXXS or XXXL.")]
+        public bool StopOnMinMaxScale { get; set; } = false;
+
+        [Category(Overworld), Description("When enabled, the bot will make a sandwich. If false the bot will stop after 30 minutes.")]
+        public bool MakeASandwich { get; set; } = true;
 
         [Category(Overworld), Description("Picnic Filters"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
         public PicnicFiltersCategory PicnicFilters { get; set; } = new();
 
         [Category(Overworld), Description("Movement Filters"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
         public MovementFiltersCategory MovementFilters { get; set; } = new();
+
+        [Category(Overworld), Description("Set your Switch Date/Time format in the Date/Time settings. The day will automatically rollback by 1 if the Date changes.")]
+        public DTFormat DateTimeFormat { get; set; } = DTFormat.MMDDYY;
+
+        [Category(Overworld), Description("When enabled, the bot will check if our dayseed changes to attempt preventing a lost outbreak.")]
+        public bool CheckForRollover { get; set; } = false;
+
+        [Category(Overworld), Description("Time to scroll down duration in milliseconds for accessing date/time settings during rollover correction. You want to have it overshoot the Date/Time setting by 1, as it will click DUP after scrolling down. [Default: 930ms]")]
+        public int HoldTimeForRollover { get; set; } = 930;
+
+        [Category(Overworld), Description("If true, start the bot when you are on the HOME screen with the game closed. The bot will only run the rollover routine so you can try to configure accurate timing.")]
+        public bool ConfigureRolloverCorrection { get; set; } = false;
 
         [Category(Overworld), Description("When enabled, the screen will be turned off during normal bot loop operation to save power.")]
         public bool ScreenOff { get; set; }

@@ -23,14 +23,8 @@ namespace SysBot.Pokemon
         [Category(Hosting), Description("Raid embed title.")]
         public string RaidEmbedTitle { get; set; } = "Tera Raid Notification";
 
-        [Category(Hosting), Description("Raid embed description. Enter your description, species, form, and if shiny here. To do a line break use \">>\"")]
+        [Category(Hosting), Description("Raid embed description. Enter your description, species, form, and if shiny here.")]
         public List<RaidParameters> RaidEmbedParameters { get; set; } = new();
-
-        [Category(Hosting), Description("When enabled, the bot will restore current day seed to tomorrow's day seed.")]
-        public bool KeepDaySeed { get; set; } = false;
-
-        [Category(FeatureToggle), Description("Raid seeds to rotate. Leave empty to ignore this.")]
-        public uint[] RaidSeedRotation { get; set; } = Array.Empty<uint>();
 
         [Category(Hosting), Description("If true, the bot will use a random code for the raid.")]
         public bool CodeTheRaid { get; set; } = true;
@@ -47,11 +41,17 @@ namespace SysBot.Pokemon
         [Category(Hosting), Description("Users NIDs here are banned raiders.")]
         public RemoteControlAccessList RaiderBanList { get; set; } = new() { AllowIfEmpty = false };
 
+        [Category(Hosting), Description("When enabled, the bot will restore current day seed to tomorrow's day seed.")]
+        public bool KeepDaySeed { get; set; } = false;
+
+        [Category(FeatureToggle), Description("Raid seeds to rotate. Leave empty to ignore this.")]
+        public uint[] RaidSeedRotation { get; set; } = Array.Empty<uint>();
+
         [Category(FeatureToggle), Description("Set your Switch Date/Time format in the Date/Time settings. The day will automatically rollback by 1 if the Date changes.")]
         public DTFormat DateTimeFormat { get; set; } = DTFormat.MMDDYY;
 
         [Category(Hosting), Description("Time to scroll down duration in milliseconds for accessing date/time settings during rollover correction. You want to have it overshoot the Date/Time setting by 1, as it will click DUP after scrolling down. [Default: 930ms]")]
-        public int HoldTimeForRollover { get; set; } = 930;
+        public int HoldTimeForRollover { get; set; } = 900;
 
         [Category(Hosting), Description("If true, start the bot when you are on the HOME screen with the game closed. The bot will only run the rollover routine so you can try to configure accurate timing.")]
         public bool ConfigureRolloverCorrection { get; set; } = false;
@@ -91,7 +91,7 @@ namespace SysBot.Pokemon
         public class RaidParameters
         {
             public override string ToString() => "Raid Parameters";
-            public string RaidDescription { get; set; } = string.Empty;
+            public string[] RaidDescription { get; set; } = { };
             public Species RaidSpecies { get; set; } = Species.None;
             public int RaidSpeciesForm { get; set; } = 0;
             public bool RaidSpeciesIsShiny { get; set; } = true;

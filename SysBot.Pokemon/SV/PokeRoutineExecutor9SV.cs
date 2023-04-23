@@ -1,10 +1,10 @@
-﻿using System;
+﻿using PKHeX.Core;
+using SysBot.Base;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
-using PKHeX.Core;
-using SysBot.Base;
+using System.Threading;
 using static SysBot.Pokemon.PokeDataOffsetsSV;
 using static SysBot.Base.SwitchButton;
 using static System.Buffers.Binary.BinaryPrimitives;
@@ -308,7 +308,7 @@ namespace SysBot.Pokemon
 
         public async Task SetBoxPokemonEgg(PK9 pkm, int box, int slot, CancellationToken token)
         {
-            var ofs = await GetPointerAddress("[[[main+44A98C8]+130]+9B0]", token).ConfigureAwait(false);
+            var ofs = await GetPointerAddress("[[[main+44BFBA8]+130]+9B0]", token).ConfigureAwait(false);
             pkm.ResetPartyStats();
             await SwitchConnection.WriteBytesAbsoluteAsync(pkm.EncryptedPartyData, ofs, token).ConfigureAwait(false);
         }
@@ -335,52 +335,48 @@ namespace SysBot.Pokemon
             public int Size { get; set; }
         }
 
-        public async Task<byte[]> ReadBlock(DataBlock block, CancellationToken token)
+        public async Task<byte[]> ReadBlock(ulong baseBlock, DataBlock block, CancellationToken token)
         {
-            return await ReadEncryptedBlock(block, token).ConfigureAwait(false);
+            return await ReadEncryptedBlock(baseBlock, block, token).ConfigureAwait(false);
         }
 
-        private async Task<byte[]> ReadEncryptedBlock(DataBlock block, CancellationToken token)
+        private async Task<byte[]> ReadEncryptedBlock(ulong baseBlock, DataBlock block, CancellationToken token)
         {
-            var address = await GetBlockAddress(block, token).ConfigureAwait(false);
+            var address = await SearchSaveKey(baseBlock, block.Key, token).ConfigureAwait(false);
+            address = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(address + 8, 0x8, token).ConfigureAwait(false), 0);
             var header = await SwitchConnection.ReadBytesAbsoluteAsync(address, 5, token).ConfigureAwait(false);
             header = DecryptBlock(block.Key, header);
             var size = ReadUInt32LittleEndian(header.AsSpan()[1..]);
-            var data = await SwitchConnection.ReadBytesAbsoluteAsync(address, 5 + (int)size, token);
+            var data = await SwitchConnection.ReadBytesAbsoluteAsync(address, 5 + (int)size, token).ConfigureAwait(false);
             var res = DecryptBlock(block.Key, data)[5..];
+
             return res;
         }
 
-        private static IEnumerable<long> PreparePointer(IEnumerable<long> pointer)
+        public async Task<ulong> SearchSaveKey(ulong baseBlock, uint key, CancellationToken token)
         {
-            var count = pointer.Count();
-            var p = new long[count + 1];
-            for (var i = 0; i < pointer.Count(); i++)
-                p[i] = pointer.ElementAt(i);
-            p[count - 1] += 8;
-            p[count] = 0x0;
-            return p;
-        }
+            var data = await SwitchConnection.ReadBytesAbsoluteAsync(baseBlock + 8, 16, token).ConfigureAwait(false);
+            var start = BitConverter.ToUInt64(data.AsSpan()[..8]);
+            var end = BitConverter.ToUInt64(data.AsSpan()[8..]);
 
-        private async Task<ulong> GetBlockAddress(DataBlock block, CancellationToken token)
-        {
-            var read_key = ReadUInt32LittleEndian(await SwitchConnection.PointerPeek(4, block.Pointer!, token).ConfigureAwait(false));
-            if (read_key == block.Key)
-                return await SwitchConnection.PointerAll(PreparePointer(block.Pointer!), token).ConfigureAwait(false);
-            var direction = block.Key > read_key ? 1 : -1;
-            var base_offset = block.Pointer![block.Pointer.Count - 1];
-            for (var offset = base_offset; offset < base_offset + 0x1000 && offset > base_offset - 0x1000; offset += direction * 0x20)
+            while (start < end)
             {
-                var pointer = block.Pointer!.ToArray();
-                pointer[^1] = offset;
-                read_key = ReadUInt32LittleEndian(await SwitchConnection.PointerPeek(4, pointer, token).ConfigureAwait(false));
-                if (read_key == block.Key)
-                    return await SwitchConnection.PointerAll(PreparePointer(pointer), token).ConfigureAwait(false);
+                var block_ct = (end - start) / 48;
+                var mid = start + (block_ct >> 1) * 48;
+
+                data = await SwitchConnection.ReadBytesAbsoluteAsync(mid, 4, token).ConfigureAwait(false);
+                var found = BitConverter.ToUInt32(data);
+                if (found == key)
+                    return mid;
+
+                if (found >= key)
+                    end = mid;
+                else start = mid + 48;
             }
-            throw new ArgumentOutOfRangeException("Save block not found in range +- 0x1000. Restart the game and try again.");
+            return start;
         }
 
-        private byte[] DecryptBlock(uint key, byte[] block)
+        private static byte[] DecryptBlock(uint key, byte[] block)
         {
             var rng = new SCXorShift32(key);
             for (int i = 0; i < block.Length; i++)
@@ -395,7 +391,6 @@ namespace SysBot.Pokemon
                 Name = "Overworld",
                 Key = 0x173304D8,
                 Type = SCTypeCode.Object,
-                Pointer = new long[] { 0x449EEE8, 0xD8, 0x0, 0x0, 0x30, 0x8, 0x4340 },
                 IsEncrypted = true,
                 Size = 2490,
             };

@@ -171,19 +171,24 @@ namespace SysBot.Pokemon
             {
                 var rstring = GetMarkName(r);
                 if (!string.IsNullOrEmpty(rstring))
-                    set += $"\nPokémon found to have **{GetMarkName(r)}**!";                
+                    set += $"\nPokémon found to have **{GetMarkName(r)}**!";
             }
             return set;
         }
 
         public string GetSpecialPrintName(PKM pk)
         {
-            var set = $"{(pk.ShinyXor == 0 ? "■ - " : pk.ShinyXor <= 16 ? "★ - " : "")}{SpeciesName.GetSpeciesNameGeneration(pk.Species, 2, 9)}{TradeExtensions<PK9>.FormOutput(pk.Species, pk.Form, out _)}\nIVs: {pk.IV_HP}/{pk.IV_ATK}/{pk.IV_DEF}/{pk.IV_SPA}/{pk.IV_SPD}/{pk.IV_SPE}\nNature: {(Nature)pk.Nature} | Gender: {(Gender)pk.Gender}";
+            string markEntryText = "";
+            HasMark((IRibbonIndex)pk, out RibbonIndex mark);
+            var index = (int)mark - (int)RibbonIndex.MarkLunchtime;
+            if (index >= 0)
+                markEntryText = MarkTitle[index];
+            var set = $"{(pk.ShinyXor == 0 ? "■ - " : pk.ShinyXor <= 16 ? "★ - " : "")}{SpeciesName.GetSpeciesNameGeneration(pk.Species, 2, 9)}{TradeExtensions<PK9>.FormOutput(pk.Species, pk.Form, out _)}{markEntryText}\nIVs: {pk.IV_HP}/{pk.IV_ATK}/{pk.IV_DEF}/{pk.IV_SPA}/{pk.IV_SPD}/{pk.IV_SPE}\nNature: {(Nature)pk.Nature} | Gender: {(Gender)pk.Gender}";
             if (pk is IRibbonIndex r)
             {
                 var rstring = GetMarkName(r);
                 if (!string.IsNullOrEmpty(rstring))
-                    set += $"\nPokémon found to have **{GetMarkName(r)}**!";
+                    set += $"\nPokémon has the **{GetMarkName(r)}**!";
             }
             if (pk is PK9 pk9)
             {
@@ -193,7 +198,7 @@ namespace SysBot.Pokemon
         }
 
         public readonly string[] MarkTitle =
-{
+        {
             " the Peckish"," the Sleepy"," the Dozy"," the Early Riser"," the Cloud Watcher"," the Sodden"," the Thunderstruck"," the Snow Frolicker"," the Shivering"," the Parched"," the Sandswept"," the Mist Drifter",
             " the Chosen One"," the Catch of the Day"," the Curry Connoisseur"," the Sociable"," the Recluse"," the Rowdy"," the Spacey"," the Anxious"," the Giddy"," the Radiant"," the Serene"," the Feisty"," the Daydreamer",
             " the Joyful"," the Furious"," the Beaming"," the Teary-Eyed"," the Chipper"," the Grumpy"," the Scholar"," the Rampaging"," the Opportunist"," the Stern"," the Kindhearted"," the Easily Flustered"," the Driven",

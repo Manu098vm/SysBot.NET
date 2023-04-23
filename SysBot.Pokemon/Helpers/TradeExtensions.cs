@@ -230,7 +230,12 @@ namespace SysBot.Pokemon
 
             lock (_syncLog)
             {
-                bool mark = pk is PK8 pk8 && pk8.HasEncounterMark();
+                bool mark = false;
+                if (pk is PK8)
+                    mark = pk is PK8 pk8 && pk8.HasEncounterMark();
+                if (pk is PK9)
+                    mark = pk is PK9 pk9 && pk9.HasEncounterMark();
+
                 var content = File.ReadAllText(filepath).Split('\n').ToList();
                 var splitTotal = content[0].Split(',');
                 content.RemoveRange(0, 3);

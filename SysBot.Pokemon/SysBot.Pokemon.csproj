@@ -1,6 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<ItemGroup>
+	  <Compile Remove="SV\BotEncounter\**" />
+	  <EmbeddedResource Remove="SV\BotEncounter\**" />
+	  <None Remove="SV\BotEncounter\**" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<None Remove="SV\BotRaid\BanList\Resources\languages.json" />
 		<None Remove="SV\BotRaid\BanList\Resources\substitutionTable.json" />
 		<None Remove="SWSH\BotDen\FlatbuffersResource\shieldEnc.bin" />

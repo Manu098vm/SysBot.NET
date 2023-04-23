@@ -19,10 +19,10 @@ namespace SysBot.Pokemon.Discord
             public readonly string ChannelName;
             public readonly Action<string> Action;
             public readonly Action<string, Embed> EmbedAction;
-            public readonly Action<MemoryStream, string, EmbedBuilder> RaidAction;
+            public readonly Action<byte[], string, EmbedBuilder> RaidAction;
             public string EmbedResult = string.Empty;
 
-            public EchoChannel(ulong channelId, string channelName, Action<string> action, Action<string, Embed> embedaction, Action<MemoryStream, string, EmbedBuilder> raidAction)
+            public EchoChannel(ulong channelId, string channelName, Action<string> action, Action<string, Embed> embedaction, Action<byte[], string, EmbedBuilder> raidAction)
             {
                 ChannelID = channelId;
                 ChannelName = channelName;
@@ -70,11 +70,11 @@ namespace SysBot.Pokemon.Discord
         {
             void Echo(string msg) => c.SendMessageAsync(msg);
             void EchoEmbed(string ping, Embed embed) => c.SendMessageAsync(ping, false, embed);
-            void RaidEmbedAsync(MemoryStream bytes, string fileName, EmbedBuilder embed) => c.SendFileAsync(bytes, fileName, "", false, embed: embed.Build()).ConfigureAwait(false);
+            async Task RaidEmbedAsync(byte[] bytes, string fileName, EmbedBuilder embed) => await c.SendFileAsync(new MemoryStream(bytes), fileName, "", false, embed: embed.Build()).ConfigureAwait(false);
 
             Action<string> l = Echo;
             Action<string, Embed> lb = EchoEmbed;
-            Action<MemoryStream, string, EmbedBuilder> rb = RaidEmbedAsync;
+            Action<byte[], string, EmbedBuilder> rb = async (bytes, fileName, embed) => await RaidEmbedAsync(bytes, fileName, embed);
             EchoUtil.Forwarders.Add(l);
             EchoUtil.EmbedForwarders.Add(lb);
             EchoUtil.RaidForwarders.Add(rb);

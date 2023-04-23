@@ -29,6 +29,9 @@ namespace SysBot.Pokemon
             StopConditionSettings.ReadUnwantedMarks(Hub.Config.StopConditions, out UnwantedMarks);
         }
 
+        // Cached offsets that stay the same per session.
+        protected ulong OverworldOffset;
+
         private int encounterCount;
 
         public override async Task MainLoop(CancellationToken token)

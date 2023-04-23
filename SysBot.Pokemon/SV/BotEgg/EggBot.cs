@@ -31,13 +31,13 @@ namespace SysBot.Pokemon
         private int sandwichcount = 0;
         private const int InjectBox = 0;
         private const int InjectSlot = 0;
-        private readonly uint EggData = 0x044AAE00;
+        private readonly uint EggData = 0x044C12D8;
         private PK9 prevShiny = new();
         private static readonly PK9 Blank = new();
-        private readonly byte[] BlankVal = { 0x01 };
-        private const string TextBox = "[[[[[main+44CEE30]+10]+3D8]+4C8]+30]";
-        private const string B1S1 = "[[[main+44A98C8]+130]+9B0]";
+        private int PicnicVal = 0;
+        private const string TextBox = "[[[[[main+44E5310]+10]+670]+6D8]+30]";
         private byte[]? TextVal = Array.Empty<byte>();
+        private ulong BoxStartOffset;
         private ulong OverworldOffset;
 
         public override async Task MainLoop(CancellationToken token)
@@ -46,7 +46,7 @@ namespace SysBot.Pokemon
 
             Log("Identifying trainer data of the host console.");
             await IdentifyTrainer(token).ConfigureAwait(false);
-            OverworldOffset = await SwitchConnection.PointerAll(Offsets.OverworldPointer, token).ConfigureAwait(false);
+            await InitializeSessionOffsets(token).ConfigureAwait(false);
 
             if (Settings.EggBotMode == EggMode.CollectAndDump)
                 await SetupBoxState(token).ConfigureAwait(false);
@@ -84,7 +84,8 @@ namespace SysBot.Pokemon
         {
 
             await SetCurrentBox(0, token).ConfigureAwait(false);
-            await SwitchConnection.WriteBytesMainAsync(BlankVal, Offsets.LoadedIntoDesiredState, token).ConfigureAwait(false);
+            PicnicVal = await PicnicState(token).ConfigureAwait(false);
+            Log($"Starting value is {PicnicVal}.");
 
             var mode = Settings.EggBotMode;
             if (mode == EggMode.WaitAndClose && Settings.ContinueAfterMatch == ContinueAfterMatch.Continue)
@@ -152,7 +153,7 @@ namespace SysBot.Pokemon
                     overworldWaitCycles = 0;
                     Log("Failed to return to the overworld after 1 minute.  Forcing a game reset.");
                     await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
-                    OverworldOffset = await SwitchConnection.PointerAll(Offsets.OverworldPointer, token).ConfigureAwait(false);  // Re-acquire overworld offset to escape the while loop
+                    await InitializeSessionOffsets(token).ConfigureAwait(false);  // Re-acquire overworld offset to escape the while loop
                     hasReset = true;
                 }
             }
@@ -212,8 +213,8 @@ namespace SysBot.Pokemon
                     {                        
                         waiting = 0;
                         eggcount++;
-                        var print = Hub.Config.StopConditions.GetSpecialPrintName(pk);
-                        Log($"Encounter: {eggcount}{Environment.NewLine}{print}");
+                        var print = $"Encounter: {eggcount}{Environment.NewLine}{Hub.Config.StopConditions.GetSpecialPrintName(pk)}{Environment.NewLine}Ball: {(Ball)pk.Ball}";
+                        Log(print);
                         Settings.AddCompletedEggs();
                         TradeExtensions<PK9>.EncounterLogs(pk, "EncounterLogPretty_EggSV.txt");
                         TradeExtensions<PK9>.EncounterScaleLogs(pk, "EncounterLogScalePretty.txt");
@@ -275,7 +276,7 @@ namespace SysBot.Pokemon
         private async Task RecoveryReset(CancellationToken token)
         {        
             await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
-            OverworldOffset = await SwitchConnection.PointerAll(Offsets.OverworldPointer, token).ConfigureAwait(false);
+            await InitializeSessionOffsets(token).ConfigureAwait(false);
             await Task.Delay(1_000, token).ConfigureAwait(false);
             await Click(X, 2_000, token).ConfigureAwait(false);
             await Click(DRIGHT, 0_250, token).ConfigureAwait(false);
@@ -359,6 +360,8 @@ namespace SysBot.Pokemon
                 while (IsWaiting)
                     await Task.Delay(1_000, token).ConfigureAwait(false);
 
+                for (int i = 0; i < 2; i++)
+                    await Click(B, 0_500, token).ConfigureAwait(false);
                 await Click(HOME, 1_000, token).ConfigureAwait(false);
             }
 
@@ -383,12 +386,6 @@ namespace SysBot.Pokemon
         {
             var Data = await SwitchConnection.ReadBytesMainAsync(Offsets.LoadedIntoDesiredState, 1, token).ConfigureAwait(false);
             return Data[0]; // 1 when in picnic, 2 in sandwich menu, 3 when eating, 2 when done eating
-        }
-
-        private async Task<bool> IsInPicnic(CancellationToken token)
-        {
-            var Data = await SwitchConnection.ReadBytesMainAsync(Offsets.LoadedIntoDesiredState, 1, token).ConfigureAwait(false);
-            return Data[0] == 0x01; // 1 when in picnic, 2 in sandwich menu, 3 when eating, 2 when done eating
         }
 
         private async Task MakeSandwich(CancellationToken token)
@@ -428,7 +425,7 @@ namespace SysBot.Pokemon
                 await SetStick(LEFT, 0, 30000, 1_000, token).ConfigureAwait(false); // Scroll to the absolute top
             await SetStick(LEFT, 0, 0, 0, token).ConfigureAwait(false);   
 
-            while (await PicnicState(token).ConfigureAwait(false) == 2) // Until we start eating the sandwich
+            while (await PicnicState(token).ConfigureAwait(false) == PicnicVal + 1) // Until we start eating the sandwich
             {
                 await SetStick(LEFT, 0, -5000, 0_300, token).ConfigureAwait(false); // Scroll down slightly and press A a few times; repeat until un-stuck
                 await SetStick(LEFT, 0, 0, 0, token).ConfigureAwait(false);
@@ -437,16 +434,14 @@ namespace SysBot.Pokemon
                     await Click(A, 0_800, token).ConfigureAwait(false);
             }
 
-            while (await PicnicState(token).ConfigureAwait(false) == 3)  // eating the sandwich
+            while (await PicnicState(token).ConfigureAwait(false) == PicnicVal + 2)  // eating the sandwich
                 await Task.Delay(1_000, token).ConfigureAwait(false);
 
             sandwichcount++;
             Log($"Sandwiches Made: {sandwichcount}");
 
-            while (!await IsInPicnic(token).ConfigureAwait(false)) // Acknowledge the sandwich and return to the picnic
-            {
-                await Click(A, 5_000, token).ConfigureAwait(false); // Wait a long time to give the flag a chance to update and avoid sandwich re-entry
-            }
+            while (await PicnicState(token).ConfigureAwait(false) != PicnicVal) // Acknowledge the sandwich and return to the picnic            
+                await Click(A, 5_000, token).ConfigureAwait(false); // Wait a long time to give the flag a chance to update and avoid sandwich re-entry            
 
             await Task.Delay(2_500, token).ConfigureAwait(false);
             await SetStick(LEFT, 0, -10000, 0_500, token).ConfigureAwait(false); // Face down to basket
@@ -463,9 +458,15 @@ namespace SysBot.Pokemon
             await Click(A, 0_500, token).ConfigureAwait(false);
         }
 
+        private async Task InitializeSessionOffsets(CancellationToken token)
+        {
+            BoxStartOffset = await SwitchConnection.PointerAll(Offsets.BoxStartPokemonPointer, token).ConfigureAwait(false);
+            OverworldOffset = await SwitchConnection.PointerAll(Offsets.OverworldPointer, token).ConfigureAwait(false);
+            Log("Caching offsets complete!");
+        }
+
         private async Task RetrieveEgg(bool match, CancellationToken token)
         {
-            var b1s1 = await GetPointerAddress(B1S1, token).ConfigureAwait(false);
             var ofs = await GetPointerAddress(TextBox, token).ConfigureAwait(false);
             var text = await SwitchConnection.ReadBytesAbsoluteAsync(ofs, 4, token).ConfigureAwait(false);
 
@@ -476,7 +477,7 @@ namespace SysBot.Pokemon
                 {
                     await Click(A, 1_500, token).ConfigureAwait(false);
 
-                    var dumpmon = await ReadBoxPokemonSV(b1s1, 344, token).ConfigureAwait(false);
+                    var dumpmon = await ReadBoxPokemonSV(BoxStartOffset, 344, token).ConfigureAwait(false);
                     if (dumpmon != null && (Species)dumpmon.Species != Species.None)
                     {
                         DumpPokemon(DumpSetting.DumpFolder, "eggs", dumpmon);

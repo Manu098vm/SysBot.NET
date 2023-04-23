@@ -38,6 +38,7 @@ namespace SysBot.Pokemon
             if (StopSettings.MarkOnly)
                 StopSettings.MarkOnly = false;
 
+            await InitializeSessionOffsets(token).ConfigureAwait(false);
             await SetCurrentBox(0, token).ConfigureAwait(false);
             var existing = await ReadBoxPokemon(0, 0, token).ConfigureAwait(false);
             if (Hub.Config.Folder.Dump && existing.Species != 0 && existing.ChecksumValid)
@@ -58,13 +59,20 @@ namespace SysBot.Pokemon
             await DoCurryMonEncounter(ingrIndex, berryIndex, berryCount, ingredientCount, token).ConfigureAwait(false);
         }
 
+        // For pointer offsets that don't change per session are accessed frequently, so set these each time we start.
+        private async Task InitializeSessionOffsets(CancellationToken token)
+        {
+            Log("Caching session offsets...");
+            OverworldOffset = await SwitchConnection.PointerAll(Offsets.OverworldPointer, token).ConfigureAwait(false);
+        }
+
         private async Task DoCurryMonEncounter(int ingrIndex, int berryIndex, int berryCount, int ingredientCount, CancellationToken token)
         {
             bool firstRun = true;
             PK8? comparison = null;
             while (!token.IsCancellationRequested && Config.NextRoutineType == PokeRoutineType.CurryBot)
             {
-                if (await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
+                if (await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
                 {
                     Log("Entering camp...");
                     await Click(X, 2_000, token).ConfigureAwait(false);
