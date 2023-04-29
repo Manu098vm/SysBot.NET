@@ -95,6 +95,9 @@ namespace SysBot.Pokemon
         [Category(Channels), Description("Echo channels that will log special messages.")]
         public RemoteControlAccessList EchoChannels { get; set; } = new();
 
+        [Category(Channels), Description("Echo channels that will log special encounter messages.")]
+        public RemoteControlAccessList EncounterEchoChannels { get; set; } = new();
+
         [Category(Channels), Description("Channel IDs where TradeCord commands are allowed.")]
         public RemoteControlAccessList TradeCordChannels { get; set; } = new();
 

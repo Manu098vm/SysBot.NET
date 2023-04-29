@@ -14,6 +14,7 @@ namespace SysBot.Pokemon
     public abstract class PokeRoutineExecutor9SV : PokeRoutineExecutor<PK9>
     {
         protected PokeDataOffsetsSV Offsets { get; } = new();
+        public ulong returnOfs = 0;
         protected PokeRoutineExecutor9SV(PokeBotState cfg) : base(cfg)
         {
         }
@@ -335,19 +336,25 @@ namespace SysBot.Pokemon
             public int Size { get; set; }
         }
 
-        public async Task<byte[]> ReadBlock(ulong baseBlock, DataBlock block, CancellationToken token)
+        public async Task<byte[]> ReadBlock(ulong baseBlock, DataBlock block, bool init, CancellationToken token)
         {
-            return await ReadEncryptedBlock(baseBlock, block, token).ConfigureAwait(false);
+            return await ReadEncryptedBlock(baseBlock, block, init, token).ConfigureAwait(false);
         }
 
-        private async Task<byte[]> ReadEncryptedBlock(ulong baseBlock, DataBlock block, CancellationToken token)
+        private async Task<byte[]> ReadEncryptedBlock(ulong baseBlock, DataBlock block, bool init, CancellationToken token)
         {
-            var address = await SearchSaveKey(baseBlock, block.Key, token).ConfigureAwait(false);
-            address = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(address + 8, 0x8, token).ConfigureAwait(false), 0);
-            var header = await SwitchConnection.ReadBytesAbsoluteAsync(address, 5, token).ConfigureAwait(false);
+            if (init)
+            {
+                var address = await SearchSaveKey(baseBlock, block.Key, token).ConfigureAwait(false);
+                address = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(address + 8, 0x8, token).ConfigureAwait(false), 0);
+                returnOfs = address;
+                Log($"Init Address found at {returnOfs}");
+            }
+  
+            var header = await SwitchConnection.ReadBytesAbsoluteAsync(returnOfs, 5, token).ConfigureAwait(false);
             header = DecryptBlock(block.Key, header);
             var size = ReadUInt32LittleEndian(header.AsSpan()[1..]);
-            var data = await SwitchConnection.ReadBytesAbsoluteAsync(address, 5 + (int)size, token).ConfigureAwait(false);
+            var data = await SwitchConnection.ReadBytesAbsoluteAsync(returnOfs, 5 + (int)size, token).ConfigureAwait(false);
             var res = DecryptBlock(block.Key, data)[5..];
 
             return res;

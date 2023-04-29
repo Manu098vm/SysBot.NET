@@ -25,8 +25,11 @@ namespace SysBot.Pokemon
         [Category(Overworld), Description("Select which location you are scanning.")]
         public Location LocationSelection { get; set; } = Location.NonAreaZero;
 
-        [Category(Overworld), Description("When enabled, the bot will stop when encounter has a Scale of XXXS or XXXL.")]
+        [Category(Overworld), Description("When enabled, the bot will stop when encounter has a Scale of XXXS or XXXL and matches StopConditions.")]
         public bool StopOnMinMaxScale { get; set; } = false;
+
+        [Category(Overworld), Description("When enabled, the bot will stop for 3 Segment Dunsparce or Family of Three Maus and matches StopConditions.")]
+        public bool StopOnOneInOneHundredOnly { get; set; } = false;
 
         [Category(Overworld), Description("When enabled, the bot will make a sandwich. If false the bot will stop after 30 minutes.")]
         public bool MakeASandwich { get; set; } = true;
@@ -37,14 +40,14 @@ namespace SysBot.Pokemon
         [Category(Overworld), Description("Movement Filters"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
         public MovementFiltersCategory MovementFilters { get; set; } = new();
 
-        [Category(Overworld), Description("Set your Switch Date/Time format in the Date/Time settings. The day will automatically rollback by 1 if the Date changes.")]
-        public DTFormat DateTimeFormat { get; set; } = DTFormat.MMDDYY;
-
         [Category(Overworld), Description("When enabled, the bot will check if our dayseed changes to attempt preventing a lost outbreak.")]
         public bool CheckForRollover { get; set; } = false;
 
+        [Category(Overworld), Description("Set your Switch Date/Time format in the Date/Time settings. The day will automatically rollback by 1 if the Date changes.")]
+        public DTFormat DateTimeFormat { get; set; } = DTFormat.MMDDYY;
+
         [Category(Overworld), Description("Time to scroll down duration in milliseconds for accessing date/time settings during rollover correction. You want to have it overshoot the Date/Time setting by 1, as it will click DUP after scrolling down. [Default: 930ms]")]
-        public int HoldTimeForRollover { get; set; } = 930;
+        public int HoldTimeForRollover { get; set; } = 900;
 
         [Category(Overworld), Description("If true, start the bot when you are on the HOME screen with the game closed. The bot will only run the rollover routine so you can try to configure accurate timing.")]
         public bool ConfigureRolloverCorrection { get; set; } = false;

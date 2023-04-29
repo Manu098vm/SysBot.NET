@@ -28,7 +28,7 @@ namespace SysBot.Pokemon
             Settings = hub.Config.RaidSV;
         }
 
-        private const string RaidBotVersion = "Version 0.4.1";
+        private const string RaidBotVersion = "Version 0.4.20";
         private int RaidsAtStart;
         private int RaidCount;
         private int WinCount;
@@ -45,7 +45,6 @@ namespace SysBot.Pokemon
         private ulong TeraRaidBlockOffset;
         private readonly ulong[] TeraNIDOffsets = new ulong[3];
         private string TeraRaidCode { get; set; } = string.Empty;
-        private List<byte[]> seedList = new();
 
         public override async Task MainLoop(CancellationToken token)
         {
@@ -98,90 +97,106 @@ namespace SysBot.Pokemon
             StartTime = DateTime.Now;
             var dayRoll = 0;
             RotationCount = 0;
-            seedList = new();
             while (!token.IsCancellationRequested)
             {
-                // Initialize offsets at the start of the routine and cache them.
-                await InitializeSessionOffsets(token).ConfigureAwait(false);
-                if (RaidCount == 0)
+                try
                 {
-                    TodaySeed = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(TeraRaidBlockOffset, 8, token).ConfigureAwait(false), 0);
-                    Log($"Today Seed: {TodaySeed:X8}");
-                }
 
-                var currentSeed = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(TeraRaidBlockOffset, 8, token).ConfigureAwait(false), 0);
-                if (TodaySeed != currentSeed)
-                {
-                    var msg = $"Current Today Seed {currentSeed:X8} does not match Starting Today Seed: {TodaySeed:X8} after rolling back 1 day. ";
-                    if (dayRoll != 0)
+                    // Initialize offsets at the start of the routine and cache them.
+                    await InitializeSessionOffsets(token).ConfigureAwait(false);
+                    if (RaidCount == 0)
                     {
-                        Log(msg + "Stopping routine for lost raid.");
-                        return;
-                    }
-                    Log(msg);
-                    await CloseGame(Hub.Config, token).ConfigureAwait(false);
-                    await RolloverCorrectionSV(token).ConfigureAwait(false);
-                    await StartGameRaid(Hub.Config, token).ConfigureAwait(false);
-
-                    dayRoll++;
-                    continue;
-                }
-
-                // Get initial raid counts for comparison later.
-                await CountRaids(null, false, token).ConfigureAwait(false);
-
-                // Clear NIDs.
-                await SwitchConnection.WriteBytesAbsoluteAsync(new byte[32], TeraNIDOffsets[0], token).ConfigureAwait(false);
-
-                // Connect online and enter den.
-                if (!await PrepareForRaid(token).ConfigureAwait(false))
-                {
-                    Log("Failed to prepare the raid, rebooting the game.");
-                    await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
-                    continue;
-                }
-
-                // Wait until we're in lobby.
-                if (!await GetLobbyReady(token).ConfigureAwait(false))
-                    continue;
-
-                // Read trainers until someone joins.
-                (partyReady, lobbyTrainers) = await ReadTrainers(token).ConfigureAwait(false);
-                if (!partyReady)
-                {
-                    if (Settings.RaidSeedRotation.Length == 0)
-                    {
-                        // Should add overworld recovery with a game restart fallback.
-                        await RegroupFromBannedUser(token).ConfigureAwait(false);
-
-                        if (!await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
-                        {
-                            Log("Something went wrong, attempting to recover.");
-                            await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
-                            continue;
-                        }
-
-                        // Clear trainer OTs.
-                        Log("Clearing stored OTs");
-                        for (int i = 0; i < 3; i++)
-                        {
-                            var ptr = new long[] { 0x44B97D8, 0x48, 0xE0 + (i * 0x30), 0x0 };
-                            await SwitchConnection.PointerPoke(new byte[16], ptr, token).ConfigureAwait(false);
-                        }
+                        TodaySeed = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(TeraRaidBlockOffset, 8, token).ConfigureAwait(false), 0);
+                        Log($"Today Seed: {TodaySeed:X8}");
                     }
 
-                    else if (Settings.RaidSeedRotation.Length != 0)
+                    var currentSeed = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(TeraRaidBlockOffset, 8, token).ConfigureAwait(false), 0);
+                    if (TodaySeed != currentSeed)
                     {
-                        Log("Lobby was empty.. Resetting game and moving on to next rotation.");
-                        RotationCount++;
+                        var msg = $"Current Today Seed {currentSeed:X8} does not match Starting Today Seed: {TodaySeed:X8} after rolling back 1 day. ";
+                        if (dayRoll != 0)
+                        {
+                            Log(msg + "Stopping routine for lost raid.");
+                            return;
+                        }
+                        Log(msg);
                         await CloseGame(Hub.Config, token).ConfigureAwait(false);
+                        await RolloverCorrectionSV(token).ConfigureAwait(false);
                         await StartGameRaid(Hub.Config, token).ConfigureAwait(false);
+
+                        dayRoll++;
+                        continue;
                     }
 
-                    continue;
-                }
+                    // Get initial raid counts for comparison later.
+                    await CountRaids(null, false, token).ConfigureAwait(false);
 
-                await CompleteRaid(lobbyTrainers, token).ConfigureAwait(false);
+                    // Clear NIDs.
+                    await SwitchConnection.WriteBytesAbsoluteAsync(new byte[32], TeraNIDOffsets[0], token).ConfigureAwait(false);
+
+                    // Connect online and enter den.
+                    if (!await PrepareForRaid(token).ConfigureAwait(false))
+                    {
+                        Log("Failed to prepare the raid, rebooting the game.");
+                        await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
+                        continue;
+                    }
+
+                    // Wait until we're in lobby.
+                    if (!await GetLobbyReady(token).ConfigureAwait(false))
+                        continue;
+
+                    // Read trainers until someone joins.
+                    (partyReady, lobbyTrainers) = await ReadTrainers(token).ConfigureAwait(false);
+                    if (!partyReady)
+                    {
+                        if (Settings.RaidEmbedParameters.Count is 1)
+                        {
+                            // Should add overworld recovery with a game restart fallback.
+                            await RegroupFromBannedUser(token).ConfigureAwait(false);
+
+                            if (!await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
+                            {
+                                Log("Something went wrong, attempting to recover.");
+                                await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
+                                continue;
+                            }
+
+                            // Clear trainer OTs.
+                            Log("Clearing stored OTs");
+                            for (int i = 0; i < 3; i++)
+                            {
+                                List<long> ptr = new(Offsets.Trader2MyStatusPointer);
+                                ptr[2] += i * 0x30;
+                                await SwitchConnection.PointerPoke(new byte[16], ptr, token).ConfigureAwait(false);
+                            }
+                        }
+
+                        else if (Settings.RaidEmbedParameters.Count > 1)
+                        {
+                            Log("Lobby was empty.. Resetting game and moving on to next rotation.");
+                            RotationCount++;
+                            await CloseGame(Hub.Config, token).ConfigureAwait(false);
+                            await StartGameRaid(Hub.Config, token).ConfigureAwait(false);
+                        }
+
+                        continue;
+                    }
+
+                    await CompleteRaid(lobbyTrainers, token).ConfigureAwait(false);
+                }
+                catch
+                {
+                    var attempts = Hub.Config.Timings.ReconnectAttempts;
+                    var delay = Hub.Config.Timings.ExtraReconnectDelay;
+                    var protocol = Config.Connection.Protocol;
+                    if (!await TryReconnect(attempts, delay, protocol, token).ConfigureAwait(false))
+                        return;
+
+                    Log($"Successful reconnect on lost connection. Attempting full recovery.");
+
+                    await ReOpenGame(Hub.Config, token).ConfigureAwait(false); // Reset game to resync 
+                }
             }
         }
 
@@ -217,8 +232,9 @@ namespace SysBot.Pokemon
                         if (nid == 0)
                             continue;
 
-                        var pointer = new long[] { 0x44B97D8, 0x48, 0xE0 + (i * 0x30), 0x0 };
-                        var trainer = await GetTradePartnerMyStatus(pointer, token).ConfigureAwait(false);
+                        List<long> ptr = new(Offsets.Trader2MyStatusPointer);
+                        ptr[2] += i * 0x30;
+                        var trainer = await GetTradePartnerMyStatus(ptr, token).ConfigureAwait(false);
 
                         if (string.IsNullOrWhiteSpace(trainer.OT))
                             continue;
@@ -272,7 +288,6 @@ namespace SysBot.Pokemon
 
             if (Settings.KeepDaySeed)
                 OverrideTodaySeed();
-
         }
 
         private void ApplyPenalty(List<(ulong, TradeMyStatus)> trainers)
@@ -289,7 +304,7 @@ namespace SysBot.Pokemon
                     Log($"Player: {name} completed the raid with catch count: {Count}.");
 
                     if (Settings.CatchLimit != 0 && Count == Settings.CatchLimit)
-                        Log($"Player: {name} has met the catch limit {Count}/{Settings.CatchLimit}, adding to the block list for this session for {Settings.RaidEmbedParameters[RotationCount].RaidSpecies}.");
+                        Log($"Player: {name} has met the catch limit {Count}/{Settings.CatchLimit}, adding to the block list for this session for {Settings.RaidEmbedParameters[RotationCount].Species}.");
                 }
             }
         }
@@ -297,22 +312,32 @@ namespace SysBot.Pokemon
         private async void OverrideTodaySeed()
         {
             var todayoverride = BitConverter.GetBytes(TodaySeed);
-            var ptr = new long[] { 0x44BFBA8, 0x180, 0x48 };
-            await SwitchConnection.PointerPoke(todayoverride, ptr, CancellationToken.None).ConfigureAwait(false);
+            List<long> ptr = new(Offsets.TeraRaidBlockPointer);
+            ptr[2] += 0x8;
+            await SwitchConnection.PointerPoke(todayoverride, ptr, CancellationToken.None).ConfigureAwait(false);           
         }
 
         private async void OverrideSeedIndex(int index)
         {
-            var ptr = new long[] { 0x44BFBA8, 0x180, 0x40 + ((index + 1) * 0x20) };
-            if (RotationCount >= Settings.RaidSeedRotation.Length)
+            var token = CancellationToken.None;
+            List<long> ptr = new(Offsets.TeraRaidBlockPointer);
+            ptr[2] = 0x40 + ((index + 1) * 0x20);
+            if (RotationCount >= Settings.RaidEmbedParameters.Count)
                 RotationCount = 0;
-            byte[] inj = BitConverter.GetBytes(Settings.RaidSeedRotation[RotationCount]);
-            var currseed = await SwitchConnection.PointerPeek(4, ptr, CancellationToken.None).ConfigureAwait(false);
-            Log($"Replacing {BitConverter.ToString(currseed)} with {BitConverter.ToString(inj)}");
-            var ptr2 = new long[] { 0x44BFBA8, 0x180, 0x40 + ((index + 1) * 0x20) - 0x10 };
-            await SwitchConnection.PointerPoke(seedList[index], ptr2, CancellationToken.None).ConfigureAwait(false);
-            await Task.Delay(0_500, CancellationToken.None).ConfigureAwait(false);
-            await SwitchConnection.PointerPoke(inj, ptr, CancellationToken.None).ConfigureAwait(false);
+            byte[] inj = BitConverter.GetBytes(Settings.RaidEmbedParameters[RotationCount].Seed);
+            var currseed = await SwitchConnection.PointerPeek(4, ptr, token).ConfigureAwait(false);
+            Log($"Replacing {BitConverter.ToString(currseed)} with {BitConverter.ToString(inj)}.");            
+            await SwitchConnection.PointerPoke(inj, ptr, token).ConfigureAwait(false);
+
+            var ptr2 = ptr;
+            ptr2[2] += 0x08;
+            var crystal = BitConverter.GetBytes((int)Settings.RaidEmbedParameters[RotationCount].CrystalType);
+            var currcrystal = await SwitchConnection.PointerPeek(1, ptr2, token).ConfigureAwait(false);
+            if (currcrystal != crystal)
+            {                
+                Log($"Replacing Raid Crystal type from {BitConverter.ToString(currcrystal)} to {BitConverter.ToString(crystal)}.");
+                await SwitchConnection.PointerPoke(crystal, ptr2, token).ConfigureAwait(false);
+            }
         }
 
         private async Task CountRaids(List<(ulong, TradeMyStatus)>? trainers, bool rotate, CancellationToken token)
@@ -322,13 +347,8 @@ namespace SysBot.Pokemon
             for (int i = 0; i < 69; i++)
             {
                 var seed = BitConverter.ToUInt32(data.Slice(32 + (i * 32), 4));
-                if (seed != 0)
-                {
-                    seeds.Add(seed);
-                    var current = data.Slice(32 + (i * 32) - 16, 20);
-                    if (!seedList.Contains(current))
-                        seedList.Add(current);
-                }
+                if (seed != 0)                
+                    seeds.Add(seed);                
                 if (seed == 0)
                 {
                     Log($"Seed rotation will occur at index {i}");
@@ -356,13 +376,15 @@ namespace SysBot.Pokemon
                     if (trainers.Count > 0 || TodaySeed != BitConverter.ToUInt64(data.Slice(0, 8)) && RaidsAtStart == seeds.Count)
                         ApplyPenalty(trainers);
 
-                    if (rotate && Settings.RaidSeedRotation.Length > 1)
+                    if (rotate && Settings.RaidEmbedParameters.Count > 1)
                     {
                         Log($"Seed index to replace found at location {SeedIndexToReplace}");
                         RotationCount++;
-                        if (RotationCount >= Settings.RaidSeedRotation.Length)
+                        if (RotationCount >= Settings.RaidEmbedParameters.Count)
+                        {
                             RotationCount = 0;
-                        Log($"RotationCount is {RotationCount}");
+                            Log($"Rotation Count = Raid Parameter Count. Resetting Rotation Count to {RotationCount}");
+                        }
 
                         await EnqueueEmbed(null, "", false, false, true, token).ConfigureAwait(false);
                     }
@@ -375,9 +397,44 @@ namespace SysBot.Pokemon
             }
         }
 
+        private async void InjectPartyPk(string battlepk)
+        {
+            var set = new ShowdownSet(battlepk);
+            var template = AutoLegalityWrapper.GetTemplate(set);
+            PK9 pk = (PK9)HostSAV.GetLegal(template, out _);
+            pk.ResetPartyStats();
+            var offset = await SwitchConnection.PointerAll(Offsets.BoxStartPokemonPointer, CancellationToken.None).ConfigureAwait(false);
+            await SwitchConnection.WriteBytesAbsoluteAsync(pk.EncryptedBoxData, offset, CancellationToken.None).ConfigureAwait(false);
+        }
+
         private async Task<bool> PrepareForRaid(CancellationToken token)
         {
             Log("Preparing lobby...");
+
+            if (Settings.RaidEmbedParameters[RotationCount].PartyPK.Length > 0)
+            {
+                await SetCurrentBox(0, token).ConfigureAwait(false);
+                var res = string.Join("\n", Settings.RaidEmbedParameters[RotationCount].PartyPK);
+                if (res.Length > 4096)
+                    res = res[..4096];
+                InjectPartyPk(res);
+
+                await Click(X, 2_000, token).ConfigureAwait(false);
+                await Click(DRIGHT, 0_500, token).ConfigureAwait(false);
+                Log("Scrolling through menus...");
+                await SetStick(SwitchStick.LEFT, 0, -32000, 1_000, token).ConfigureAwait(false);
+                await SetStick(SwitchStick.LEFT, 0, 0, 0, token).ConfigureAwait(false);
+                Log("Tap tap...");
+                for (int i = 0; i < 2; i++)
+                    await Click(DDOWN, 0_500, token).ConfigureAwait(false);
+                await Click(A, 3_500, token).ConfigureAwait(false);
+                await Click(Y, 0_500, token).ConfigureAwait(false);
+                await Click(DLEFT, 0_800, token).ConfigureAwait(false);
+                await Click(Y, 0_500, token).ConfigureAwait(false);
+                for (int i = 0; i < 2; i++)
+                    await Click(B, 1_500, token).ConfigureAwait(false);
+                Log("Battle PK is ready!");
+            }
 
             // Make sure we're connected.
             while (!await IsConnectedOnline(ConnectedOffset, token).ConfigureAwait(false))
@@ -400,7 +457,7 @@ namespace SysBot.Pokemon
             await Click(A, 3_000, token).ConfigureAwait(false);
             await Click(A, 3_000, token).ConfigureAwait(false);
 
-            if (!Settings.CodeTheRaid)
+            if (!Settings.RaidEmbedParameters[RotationCount].IsCoded)
                 await Click(DDOWN, 1_000, token).ConfigureAwait(false);
 
             await Click(A, 8_000, token).ConfigureAwait(false);
@@ -459,7 +516,7 @@ namespace SysBot.Pokemon
                 }
                 if (val == Settings.CatchLimit + 2 && Settings.CatchLimit != 0) // Hard pity - ban user
                 {
-                    msg = $"{trainer.OT} is now banned for repeatedly attempting to go beyond the catch limit for {Settings.RaidEmbedParameters[RotationCount].RaidSpecies} on {DateTime.Now}.";
+                    msg = $"{trainer.OT} is now banned for repeatedly attempting to go beyond the catch limit for {Settings.RaidEmbedParameters[RotationCount].Species} on {DateTime.Now}.";
                     Log(msg);
                     RaiderBanList.List.Add(new() { ID = nid, Name = trainer.OT, Comment = msg });
                     blockResult = false;
@@ -514,13 +571,14 @@ namespace SysBot.Pokemon
                         nid = BitConverter.ToUInt64(data, 0);
                     }
 
-                    var pointer = new long[] { 0x44B97D8, 0x48, 0xE0 + (i * 0x30), 0x0 };
-                    var trainer = await GetTradePartnerMyStatus(pointer, token).ConfigureAwait(false);
+                    List<long> ptr = new(Offsets.Trader2MyStatusPointer);
+                    ptr[2] += i * 0x30;
+                    var trainer = await GetTradePartnerMyStatus(ptr, token).ConfigureAwait(false);
 
                     while (trainer.OT.Length == 0 && (DateTime.Now < endTime))
                     {
                         await Task.Delay(0_500, token).ConfigureAwait(false);
-                        trainer = await GetTradePartnerMyStatus(pointer, token).ConfigureAwait(false);
+                        trainer = await GetTradePartnerMyStatus(ptr, token).ConfigureAwait(false);
                     }
 
                     if (nid != 0 && !string.IsNullOrWhiteSpace(trainer.OT))
@@ -634,18 +692,18 @@ namespace SysBot.Pokemon
         private async Task EnqueueEmbed(List<string>? names, string message, bool hatTrick, bool disband, bool upnext, CancellationToken token)
         {
             // Title can only be up to 256 characters.
-            var title = hatTrick && names is not null ? $"**🪄🎩✨ {names[0]} with the Hat Trick! ✨🎩🪄**" : Settings.RaidEmbedTitle.Length > 0 ? Settings.RaidEmbedTitle : "Tera Raid Notification";
+            var title = hatTrick && names is not null ? $"**🪄🎩✨ {names[0]} with the Hat Trick! ✨🎩🪄**" : Settings.RaidEmbedParameters[RotationCount].Title.Length > 0 ? Settings.RaidEmbedParameters[RotationCount].Title : "Tera Raid Notification";
             if (title.Length > 256)
                 title = title[..256];
 
             // Description can only be up to 4096 characters.
-            var description = Settings.RaidEmbedParameters[RotationCount].RaidDescription.Length > 0 ? string.Join("\n", Settings.RaidEmbedParameters[RotationCount].RaidDescription) : "";
+            var description = Settings.RaidEmbedParameters[RotationCount].Description.Length > 0 ? string.Join("\n", Settings.RaidEmbedParameters[RotationCount].Description) : "";
             if (description.Length > 4096)
                 description = description[..4096];
 
             string code = string.Empty;
             if (names is null)
-                code = $"**{(Settings.CodeTheRaid ? await GetRaidCode(token).ConfigureAwait(false) : "Free For All")}**";
+                code = $"**{(Settings.RaidEmbedParameters[RotationCount].IsCoded ? await GetRaidCode(token).ConfigureAwait(false) : "Free For All")}**";
 
             if (disband) // Wait for trainer to load before disband
                 await Task.Delay(5_000, token).ConfigureAwait(false);
@@ -654,7 +712,7 @@ namespace SysBot.Pokemon
             if (Settings.TakeScreenshot && !upnext)
                 bytes = await SwitchConnection.PixelPeek(token).ConfigureAwait(false) ?? Array.Empty<byte>();
 
-            string disclaimer = Settings.RaidSeedRotation.Length > 1 ? "Disclaimer: Raids are on rotation via seed injection.\n" : "";
+            string disclaimer = Settings.RaidEmbedParameters.Count > 1 ? "Disclaimer: Raids are on rotation via seed injection.\n" : "";
 
             if (upnext)
                 title = "Preparing next raid...";
@@ -698,20 +756,23 @@ namespace SysBot.Pokemon
             var turl = string.Empty;
             var form = string.Empty;
 
-            Log($"Rotation Count: {RotationCount} | Species is {Settings.RaidEmbedParameters[RotationCount].RaidSpecies}");
+            Log($"Rotation Count: {RotationCount} | Species is {Settings.RaidEmbedParameters[RotationCount].Species}");
             PK9 pk = new()
             {
-                Species = (ushort)Settings.RaidEmbedParameters[RotationCount].RaidSpecies,
-                Form = (byte)Settings.RaidEmbedParameters[RotationCount].RaidSpeciesForm
+                Species = (ushort)Settings.RaidEmbedParameters[RotationCount].Species,
+                Form = (byte)Settings.RaidEmbedParameters[RotationCount].SpeciesForm
             };
             if (pk.Form != 0)
                 form = $"-{pk.Form}";
-            if (Settings.RaidEmbedParameters[RotationCount].RaidSpeciesIsShiny == true)
+            if (Settings.RaidEmbedParameters[RotationCount].IsShiny == true)
                 CommonEdits.SetIsShiny(pk, true);
             else
                 CommonEdits.SetIsShiny(pk, false);
 
-            turl = TradeExtensions<PK9>.PokeImg(pk, false, false);
+            if (Settings.RaidEmbedParameters[RotationCount].SpriteAlternateArt && Settings.RaidEmbedParameters[RotationCount].IsShiny)
+                turl = AltPokeImg(pk);
+            else
+                turl = TradeExtensions<PK9>.PokeImg(pk, false, false);
 
             var fileName = $"raidecho{RotationCount}.jpg";
             embed.ThumbnailUrl = turl;
@@ -813,7 +874,7 @@ namespace SysBot.Pokemon
             // Switch Logo and game load screen
             await Task.Delay(16_000 + timing.ExtraTimeLoadGame, token).ConfigureAwait(false);
 
-            if (Settings.RaidSeedRotation.Length > 1)
+            if (Settings.RaidEmbedParameters.Count > 1 && Settings.RaidEmbedParameters[RotationCount].Seed != default)
             {
                 OverrideSeedIndex(SeedIndexToReplace);
                 Log("Seed override completed.");
@@ -850,6 +911,15 @@ namespace SysBot.Pokemon
             if (!valid)
                 return false;
             return await IsOnOverworld(offset, token).ConfigureAwait(false);
+        }
+
+        private static string AltPokeImg(PKM pkm)
+        {
+            string pkmform = string.Empty;
+            if (pkm.Form != 0)
+                pkmform = $"-{pkm.Form}";
+
+            return _ = $"https://raw.githubusercontent.com/zyro670/PokeTextures/main/Placeholder_Sprites/scaled_up_sprites/Shiny/AlternateArt/" + $"{pkm.Species}{pkmform}" + ".png";
         }
     }
 }
