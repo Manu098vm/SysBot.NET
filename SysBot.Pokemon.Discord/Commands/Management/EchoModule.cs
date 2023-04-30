@@ -114,7 +114,7 @@ namespace SysBot.Pokemon.Discord
             AddEncounterEchoChannel(c, cid);
 
             // Add to discord global loggers (saves on program close)
-            SysCordSettings.Settings.EchoChannels.AddIfNew(new[] { GetReference(Context.Channel) });
+            SysCordSettings.Settings.EncounterEchoChannels.AddIfNew(new[] { GetReference(Context.Channel) });
             await ReplyAsync("Added Echo output to this channel!").ConfigureAwait(false);
         }
 
