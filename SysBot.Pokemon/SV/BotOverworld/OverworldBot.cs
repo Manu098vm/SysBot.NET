@@ -251,6 +251,14 @@ namespace SysBot.Pokemon
                         Log("We can't move! Are we in battle? Resetting game to attempt recovery and positioning.");
                         await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
 
+                        if (Settings.LocationSelection == Location.SecretCave)
+                        {
+                            Log("Attempting to reposition map from reset...");
+                            await Click(Y, 2_000, token).ConfigureAwait(false);
+                            await Click(RSTICK, 1_000, token).ConfigureAwait(false);
+                            await Click(B, 2_500, token).ConfigureAwait(false);
+                        }
+
                         GameWasReset = true;
                     }
 

@@ -20,6 +20,9 @@ namespace SysBot.Pokemon
         [Category(Hosting), Description("Amount of raids before updating the ban list. If you want the global ban list off, set this to -1.")]
         public int RaidsBetweenUpdate { get; set; } = 3;
 
+        [Category(Hosting), Description("If true, the bot will notify you if you are not on the latest azure-build of NotForkBot.")]
+        public bool CheckForUpdatedBuild { get; set; } = true;
+
         [Category(Hosting), Description("Raid embed description. Enter your description, species, form, and if shiny here.")]
         public List<RaidParameters> RaidEmbedParameters { get; set; } = new();
 

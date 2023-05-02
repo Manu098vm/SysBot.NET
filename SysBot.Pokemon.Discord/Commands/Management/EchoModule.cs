@@ -90,7 +90,7 @@ namespace SysBot.Pokemon.Discord
         {
             void Echo(string msg) => c.SendMessageAsync(msg);            
             async Task RaidEmbedAsync(byte[] bytes, string fileName, EmbedBuilder embed) => await c.SendFileAsync(new MemoryStream(bytes), fileName, "", false, embed: embed.Build()).ConfigureAwait(false);
-            Action<byte[], string, EmbedBuilder> rb = async (bytes, fileName, embed) => await RaidEmbedAsync(bytes, fileName, embed);
+            Action<byte[], string, EmbedBuilder> rb = async (bytes, fileName, embed) => await RaidEmbedAsync(bytes, fileName, embed).ConfigureAwait(false);
             Action<string> l = Echo;
             EchoUtil.Forwarders.Add(l);
             EchoUtil.RaidForwarders.Add(rb);

@@ -95,13 +95,17 @@ namespace SysBot.Pokemon.Discord
 
                 var specitem = fin.HeldItem != 0 ? $"{SpeciesName.GetSpeciesNameGeneration(fin.Species, 2, fin.Generation <= 8 ? 8 : 9)}{TradeExtensions<T>.FormOutput(fin.Species, fin.Form, out _) + " (" + ShowdownParsing.GetShowdownText(fin).Split('@', '\n')[1].Trim() + ")"}" : $"{SpeciesName.GetSpeciesNameGeneration(fin.Species, 2, fin.Generation <= 8 ? 8 : 9) + TradeExtensions<T>.FormOutput(fin.Species, fin.Form, out _)}{markEntryText}";
 
-                var msg = string.Empty;
+                var msg = "Displaying your ";
                 var mode = info.Type;
                 switch (mode)
                 {
-                    case PokeTradeType.Specific: msg = $"Displaying your request!"; break;
-                    case PokeTradeType.Clone: msg = $"Displaying your clone!"; break;
-                    case PokeTradeType.Display or PokeTradeType.Dump: msg = $"Displaying your trophy!"; break;
+                    case PokeTradeType.Specific: msg = "request!"; break;
+                    case PokeTradeType.Clone: msg = "clone!"; break;
+                    case PokeTradeType.Display: msg = "trophy!"; break;
+                    case PokeTradeType.EtumrepDump or PokeTradeType.Dump or PokeTradeType.Seed: msg = "dump!"; break;
+                    case PokeTradeType.SupportTrade or PokeTradeType.Giveaway: msg = $"gift!"; break;
+                    case PokeTradeType.FixOT: msg = $"fixed OT!"; break;
+                    case PokeTradeType.TradeCord: msg = $"prize!"; break;
                 }
                 string TIDFormatted = fin.Generation >= 7 ? $"{fin.TrainerTID7:000000}" : $"{fin.TID16:00000}";
                 var footer = new EmbedFooterBuilder { Text = $"Trainer Info: {fin.OT_Name}/{TIDFormatted}" };
