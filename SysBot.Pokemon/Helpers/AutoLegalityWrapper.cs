@@ -36,6 +36,9 @@ namespace SysBot.Pokemon
             Legalizer.EnableEasterEggs = cfg.EnableEasterEggs;
             APILegality.AllowTrainerOverride = cfg.AllowTrainerDataOverride;
             APILegality.AllowBatchCommands = cfg.AllowBatchCommands;
+            APILegality.PrioritizeGame = cfg.PrioritizeGame;
+            APILegality.PrioritizeGameVersion = cfg.PrioritizeGameVersion;
+            APILegality.SetBattleVersion = cfg.SetBattleVersion;
             APILegality.Timeout = cfg.Timeout;
         }
 
@@ -64,15 +67,13 @@ namespace SysBot.Pokemon
                         TID16 = TID,
                         SID16 = SID,
                         OT = OT,
+                        Generation = i,
                     };
                     var exist = TrainerSettings.GetSavedTrainerData(v, i, fallback);
                     if (exist is SimpleTrainerInfo) // not anything from files; this assumes ALM returns SimpleTrainerInfo for non-user-provided fake templates.
                         TrainerSettings.Register(fallback);
                 }
             }
-
-            var trainer = TrainerSettings.GetSavedTrainerData(PKX.Generation);
-            RecentTrainerCache.SetRecentTrainer(trainer);
         }
 
         private static void InitializeCoreStrings()

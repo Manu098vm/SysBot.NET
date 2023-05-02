@@ -6,6 +6,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using Discord.Commands;
 
 namespace SysBot.Pokemon.Discord
 {
@@ -15,15 +16,17 @@ namespace SysBot.Pokemon.Discord
         private PokeTradeTrainerInfo Info { get; }
         private int Code { get; }
         private SocketUser Trader { get; }
+        private SocketCommandContext Context { get; }
         public Action<PokeRoutineExecutor<T>>? OnFinish { private get; set; }
         public readonly PokeTradeHub<T> Hub = SysCord<T>.Runner.Hub;
 
-        public DiscordTradeNotifier(T data, PokeTradeTrainerInfo info, int code, SocketUser trader)
+        public DiscordTradeNotifier(T data, PokeTradeTrainerInfo info, int code, SocketUser trader, SocketCommandContext channel)
         {
             Data = data;
             Info = info;
             Code = code;
             Trader = trader;
+            Context = channel;
         }
 
         public void TradeInitialize(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info)
@@ -59,6 +62,70 @@ namespace SysBot.Pokemon.Discord
             Trader.SendMessageAsync(message).ConfigureAwait(false);
             if (result.Species != 0 && Hub.Config.Discord.ReturnPKMs)
                 Trader.SendPKMAsync(result, "Here's what you traded me!").ConfigureAwait(false);
+
+            var SVmon = TradeExtensions<PK9>.SVTrade;
+            var LAmon = TradeExtensions<PA8>.LATrade;
+            var BDSPmon = TradeExtensions<PB8>.BDSPTrade;
+            var SWSHmon = TradeExtensions<PK8>.SWSHTrade;
+            PKM fin = result;
+            switch (result)
+            {
+                case PK9: fin = SVmon; break;
+                case PA8: fin = LAmon; break;
+                case PB8: fin = BDSPmon; break;
+                case PK8: fin = SWSHmon; break;
+            }
+
+            if (fin.Species != 0 && Hub.Config.Trade.TradeDisplay)
+            {
+                var shiny = fin.ShinyXor == 0 ? "■" : fin.ShinyXor <= 16 ? "★" : "";
+                var set = new ShowdownSet($"{fin.Species}");
+                var ballImg = $"https://raw.githubusercontent.com/BakaKaito/HomeImages/main/Ballimg/50x50/" + $"{(Ball)fin.Ball}ball".ToLower() + ".png";
+                var gender = fin.Gender == 0 ? " - (M)" : fin.Gender == 1 ? " - (F)" : "";
+                var pokeImg = TradeExtensions<T>.PokeImg(fin, false, false);
+                var trademessage = $"Pokémon IVs: {fin.IV_HP}/{fin.IV_ATK}/{fin.IV_DEF}/{fin.IV_SPA}/{fin.IV_SPD}/{fin.IV_SPE}\n" +
+                    $"Ability: {(Ability)fin.Ability}\n" +
+                    $"{(Nature)fin.Nature} Nature\n" +
+                    (StopConditionSettings.HasMark((IRibbonIndex)fin, out RibbonIndex mark) ? $"\nPokémon Mark: {mark.ToString().Replace("Mark", "")}{Environment.NewLine}" : "");
+
+                string markEntryText = "";
+                var index = (int)mark - (int)RibbonIndex.MarkLunchtime;
+                if (index > 0)
+                    markEntryText = MarkTitle[index];
+
+                var specitem = fin.HeldItem != 0 ? $"{SpeciesName.GetSpeciesNameGeneration(fin.Species, 2, fin.Generation <= 8 ? 8 : 9)}{TradeExtensions<T>.FormOutput(fin.Species, fin.Form, out _) + " (" + ShowdownParsing.GetShowdownText(fin).Split('@', '\n')[1].Trim() + ")"}" : $"{SpeciesName.GetSpeciesNameGeneration(fin.Species, 2, fin.Generation <= 8 ? 8 : 9) + TradeExtensions<T>.FormOutput(fin.Species, fin.Form, out _)}{markEntryText}";
+
+                var msg = string.Empty;
+                var mode = info.Type;
+                switch (mode)
+                {
+                    case PokeTradeType.Specific: msg = $"Displaying your request!"; break;
+                    case PokeTradeType.Clone: msg = $"Displaying your clone!"; break;
+                    case PokeTradeType.Display or PokeTradeType.Dump: msg = $"Displaying your trophy!"; break;
+                }
+                string TIDFormatted = fin.Generation >= 7 ? $"{fin.TrainerTID7:000000}" : $"{fin.TID16:00000}";
+                var footer = new EmbedFooterBuilder { Text = $"Trainer Info: {fin.OT_Name}/{TIDFormatted}" };
+                var author = new EmbedAuthorBuilder { Name = $"{Context.User.Username}'s Pokémon" };
+                if (!Hub.Config.TradeCord.UseLargerPokeBalls)                
+                    ballImg = "";                
+                author.IconUrl = ballImg;
+                var embed = new EmbedBuilder { Color = fin.IsShiny && fin.ShinyXor == 0 ? Color.Gold : fin.IsShiny ? Color.LighterGrey : Color.Teal, Author = author, Footer = footer, ThumbnailUrl = pokeImg };
+                embed.AddField(x =>
+                {
+                    x.Name = $"{shiny} {specitem}{gender}";
+                    x.Value = trademessage;
+                    x.IsInline = false;
+                });
+
+                Context.Channel.SendMessageAsync(Trader.Username + " - " + msg, embed: embed.Build()).ConfigureAwait(false);
+                switch (fin)
+                {
+                    case PK9: TradeExtensions<PK9>.SVTrade = new(); break;
+                    case PA8: TradeExtensions<PA8>.LATrade = new(); break;
+                    case PB8: TradeExtensions<PB8>.BDSPTrade = new(); break;
+                    case PK8: TradeExtensions<PK8>.SWSHTrade = new(); break;
+                }    
+            }
         }
 
         public void SendNotification(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, string message)
@@ -127,5 +194,13 @@ namespace SysBot.Pokemon.Discord
             OnFinish?.Invoke(routine);
             _ = Task.Run(() => EtumrepUtil.SendEtumrepEmbedAsync(Trader, pkms).ConfigureAwait(false));
         }
+
+        public readonly string[] MarkTitle =
+{
+            " the Peckish"," the Sleepy"," the Dozy"," the Early Riser"," the Cloud Watcher"," the Sodden"," the Thunderstruck"," the Snow Frolicker"," the Shivering"," the Parched"," the Sandswept"," the Mist Drifter",
+            " the Chosen One"," the Catch of the Day"," the Curry Connoisseur"," the Sociable"," the Recluse"," the Rowdy"," the Spacey"," the Anxious"," the Giddy"," the Radiant"," the Serene"," the Feisty"," the Daydreamer",
+            " the Joyful"," the Furious"," the Beaming"," the Teary-Eyed"," the Chipper"," the Grumpy"," the Scholar"," the Rampaging"," the Opportunist"," the Stern"," the Kindhearted"," the Easily Flustered"," the Driven",
+            " the Apathetic"," the Arrogant"," the Reluctant"," the Humble"," the Pompous"," the Lively"," the Worn-Out",
+        };
     }
 }

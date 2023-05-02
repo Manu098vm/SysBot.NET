@@ -498,5 +498,10 @@ namespace SysBot.Pokemon
             bool different = criteriaList.Skip(1).Any(x => x.Species != criteriaList.First().Species);
             return different;
         }
+
+        public static PK8 SWSHTrade = new();
+        public static PB8 BDSPTrade = new();
+        public static PA8 LATrade = new();
+        public static PK9 SVTrade = new();
     }
 }

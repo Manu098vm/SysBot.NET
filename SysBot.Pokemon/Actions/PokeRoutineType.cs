@@ -21,6 +21,8 @@
         Clone = 5,
         /// <summary> Exports files for all data shown to the bot. </summary>
         Dump = 6,
+        /// <summary> Exports files for all data shown to the bot. </summary>
+        Display = 6,
 
         /// <summary> Retrieves eggs from the Day Care. </summary>
         EggFetch = 7,

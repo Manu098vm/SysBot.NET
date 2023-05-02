@@ -49,27 +49,24 @@ namespace SysBot.Pokemon
         public override async Task MainLoop(CancellationToken token)
         {
             await InitializeHardware(Hub.Config.OverworldSV, token).ConfigureAwait(false);
-
             Log("Identifying trainer data of the host console.");
             await IdentifyTrainer(token).ConfigureAwait(false);
             Log("Starting main OverworldBotSV loop.");
             Config.IterateNextRoutine();
-            while (!token.IsCancellationRequested && Config.NextRoutineType == PokeRoutineType.OverworldBot)
+
+            try
             {
-                try
+                await InitializeSessionOffsets(token).ConfigureAwait(false);
+                if (Settings.ConfigureRolloverCorrection)
                 {
-                    await InitializeSessionOffsets(token).ConfigureAwait(false);
-                    if (Settings.ConfigureRolloverCorrection)
-                    {
-                        await RolloverCorrectionSV(token).ConfigureAwait(false);
-                        return;
-                    }
-                    await ScanOverworld(token).ConfigureAwait(false);
+                    await RolloverCorrectionSV(token).ConfigureAwait(false);
+                    return;
                 }
-                catch (Exception e)
-                {
-                    Log(e.Message);
-                }
+                await ScanOverworld(token).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                Log(e.Message);
             }
 
             Log($"Ending {nameof(OverworldBotSV)} loop.");
@@ -157,6 +154,7 @@ namespace SysBot.Pokemon
 
                 if (Settings.LocationSelection != Location.NonAreaZero && Settings.LocationSelection != Location.TownBorder && atStation is false)
                 {
+                    Log("Preparing for Area Zero...");
                     await NavigateToAreaZeroEntrance(token).ConfigureAwait(false);
                     await NavigateToAreaZeroPicnic(token).ConfigureAwait(false);
                 }
@@ -261,7 +259,6 @@ namespace SysBot.Pokemon
 
                     await SVSaveGameOverworld(token).ConfigureAwait(false);
                     var block = await ReadBlock(BaseBlockKeyPointer, Blocks.Overworld, status is 0, token).ConfigureAwait(false);
-
                     if (status is 0)
                         status++;
                     for (int i = 0; i < 20; i++)
@@ -278,7 +275,7 @@ namespace SysBot.Pokemon
                         prints.Add(result);
                     }                    
 
-                    if (encounters.Count < 1 && !await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
+                    if (encounters.Count < 1 && !await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false) && Settings.LocationSelection != Location.NonAreaZero && Settings.LocationSelection != Location.TownBorder)
                     {
                         Log("No encounters present, are we in a lab? Attempting recovery");
                         await Click(B, 1_500, token).ConfigureAwait(false);

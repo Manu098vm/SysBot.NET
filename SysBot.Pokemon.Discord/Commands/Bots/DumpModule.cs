@@ -57,5 +57,54 @@ namespace SysBot.Pokemon.Discord
             });
             await ReplyAsync("These are the users who are currently waiting:", embed: embed.Build()).ConfigureAwait(false);
         }
+
+        //Dump Module Additions
+        [Command("display")]
+        [Alias("dp")]
+        [Summary("Display & show stats of the Pokémon you show via Link Trade.")]
+        //[RequireQueueRole(nameof(DiscordManager.RolesDisplay))]
+        public async Task DisplayAsync(int code)
+        {
+            var sig = Context.User.GetFavor();
+            await QueueHelper<T>.AddToQueueAsync(Context, code, Context.User.Username, sig, new T(), PokeRoutineType.Display, PokeTradeType.Display).ConfigureAwait(false);
+        }
+
+        [Command("display")]
+        [Alias("dp")]
+        [Summary("Display & show stats of the Pokémon you show via Link Trade.")]
+        //[RequireQueueRole(nameof(DiscordManager.RolesDisplay))]
+        public async Task DisplayAsync([Summary("Trade Code")][Remainder] string code)
+        {
+            int tradeCode = Util.ToInt32(code);
+            var sig = Context.User.GetFavor();
+            await QueueHelper<T>.AddToQueueAsync(Context, tradeCode == 0 ? Info.GetRandomTradeCode() : tradeCode, Context.User.Username, sig, new T(), PokeRoutineType.Display, PokeTradeType.Display).ConfigureAwait(false);
+        }
+
+        [Command("display")]
+        [Alias("dp")]
+        [Summary("Display & show stats of the Pokémon you show via Link Trade.")]
+        //[RequireQueueRole(nameof(DiscordManager.RolesDisplay))]
+        public async Task DisplayAsync()
+        {
+            var code = Info.GetRandomTradeCode();
+            await DisplayAsync(code).ConfigureAwait(false);
+        }
+
+        [Command("displayList")]
+        [Alias("dpl", "dpq")]
+        [Summary("Prints the users in the Display queue.")]
+        [RequireSudo]
+        public async Task GetDisplayListAsync()
+        {
+            string msg = Info.GetTradeList(PokeRoutineType.Display);
+            var embed = new EmbedBuilder();
+            embed.AddField(x =>
+            {
+                x.Name = "Pending Trades";
+                x.Value = msg;
+                x.IsInline = false;
+            });
+            await ReplyAsync("These are the users who are currently waiting:", embed: embed.Build()).ConfigureAwait(false);
+        }
     }
 }

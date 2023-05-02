@@ -247,6 +247,8 @@ namespace SysBot.Pokemon
             if (toSend.Species != 0)
                 await SetBoxPokemonAbsolute(BoxStartOffset, toSend, token, sav).ConfigureAwait(false);
 
+            TradeExtensions<PB8>.BDSPTrade = toSend;
+
             // Enter Union Room and set ourselves up as Trading.
             if (!await EnterUnionRoomWithCode(poke.Type, poke.Code, token).ConfigureAwait(false))
             {

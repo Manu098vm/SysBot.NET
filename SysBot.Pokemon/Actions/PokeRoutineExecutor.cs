@@ -54,17 +54,6 @@ namespace SysBot.Pokemon
             return (solved != 0, solved);
         }
 
-        /*public static void DumpPokemon(string folder, string subfolder, T pk)
-                {
-                    if (!Directory.Exists(folder))
-                        return;
-                    var dir = Path.Combine(folder, subfolder);
-                    Directory.CreateDirectory(dir);
-                    var fn = Path.Combine(dir, Util.CleanFileName(pk.FileName));
-                    File.
-                (fn, pk.DecryptedPartyData);
-                    LogUtil.LogInfo($"Saved file: {fn}", "Dump");
-                }*/
         public static void DumpPokemon(string folder, string subfolder, PKM pk)
         {
             string form = pk.Form > 0 ? $"-{pk.Form:00}" : string.Empty;
@@ -92,9 +81,15 @@ namespace SysBot.Pokemon
 
             string OTInfo = string.IsNullOrEmpty(pk.OT_Name) ? "" : $" - {pk.OT_Name} - {TIDFormatted}{ballFormatted}";
 
-            if (pk is PK8 || pk is PK9)
+            if (pk is PK9)
             {
                 bool hasMark = StopConditionSettings.HasMark((PK9)pk, out RibbonIndex mark);
+                if (hasMark)
+                    marktype = hasMark ? $"{mark.ToString().Replace("Mark", "")}Mark - " : "";
+            }
+            if (pk is PK8)
+            {
+                bool hasMark = StopConditionSettings.HasMark((PK8)pk, out RibbonIndex mark);
                 if (hasMark)
                     marktype = hasMark ? $"{mark.ToString().Replace("Mark", "")}Mark - " : "";
             }

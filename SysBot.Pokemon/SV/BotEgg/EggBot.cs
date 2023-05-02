@@ -43,7 +43,6 @@ namespace SysBot.Pokemon
         public override async Task MainLoop(CancellationToken token)
         {
             await InitializeHardware(Hub.Config.EggSV, token).ConfigureAwait(false);
-
             Log("Identifying trainer data of the host console.");
             await IdentifyTrainer(token).ConfigureAwait(false);
             await InitializeSessionOffsets(token).ConfigureAwait(false);
@@ -53,20 +52,17 @@ namespace SysBot.Pokemon
 
             Log("Starting main EggBot loop.");
             Config.IterateNextRoutine();
-            while (!token.IsCancellationRequested && Config.NextRoutineType == PokeRoutineType.EggFetch)
+
+            try
             {
-                try
-                {
-                    if (!await InnerLoop(token).ConfigureAwait(false))
-                        break;
-                }
-                catch (Exception e)
-                {
-                    Log(e.Message);
-                }
+                await InnerLoop(token).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                Log(e.Message);
             }
 
-            Log($"Ending {nameof(EggBot)} loop.");
+            Log($"Ending {nameof(EggBotSV)} loop.");
             await HardStop().ConfigureAwait(false);
         }
 
@@ -80,7 +76,7 @@ namespace SysBot.Pokemon
         /// <summary>
         /// Return true if we need to stop looping.
         /// </summary>
-        private async Task<bool> InnerLoop(CancellationToken token)
+        private async Task InnerLoop(CancellationToken token)
         {
 
             await SetCurrentBox(0, token).ConfigureAwait(false);
@@ -90,7 +86,7 @@ namespace SysBot.Pokemon
             if (mode == EggMode.WaitAndClose && Settings.ContinueAfterMatch == ContinueAfterMatch.Continue)
             {
                 Log("The Continue setting is not recommended for this mode, please change it to PauseWaitAcknowledge. Close and reopen exe to save changes.");
-                return false;
+                return;
             }
 
             if (mode == EggMode.CollectAndDump)
@@ -105,7 +101,7 @@ namespace SysBot.Pokemon
                 await MakeSandwich(token).ConfigureAwait(false);
 
             await WaitForEggs(mode, token).ConfigureAwait(false);
-            return false;
+            return;
         }
 
         private async Task SetupBoxState(CancellationToken token)

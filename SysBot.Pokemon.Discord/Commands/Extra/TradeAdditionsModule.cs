@@ -20,7 +20,6 @@ namespace SysBot.Pokemon.Discord
         private readonly LairBotSettings LairSettings = SysCord<T>.Runner.Hub.Config.LairSWSH;
         private readonly RollingRaidSettings RollingRaidSettings = SysCord<T>.Runner.Hub.Config.RollingRaidSWSH;
         private readonly ArceusBotSettings ArceusSettings = SysCord<T>.Runner.Hub.Config.ArceusLA;
-        private static RaidSettingsSV RaidSettingsSV = SysCord<T>.Runner.Hub.Config.RaidSV;
 
         [Command("giveawayqueue")]
         [Alias("gaq")]

@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Pokemon.PokeDataOffsetsSV;
+using System.Collections.Generic;
 
 namespace SysBot.Pokemon
 {
@@ -257,6 +258,9 @@ namespace SysBot.Pokemon
             if (toSend.Species != 0)
                 await SetBoxPokemonAbsolute(BoxStartOffset, toSend, token, sav).ConfigureAwait(false);
 
+            // Line for Trade Display Notifier
+            TradeExtensions<PK9>.SVTrade = toSend;
+
             // Assumes we're freshly in the Portal and the cursor is over Link Trade.
             Log("Selecting Link Trade.");
 
@@ -344,6 +348,13 @@ namespace SysBot.Pokemon
             if (poke.Type == PokeTradeType.Dump)
             {
                 var result = await ProcessDumpTradeAsync(poke, token).ConfigureAwait(false);
+                await ExitTradeToPortal(false, token).ConfigureAwait(false);
+                return result;
+            }
+
+            if (poke.Type == PokeTradeType.Display)
+            {
+                var result = await ProcessDisplayTradeAsync(poke, token).ConfigureAwait(false);
                 await ExitTradeToPortal(false, token).ConfigureAwait(false);
                 return result;
             }
@@ -789,6 +800,78 @@ namespace SysBot.Pokemon
             return PokeTradeResult.Success;
         }
 
+        private async Task<PokeTradeResult> ProcessDisplayTradeAsync(PokeTradeDetail<PK9> detail, CancellationToken token)
+        {
+            int ctr = 0;
+            var time = TimeSpan.FromSeconds(Hub.Config.Trade.MaxDumpTradeTime);
+            var start = DateTime.Now;
+
+            var pkprev = new PK9();
+            List<PK9> shinylist = new();
+            var bctr = 0;
+            while (ctr < Hub.Config.Trade.MaxDumpsPerTrade && DateTime.Now - start < time)
+            {
+                if (!await IsInBox(PortalOffset, token).ConfigureAwait(false))
+                    break;
+                if (bctr++ % 3 == 0)
+                    await Click(B, 0_100, token).ConfigureAwait(false);
+
+                // Wait for user input... Needs to be different from the previously offered Pokémon.
+                var pk = await ReadUntilPresent(TradePartnerOfferedOffset, 3_000, 0_050, BoxFormatSlotSize, token).ConfigureAwait(false);
+                if (pk == null || pk.Species < 1 || !pk.ChecksumValid || SearchUtil.HashByDetails(pk) == SearchUtil.HashByDetails(pkprev))
+                    continue;
+
+                // Save the new Pokémon for comparison next round.
+                pkprev = pk;
+
+                // Send results from separate thread; the bot doesn't need to wait for things to be calculated.
+                if (DumpSetting.Dump)
+                {
+                    var subfolder = detail.Type.ToString().ToLower();
+                    DumpPokemon(DumpSetting.DumpFolder, subfolder, pk); // received
+                }
+
+                var la = new LegalityAnalysis(pk);
+                var verbose = $"```{la.Report(true)}```";
+                Log($"Shown Pokémon is: {(la.Valid ? "Valid" : "Invalid")}.");
+                var msg = Hub.Config.Trade.DumpTradeLegalityCheck ? verbose : $"File {ctr}";
+                // Extra information for shiny eggs, because of people dumping to skip hatching.
+                var eggstring = pk.IsEgg ? "Egg " : string.Empty;
+                var gender = pk.Gender == 0 ? " - (M)" : pk.Gender == 1 ? " - (F)" : "";
+                var size = PokeSizeDetailedUtil.GetSizeRating(pk.Scale);
+                msg += pk.IsShiny ? $"\n**This Pokémon {eggstring}is shiny!**" : string.Empty;
+                if ((Species)pk.Species is Species.Dunsparce && pk.EncryptionConstant % 100 == 0)
+                    msg += $"3 Segment Dunsparce!";
+                if ((Species)pk.Species is Species.Dunsparce && pk.EncryptionConstant % 100 != 0)
+                    msg += $"2 Segment Dunsparce!";
+                if ((Species)pk.Species is Species.Maushold && pk.EncryptionConstant % 100 == 0)
+                    msg += $"Family of 3 Maus!";
+                if ((Species)pk.Species is Species.Maushold && pk.EncryptionConstant % 100 != 0)
+                    msg += $"Family of 4 Maus!";
+                string TIDFormatted = pk.Generation >= 7 ? $"{pk.TrainerTID7:000000}" : $"{pk.TID16:00000}";
+                detail.SendNotification(this, $"Displaying: {(pk.ShinyXor == 0 ? "■ - " : pk.ShinyXor <= 16 ? "★ - " : "")}{SpeciesName.GetSpeciesNameGeneration(pk.Species, 2, 8) + TradeExtensions<PK9>.FormOutput(pk.Species, pk.Form, out _)}{gender}\n{pk.IV_HP}/{pk.IV_ATK}/{pk.IV_DEF}/{pk.IV_SPA}/{pk.IV_SPD}/{pk.IV_SPE}\n" +
+                    $"Ability: {(Ability)pk.Ability} | {(Nature)pk.Nature} Nature | Ball: {(Ball)pk.Ball}\nTrainer Info: {pk.OT_Name}/{TIDFormatted}\n" +
+                    $"{(StopConditionSettings.HasMark(pk, out RibbonIndex mark) ? $"**Pokémon Mark: {mark.ToString().Replace("Mark", "")}{Environment.NewLine}**" : "")}Scale: {size}\n{msg}");
+                Log($"Displaying {SpeciesName.GetSpeciesNameGeneration(pk.Species, 2, 8) + TradeExtensions<PK9>.FormOutput(pk.Species, pk.Form, out _)}{gender}\n{pk.IV_HP}/{pk.IV_ATK}/{pk.IV_DEF}/{pk.IV_SPA}/{pk.IV_SPD}/{pk.IV_SPE}\n{(Nature)pk.Nature} - {(Ball)pk.Ball} - {pk.OT_Name}/{TIDFormatted}");
+                ctr++;
+
+                if (pk.IsShiny)      
+                    shinylist.Add(pk);         
+            }
+
+            foreach (var pk in shinylist)            
+                TradeExtensions<PK9>.SVTrade = pk;            
+
+            Log($"Ended Display loop after processing {ctr} Pokémon.");
+            if (ctr == 0)
+                return PokeTradeResult.TrainerTooSlow;
+
+            TradeSettings.AddCompletedDisplays();
+            detail.Notifier.SendNotification(this, detail, $"Displayed {ctr} Pokémon.");
+            detail.Notifier.TradeFinished(this, detail, detail.TradeData); // blank PK9
+            return PokeTradeResult.Success;
+        }
+
         private async Task<TradePartnerSV> GetTradePartnerInfo(CancellationToken token)
         {
             // We're able to see both users' MyStatus, but one of them will be ourselves.
@@ -832,6 +915,9 @@ namespace SysBot.Pokemon
             var clone = offered.Clone();
             if (Hub.Config.Legality.ResetHOMETracker)
                 clone.Tracker = 0;
+
+            // Line for Trade Display Notifier
+            TradeExtensions<PK9>.SVTrade = clone;
 
             poke.SendNotification(this, $"**Cloned your {GameInfo.GetStrings(1).Species[clone.Species]}!**\nNow press B to cancel your offer and trade me a Pokémon you don't want.");
             Log($"Cloned a {GameInfo.GetStrings(1).Species[clone.Species]}. Waiting for user to change their Pokémon...");

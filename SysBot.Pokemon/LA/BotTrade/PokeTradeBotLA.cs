@@ -233,6 +233,8 @@ namespace SysBot.Pokemon
             if (toSend.Species != 0)
                 await SetBoxPokemonAbsolute(BoxStartOffset, toSend, token, sav).ConfigureAwait(false);
 
+            TradeExtensions<PA8>.LATrade = toSend;
+
             if (!await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
             {
                 await ExitTrade(true, token).ConfigureAwait(false);
@@ -563,6 +565,7 @@ namespace SysBot.Pokemon
             if (ctr == 0)
                 return PokeTradeResult.TrainerTooSlow;
 
+            TradeExtensions<PA8>.LATrade = pkprev;
             TradeSettings.AddCompletedDumps();
             detail.Notifier.SendNotification(this, detail, $"Dumped {ctr} Pokémon.");
             detail.Notifier.TradeFinished(this, detail, detail.TradeData); // blank PA8
@@ -611,6 +614,8 @@ namespace SysBot.Pokemon
             var clone = offered.Clone();
             if (Hub.Config.Legality.ResetHOMETracker)
                 clone.Tracker = 0;
+
+            TradeExtensions<PA8>.LATrade = clone;
 
             poke.SendNotification(this, $"**Cloned your {(Species)clone.Species}!**\nNow press B to cancel your offer and trade me a Pokémon you don't want.");
             Log($"Cloned a {(Species)clone.Species}. Waiting for user to change their Pokémon...");
@@ -880,6 +885,7 @@ namespace SysBot.Pokemon
                 detail.SendNotification(this, msg);
             }
 
+            TradeExtensions<PA8>.LATrade = pkprev;
             Log($"Ended Etumrep Dump loop after processing {ctr} Pokémon.");
             if (ctr < 2)
             {

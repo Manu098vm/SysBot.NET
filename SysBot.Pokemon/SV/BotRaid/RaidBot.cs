@@ -72,21 +72,14 @@ namespace SysBot.Pokemon
                 return;
             }
 
-            try
-            {
-                Log("Identifying trainer data of the host console.");
-                HostSAV = await IdentifyTrainer(token).ConfigureAwait(false);
-                await InitializeHardware(Settings, token).ConfigureAwait(false);
+            Log("Identifying trainer data of the host console.");
+            HostSAV = await IdentifyTrainer(token).ConfigureAwait(false);
+            await InitializeHardware(Settings, token).ConfigureAwait(false);
 
-                Log("Starting main RaidBot loop.");
-                await InnerLoop(token).ConfigureAwait(false);
-            }
-            catch (Exception e)
-            {
-                Log(e.Message);
-            }
+            Log("Starting main RaidBot loop.");
+            await InnerLoop(token).ConfigureAwait(false);
 
-            Log($"Ending {nameof(RaidBot)} loop.");
+            Log($"Ending {nameof(RaidBotSV)} loop.");
             await HardStop().ConfigureAwait(false);
         }
 
@@ -101,7 +94,6 @@ namespace SysBot.Pokemon
             {
                 try
                 {
-
                     // Initialize offsets at the start of the routine and cache them.
                     await InitializeSessionOffsets(token).ConfigureAwait(false);
                     if (RaidCount == 0)
@@ -179,7 +171,6 @@ namespace SysBot.Pokemon
                             await CloseGame(Hub.Config, token).ConfigureAwait(false);
                             await StartGameRaid(Hub.Config, token).ConfigureAwait(false);
                         }
-
                         continue;
                     }
 

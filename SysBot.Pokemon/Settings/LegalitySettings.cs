@@ -37,6 +37,11 @@ namespace SysBot.Pokemon
         [Category(Generate), Description("Default language for PKM files that don't match any of the provided PKM files.")]
         public LanguageID GenerateLanguage { get; set; } = LanguageID.English;
 
+        [Category(Generate), Description("If PrioritizeGame is set to \"true\", uses PrioritizeGameVersion to start looking for encounters. If \"false\", uses newest game as the version.")]
+        public bool PrioritizeGame { get; set; } = true;
+        [Category(Generate), Description("Specifies the first game to try and generate encounters before checking other games, or current game if this field is set to \"Any\". Set PrioritizeGame to \"true\" to enable.")]
+        public GameVersion PrioritizeGameVersion { get; set; } = GameVersion.Any;
+
         [Category(Generate), Description("Set all possible legal ribbons for any generated Pokémon.")]
         public bool SetAllLegalRibbons { get; set; }
 
@@ -48,6 +53,9 @@ namespace SysBot.Pokemon
 
         [Category(Generate), Description("Allow XOROSHIRO when generating Gen 8 Raid Pokémon.")]
         public bool UseXOROSHIRO { get; set; } = true;
+
+        [Category(Generate), Description("Adds Battle Version for games that support it (SWSH only) for using past-gen Pokémon in online competitive play.")]
+        public bool SetBattleVersion { get; set; }
 
         [Category(Generate), Description("Bot will create an Easter Egg Pokémon if provided an illegal set.")]
         public bool EnableEasterEggs { get; set; }
