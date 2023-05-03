@@ -398,18 +398,19 @@ namespace SysBot.Pokemon
 
             if (Settings.StopOnOneInOneHundredOnly)
             {
-                if ((Species)pk.Species is Species.Dunsparce or Species.Tandemaus && pk.EncryptionConstant % 100 != 0)
+                if ((Species)pk.Species is Species.Dunsparce or Species.Dudunsparce or Species.Tandemaus or Species.Maushold && pk.EncryptionConstant % 100 != 0)
                 {
-                    {
-                        url = TradeExtensions<PK9>.PokeImg(pk, false, false);
-                        EchoUtil.EchoEmbed("", print, url, "", false);
-                    }
+                    string segmsg = (Species)pk.Species is Species.Dunsparce or Species.Dudunsparce ? "3-Segment" : "Family Of 3";
+                    string res3 = $"A non-special {segmsg} {(Species)pk.Species} has been found...\n";
+                    Log(res3);
+                    url = TradeExtensions<PK9>.PokeImg(pk, false, false);
+                    EchoUtil.EchoEmbed("", print, url, "", false);
                     return true; // 1/100 condition unsatisfied, continue scanning
                 }
 
-                else if ((Species)pk.Species is Species.Dunsparce or Species.Tandemaus && pk.EncryptionConstant % 100 == 0)
+                else if ((Species)pk.Species is Species.Dunsparce or Species.Dudunsparce or Species.Tandemaus or Species.Maushold && pk.EncryptionConstant % 100 == 0)
                 {
-                    string segmsg = (Species)pk.Species is Species.Dunsparce ? "3-Segment" : "Family Of 3";
+                    string segmsg = (Species)pk.Species is Species.Dunsparce or Species.Dudunsparce ? "3-Segment" : "Family Of 3";
                     string res3 = $"A special {segmsg} {(Species)pk.Species} has been found!\n";
                     Log(res3);
                     url = TradeExtensions<PK9>.PokeImg(pk, false, false);

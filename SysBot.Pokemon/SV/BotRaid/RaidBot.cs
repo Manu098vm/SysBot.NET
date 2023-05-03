@@ -30,7 +30,7 @@ namespace SysBot.Pokemon
         }
 
         private const string RaidBotVersion = "Version 0.4.20";
-        private const int AzureBuildID = 407;
+        private const int AzureBuildID = 408;
         private int RaidsAtStart;
         private int RaidCount;
         private int WinCount;
@@ -384,12 +384,17 @@ namespace SysBot.Pokemon
 
                         await EnqueueEmbed(null, "", false, false, true, token).ConfigureAwait(false);
                     }
-
                     return;
                 }
 
                 Log("We lost the raid...");
                 LossCount++;
+
+                if (Settings.RaidEmbedParameters.Count > 1)
+                {
+                    Log("Moving on to the next rotation...");
+                    RotationCount++;
+                }
             }
         }
 
@@ -870,7 +875,7 @@ namespace SysBot.Pokemon
             // Switch Logo and game load screen
             await Task.Delay(16_000 + timing.ExtraTimeLoadGame, token).ConfigureAwait(false);
 
-            if (Settings.RaidEmbedParameters.Count > 1 && Settings.RaidEmbedParameters[RotationCount].Seed != default)
+            if (Settings.RaidEmbedParameters.Count > 1)
             {
                 OverrideSeedIndex(SeedIndexToReplace);
                 Log("Seed override completed.");
