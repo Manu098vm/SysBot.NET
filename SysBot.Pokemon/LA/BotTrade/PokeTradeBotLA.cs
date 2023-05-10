@@ -1,12 +1,12 @@
-﻿using PKHeX.Core;
+﻿using System.Linq;
+using PKHeX.Core;
 using PKHeX.Core.Searching;
 using SysBot.Base;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Pokemon.PokeDataOffsetsLA;
 
@@ -66,6 +66,7 @@ namespace SysBot.Pokemon
 
                 Log("Identifying trainer data of the host console.");
                 var sav = await IdentifyTrainer(token).ConfigureAwait(false);
+                RecentTrainerCache.SetRecentTrainer(sav);
                 await InitializeSessionOffsets(token).ConfigureAwait(false);
 
                 Log($"Starting main {nameof(PokeTradeBotLA)} loop.");
@@ -271,7 +272,10 @@ namespace SysBot.Pokemon
             var partnerFound = await WaitForTradePartner(token).ConfigureAwait(false);
 
             if (token.IsCancellationRequested)
+            {
+                await ExitTrade(false, token).ConfigureAwait(false);
                 return PokeTradeResult.RoutineCancel;
+            }
             if (!partnerFound)
             {
                 await ExitTrade(false, token).ConfigureAwait(false);
@@ -373,10 +377,6 @@ namespace SysBot.Pokemon
             // Only log if we completed the trade.
             UpdateCountsAndExport(poke, received, toSend);
 
-            // Still need to wait out the trade animation.
-            for (var i = 0; i < 30; i++)
-                await Click(B, 0_500, token).ConfigureAwait(false);
-
             await ExitTrade(false, token).ConfigureAwait(false);
             return PokeTradeResult.Success;
         }
@@ -408,36 +408,27 @@ namespace SysBot.Pokemon
             var oldEC = await SwitchConnection.ReadBytesAbsoluteAsync(BoxStartOffset, 8, token).ConfigureAwait(false);
 
             await Click(A, 3_000, token).ConfigureAwait(false);
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < Hub.Config.Trade.MaxTradeConfirmTime; i++)
             {
                 if (await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
                     return PokeTradeResult.TrainerLeft;
                 if (await IsUserBeingShifty(detail, token).ConfigureAwait(false))
                     return PokeTradeResult.SuspiciousActivity;
-                await Click(A, 1_500, token).ConfigureAwait(false);
-            }
+                await Click(A, 1_000, token).ConfigureAwait(false);
 
-            var tradeCounter = 0;
-            while (true)
-            {
+                // EC is detectable at the start of the animation.
                 var newEC = await SwitchConnection.ReadBytesAbsoluteAsync(BoxStartOffset, 8, token).ConfigureAwait(false);
                 if (!newEC.SequenceEqual(oldEC))
                 {
-                    await Task.Delay(5_000, token).ConfigureAwait(false);
+                    await Task.Delay(30_000, token).ConfigureAwait(false);
                     return PokeTradeResult.Success;
                 }
-
-                tradeCounter++;
-
-                if (tradeCounter >= Hub.Config.Trade.TradeAnimationMaxDelaySeconds)
-                {
-                    // If we don't detect a B1S1 change, the trade didn't go through in that time.
-                    return PokeTradeResult.TrainerTooSlow;
-                }
-
-                if (await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
-                    return PokeTradeResult.TrainerLeft;
             }
+            if (await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
+                return PokeTradeResult.TrainerLeft;
+
+            // If we don't detect a B1S1 change, the trade didn't go through in that time.
+            return PokeTradeResult.TrainerTooSlow;
         }
 
         protected virtual async Task<bool> WaitForTradePartner(CancellationToken token)
@@ -776,13 +767,22 @@ namespace SysBot.Pokemon
                 var previousEncounter = EncounteredUsers.TryRegister(poke.Trainer.ID, TrainerName, poke.Trainer.ID);
                 if (previousEncounter != null && previousEncounter.Name != TrainerName)
                 {
+                    if (AbuseSettings.TradeAbuseAction != TradeAbuseAction.Ignore)
+                    {
+                        if (AbuseSettings.TradeAbuseAction == TradeAbuseAction.BlockAndQuit)
+                        {
+                            AbuseSettings.BannedIDs.AddIfNew(new[] { GetReference(TrainerName, TrainerNID, "in-game block for sending to multiple in-game players") });
+                            Log($"Added {TrainerNID} to the BannedIDs list.");
+                        }
+                        quit = true;
+                    }
+
                     var msg = $"Found {user.TrainerName}{useridmsg} sending to multiple in-game players. Previous OT: {previousEncounter.Name}, Current OT: {TrainerName}";
                     if (AbuseSettings.EchoNintendoOnlineIDMultiRecipients)
                         msg += $"\nID: {TrainerNID}";
                     if (!string.IsNullOrWhiteSpace(AbuseSettings.MultiRecipientEchoMention))
                         msg = $"{AbuseSettings.MultiRecipientEchoMention} {msg}";
                     EchoUtil.Echo(msg);
-                    quit = true;
                 }
             }
 
@@ -895,7 +895,7 @@ namespace SysBot.Pokemon
             }
 
             ushort[] multiExceptions = new ushort[]
-                        {
+            {
                 (ushort)Species.Bidoof, (ushort)Species.Eevee,
                 (ushort)Species.Combee,
                 (ushort)Species.Qwilfish,
@@ -916,7 +916,7 @@ namespace SysBot.Pokemon
                 (ushort)Species.Swinub, (ushort)Species.Piloswine,
                 (ushort)Species.Paras, (ushort)Species.Parasect, (ushort)Species.Zubat, (ushort)Species.Golbat,
                 (ushort)Species.Rufflet,
-                        };
+            };
 
             bool isMulti = multiExceptions.Intersect(dumps.Select(x => x.Species)).ToArray().Length >= 1 && dumps.All(x => multiExceptions.Contains(x.Species));
             bool different = TradeExtensions<PA8>.DifferentFamily(dumps) && !isMulti;

@@ -34,23 +34,17 @@ namespace SysBot.Pokemon
         [Category(Overworld), Description("When enabled, the bot will make a sandwich. If false the bot will stop after 30 minutes.")]
         public bool MakeASandwich { get; set; } = true;
 
+        [Category(Overworld), Description("Some locations take a little longer to load in spawns, set this to wait longer than default time. 1000ms = 1s. [Default: 0ms]")]
+        public int WaitTimeBeforeSaving { get; set; } = 0;
+
         [Category(Overworld), Description("Picnic Filters"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
         public PicnicFiltersCategory PicnicFilters { get; set; } = new();
 
+        [Category(Overworld), Description("Rollover Filters"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
+        public RolloverFiltersCategory RolloverFilters { get; set; } = new();
+
         [Category(Overworld), Description("Movement Filters"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
         public MovementFiltersCategory MovementFilters { get; set; } = new();
-
-        [Category(Overworld), Description("When enabled, the bot will check if our dayseed changes to attempt preventing a lost outbreak.")]
-        public bool CheckForRollover { get; set; } = false;
-
-        [Category(Overworld), Description("Set your Switch Date/Time format in the Date/Time settings. The day will automatically rollback by 1 if the Date changes.")]
-        public DTFormat DateTimeFormat { get; set; } = DTFormat.MMDDYY;
-
-        [Category(Overworld), Description("Time to scroll down duration in milliseconds for accessing date/time settings during rollover correction. You want to have it overshoot the Date/Time setting by 1, as it will click DUP after scrolling down. [Default: 930ms]")]
-        public int HoldTimeForRollover { get; set; } = 900;
-
-        [Category(Overworld), Description("If true, start the bot when you are on the HOME screen with the game closed. The bot will only run the rollover routine so you can try to configure accurate timing.")]
-        public bool ConfigureRolloverCorrection { get; set; } = false;
 
         [Category(Overworld), Description("When enabled, the screen will be turned off during normal bot loop operation to save power.")]
         public bool ScreenOff { get; set; }
@@ -101,6 +95,32 @@ namespace SysBot.Pokemon
 
         }
 
+        [Category(Overworld)]
+        [TypeConverter(typeof(RolloverFiltersCategoryConverter))]
+        public class RolloverFiltersCategory
+        {
+            public override string ToString() => "Rollover Conditions";
+
+            [Category(Overworld), Description("When enabled, the bot will check if our dayseed changes to attempt preventing a lost outbreak.")]
+            public bool CheckForRollover { get; set; } = false;
+
+            [Category(Overworld), Description("When enabled, the bot will use the overshoot method to apply rollover correction, otherwise will use DDOWN clicks.")]
+            public bool UseOvershoot { get; set; } = false;
+
+            [Category(Overworld), Description("Set your Switch Date/Time format in the Date/Time settings. The day will automatically rollback by 1 if the Date changes.")]
+            public DTFormat DateTimeFormat { get; set; } = DTFormat.MMDDYY;
+
+            [Category(Overworld), Description("Time to scroll down duration in milliseconds for accessing date/time settings during rollover correction. You want to have it overshoot the Date/Time setting by 1, as it will click DUP after scrolling down. [Default: 930ms]")]
+            public int HoldTimeForRollover { get; set; } = 900;
+
+            [Category(Overworld), Description("Amount of times to hit DDOWN for accessing date/time settings during rollover correction. [Default: 39 Clicks]")]
+            public int DDOWNClicks { get; set; } = 39;
+
+            [Category(Overworld), Description("If true, start the bot when you are on the HOME screen with the game closed. The bot will only run the rollover routine so you can try to configure accurate timing.")]
+            public bool ConfigureRolloverCorrection { get; set; } = false;
+
+        }
+
         private sealed class PicnicFiltersCategoryConverter : TypeConverter
         {
             public override bool GetPropertiesSupported(ITypeDescriptorContext? context) => true;
@@ -115,6 +135,15 @@ namespace SysBot.Pokemon
             public override bool GetPropertiesSupported(ITypeDescriptorContext? context) => true;
 
             public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext? context, object? value, Attribute[]? attributes) => TypeDescriptor.GetProperties(typeof(MovementFiltersCategory));
+
+            public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType) => destinationType != typeof(string) && base.CanConvertTo(context, destinationType);
+        }
+
+        private sealed class RolloverFiltersCategoryConverter : TypeConverter
+        {
+            public override bool GetPropertiesSupported(ITypeDescriptorContext? context) => true;
+
+            public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext? context, object? value, Attribute[]? attributes) => TypeDescriptor.GetProperties(typeof(RolloverFiltersCategory));
 
             public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType) => destinationType != typeof(string) && base.CanConvertTo(context, destinationType);
         }

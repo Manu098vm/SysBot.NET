@@ -1,13 +1,16 @@
-﻿using PKHeX.Core;
-using Discord;
+﻿using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
+using Newtonsoft.Json;
+using PermuteMMO.Lib;
+using PKHeX.Core;
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Collections.Generic;
-using Discord.WebSocket;
 
 namespace SysBot.Pokemon.Discord
 {
@@ -162,7 +165,7 @@ namespace SysBot.Pokemon.Discord
             var la = new LegalityAnalysis(pkm);
             if (Info.Hub.Config.Trade.Memes && await TrollAsync(Context, pkm is not T || !la.Valid, pkm, true).ConfigureAwait(false))
                 return;
-            
+
             if (pkm is not T pk || !la.Valid)
             {
                 var reason = result == "Timeout" ? "That set took too long to generate." : "I wasn't able to create something from that.";
@@ -210,7 +213,7 @@ namespace SysBot.Pokemon.Discord
             var la = new LegalityAnalysis(pkm);
             if (Info.Hub.Config.Trade.Memes && await TrollAsync(Context, pkm is not T || !la.Valid, pkm).ConfigureAwait(false))
                 return;
-            
+
             if (pkm is not T pk || !la.Valid)
             {
                 var reason = result == "Timeout" ? "That set took too long to generate." : "I wasn't able to create something from that.";
@@ -249,8 +252,8 @@ namespace SysBot.Pokemon.Discord
             MemoryStream ms = new(bytes);
 
             var img = "cap.jpg";
-            var embed = new EmbedBuilder{ ImageUrl = $"attachment://{img}", Color = Color.Purple }.WithFooter(new EmbedFooterBuilder { Text = $"Captured image from bot at address {address}." });
-            await Context.Channel.SendFileAsync(ms, img, "", false, embed : embed.Build());
+            var embed = new EmbedBuilder { ImageUrl = $"attachment://{img}", Color = Color.Purple }.WithFooter(new EmbedFooterBuilder { Text = $"Captured image from bot at address {address}." });
+            await Context.Channel.SendFileAsync(ms, img, "", false, embed: embed.Build());
         }
 
         [Command("hunt")]
@@ -653,5 +656,140 @@ namespace SysBot.Pokemon.Discord
             await ReplyAsync(msg).ConfigureAwait(false);
         }
 
+        [Command("addRaidParams")]
+        [Alias("arp")]
+        [Summary("Adds new raid parameter.")]
+        [RequireSudo]
+        public async Task AddNewRaidParam([Summary("Seed")] string seed, [Summary("Species Type")] string species, [Summary("Content Type")] string content)
+        {
+            int type = int.Parse(content);
+
+            var description = string.Empty;
+            var filepath = "bodyparam.txt";
+            if (File.Exists(filepath))
+                description = File.ReadAllText(filepath);
+
+            var data = string.Empty;
+            var pkpath = "pkparam.txt";
+            if (File.Exists(pkpath))
+                data = File.ReadAllText(pkpath);
+
+            var parse = TradeExtensions<T>.EnumParse<Species>(species);
+            if (parse == default)
+            {
+                await ReplyAsync($"{species} is not a valid Species.").ConfigureAwait(false);
+                return;
+            }
+
+            RaidSettingsSV.RaidParameters newparam = new()
+            {
+                CrystalType = (RaidSettingsSV.TeraCrystalType)type,                
+                Description = new[] { description },
+                PartyPK = new[] { data },
+                Species = parse,
+                SpeciesForm = 0,
+                Seed = seed,
+                IsCoded = true,
+                Title = $"{parse} ☆ - {(RaidSettingsSV.TeraCrystalType)type}",
+            };
+
+            SysCord<T>.Runner.Hub.Config.RaidSV.RaidEmbedParameters.Add(newparam);
+            var msg = $"A new raid for {newparam.Species} has been added!";
+            await ReplyAsync(msg).ConfigureAwait(false);
+        }
+
+        [Command("removeRaidParams")]
+        [Alias("rrp")]
+        [Summary("Adds new raid parameter.")]
+        [RequireSudo]
+        public async Task RemoveRaidParam([Summary("Seed")] string seed)
+        {
+
+            var remove = uint.Parse(seed, NumberStyles.AllowHexSpecifier);
+            var list = SysCord<T>.Runner.Hub.Config.RaidSV.RaidEmbedParameters;
+            foreach (var s in list)
+            {
+                var def = uint.Parse(s.Seed, NumberStyles.AllowHexSpecifier);
+                if (def == remove)
+                {
+                    list.Remove(s);
+                    var msg = $"Raid for {s.Species} | {s.Seed:X8} has been removed!";
+                    await ReplyAsync(msg).ConfigureAwait(false);
+                    return;
+                }
+            }
+        }
+
+        [Command("toggleRaidParams")]
+        [Alias("trp")]
+        [Summary("Toggles raid parameter.")]
+        [RequireSudo]
+        public async Task DeactivateRaidParam([Summary("Seed")] string seed)
+        {
+
+            var deactivate = uint.Parse(seed, NumberStyles.AllowHexSpecifier);
+            var list = SysCord<T>.Runner.Hub.Config.RaidSV.RaidEmbedParameters;
+            foreach (var s in list)
+            {
+                var def = uint.Parse(s.Seed, NumberStyles.AllowHexSpecifier);
+                if (def == deactivate)
+                {
+                    if (s.ActiveInRotation == true)
+                        s.ActiveInRotation = false;
+                    else
+                        s.ActiveInRotation = true;
+                    var m = s.ActiveInRotation == true ? "enabled" : "disabled";
+                    var msg = $"Raid for {s.Species} | {s.Seed:X8} has been {m}!";
+                    await ReplyAsync(msg).ConfigureAwait(false);
+                    return;
+                }
+            }
+        }
+
+        [Command("changeRaidParamTitle")]
+        [Alias("crpt")]
+        [Summary("Adds new raid parameter.")]
+        [RequireSudo]
+        public async Task ChangeRaidParamTite([Summary("Seed")] string seed, [Summary("Content Type")] string title)
+        {
+
+            var deactivate = uint.Parse(seed, NumberStyles.AllowHexSpecifier);
+            var list = SysCord<T>.Runner.Hub.Config.RaidSV.RaidEmbedParameters;
+            foreach (var s in list)
+            {
+                var def = uint.Parse(s.Seed, NumberStyles.AllowHexSpecifier);
+                if (def == deactivate)
+                {
+                    s.Title = title;
+                    var msg = $"Raid Title for {s.Species} | {s.Seed:X8} has been changed!";
+                    await ReplyAsync(msg).ConfigureAwait(false);
+                    return;
+                }
+            }
+        }
+
+        [Command("viewraidList")]
+        [Alias("vrl")]
+        [Summary("Prints the raid list in the current collection.")]
+        public async Task GetRaidListAsync()
+        {
+            var list = SysCord<T>.Runner.Hub.Config.RaidSV.RaidEmbedParameters;
+            string msg = string.Empty;
+            foreach (var s in list)
+            {
+                if (s.ActiveInRotation)
+                    msg += s.Title + " - " + s.Seed + " - Status: Active" + Environment.NewLine;
+                else
+                    msg += s.Title + " - " + s.Seed + " - Status: Inactive" + Environment.NewLine;
+            }
+            var embed = new EmbedBuilder();
+            embed.AddField(x =>
+            {
+                x.Name = "Raid List";
+                x.Value = msg;
+                x.IsInline = false;
+            });
+            await ReplyAsync("These are the raids currently in the rotations list:", embed: embed.Build()).ConfigureAwait(false);
+        }
     }
 }

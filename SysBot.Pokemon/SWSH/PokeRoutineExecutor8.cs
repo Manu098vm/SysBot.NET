@@ -473,5 +473,48 @@ namespace SysBot.Pokemon
             }
             return null;
         }
+
+        // Zyro additions
+
+        public async Task<string> HasOverworldMark(uint offset, CancellationToken token)
+        {
+            //Ty Anubis
+            var data = await Connection.ReadBytesAsync(offset + 0x16, 1, token).ConfigureAwait(false);
+            RibbonIndex index = (RibbonIndex)data[0];
+            return data[0] == 0xFF ? "" : "\n- Has the **" + index.ToString().Replace("Mark", "") + " Mark**!";
+        }
+        public async Task<string> ScanIsShiny(uint offset, CancellationToken token)
+        {
+            var data = await Connection.ReadBytesAsync(offset + 0x06, 1, token).ConfigureAwait(false);
+            return data[0] == 0x02 ? "Shiny: No" : "Shiny: Yes";
+        }
+
+        public async Task<PK8?> ReadPartyMon(CancellationToken token)
+        {
+            uint partymon1 = 0x8FE9DAC8;
+            var ourec = BitConverter.ToUInt32(await SwitchConnection.ReadBytesAsync(0x910988C8, 4, token).ConfigureAwait(false), 0);
+            int o = 0;
+            PK8 ourcheck;
+            do
+            {
+                ourcheck = await ReadPokemon(partymon1, token).ConfigureAwait(false);
+                partymon1 += 0x7A0;
+                o++;
+            } while ($"{ourec:X8}" != $"{ourcheck.EncryptionConstant:X8}");
+
+            if ($"{ourec:X8}" == $"{ourcheck.EncryptionConstant:X8}")
+                return ourcheck;
+            else
+                return null;
+        }
+
+        public async Task Sleep(CancellationToken token, bool gameClosed = false)
+        {
+            Log($"Sleep Mode Activated!");
+            if (Config.Connection.Protocol == SwitchProtocol.WiFi) // Scroll to system settings
+                await PressAndHold(HOME, 2_000, 0, token).ConfigureAwait(false);
+            await Click(A, 1_000, token).ConfigureAwait(false);
+            await DetachController(token).ConfigureAwait(false);
+        }
     }
 }

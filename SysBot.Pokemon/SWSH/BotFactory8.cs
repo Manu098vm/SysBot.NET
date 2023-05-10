@@ -29,6 +29,7 @@ namespace SysBot.Pokemon
             PokeRoutineType.SoJCamp => new SoJCamp(cfg, Hub),
             PokeRoutineType.CurryBot => new CurryBot(cfg, Hub),
             PokeRoutineType.RollingRaid => new RollingRaidBot(cfg, Hub),
+            PokeRoutineType.OverworldBot => new OverworldBot(cfg, Hub),
 
             PokeRoutineType.RemoteControl => new RemoteControlBot(cfg),
             _ => throw new ArgumentException(nameof(cfg.NextRoutineType)),
@@ -58,6 +59,7 @@ namespace SysBot.Pokemon
             PokeRoutineType.SoJCamp => true,
             PokeRoutineType.CurryBot => true,
             PokeRoutineType.RollingRaid => true,
+            PokeRoutineType.OverworldBot => true,
 
             PokeRoutineType.RemoteControl => true,
 

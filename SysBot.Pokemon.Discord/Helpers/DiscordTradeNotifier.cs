@@ -99,13 +99,13 @@ namespace SysBot.Pokemon.Discord
                 var mode = info.Type;
                 switch (mode)
                 {
-                    case PokeTradeType.Specific: msg = "request!"; break;
-                    case PokeTradeType.Clone: msg = "clone!"; break;
-                    case PokeTradeType.Display: msg = "trophy!"; break;
-                    case PokeTradeType.EtumrepDump or PokeTradeType.Dump or PokeTradeType.Seed: msg = "dump!"; break;
-                    case PokeTradeType.SupportTrade or PokeTradeType.Giveaway: msg = $"gift!"; break;
-                    case PokeTradeType.FixOT: msg = $"fixed OT!"; break;
-                    case PokeTradeType.TradeCord: msg = $"prize!"; break;
+                    case PokeTradeType.Specific: msg += "request!"; break;
+                    case PokeTradeType.Clone: msg += "clone!"; break;
+                    case PokeTradeType.Display: msg += "trophy!"; break;
+                    case PokeTradeType.EtumrepDump or PokeTradeType.Dump or PokeTradeType.Seed: msg += "dump!"; break;
+                    case PokeTradeType.SupportTrade or PokeTradeType.Giveaway: msg += $"gift!"; break;
+                    case PokeTradeType.FixOT: msg += $"fixed OT!"; break;
+                    case PokeTradeType.TradeCord: msg += $"prize!"; break;
                 }
                 string TIDFormatted = fin.Generation >= 7 ? $"{fin.TrainerTID7:000000}" : $"{fin.TID16:00000}";
                 var footer = new EmbedFooterBuilder { Text = $"Trainer Info: {fin.OT_Name}/{TIDFormatted}" };

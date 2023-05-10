@@ -71,6 +71,10 @@ namespace SysBot.Pokemon
 
         [Category(BotEncounter)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
+        public OverworldSettings OverworldSWSH { get; set; } = new();
+
+        [Category(BotEncounter)]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
         public EncounterSettings EncounterSWSH { get; set; } = new();
 
         [Category(BotEncounter)]

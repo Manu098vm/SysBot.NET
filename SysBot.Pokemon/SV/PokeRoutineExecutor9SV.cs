@@ -8,6 +8,7 @@ using System.Threading;
 using static SysBot.Pokemon.PokeDataOffsetsSV;
 using static SysBot.Base.SwitchButton;
 using static System.Buffers.Binary.BinaryPrimitives;
+using System.IO;
 
 namespace SysBot.Pokemon
 {
@@ -401,6 +402,67 @@ namespace SysBot.Pokemon
                 IsEncrypted = true,
                 Size = 2490,
             };
+        }        
+
+        private async Task<ulong> SearchSaveKeyRaid(ulong BaseBlockKeyPointer, uint key, CancellationToken token)
+        {
+            var data = await SwitchConnection.ReadBytesAbsoluteAsync(BaseBlockKeyPointer + 8, 16, token).ConfigureAwait(false);
+            var start = BitConverter.ToUInt64(data.AsSpan()[..8]);
+            var end = BitConverter.ToUInt64(data.AsSpan()[8..]);
+
+            while (start < end)
+            {
+                var block_ct = (end - start) / 48;
+                var mid = start + (block_ct >> 1) * 48;
+
+                data = await SwitchConnection.ReadBytesAbsoluteAsync(mid, 4, token).ConfigureAwait(false);
+                var found = BitConverter.ToUInt32(data);
+                if (found == key)
+                    return mid;
+
+                if (found >= key)
+                    end = mid;
+                else start = mid + 48;
+            }
+            return start;
+        }
+
+        public async Task<byte[]> ReadSaveBlockRaid(ulong BaseBlockKeyPointer, uint key, int size, CancellationToken token)
+        {
+            var block_ofs = await SearchSaveKeyRaid(BaseBlockKeyPointer, key, token).ConfigureAwait(false);
+            var data = await SwitchConnection.ReadBytesAbsoluteAsync(block_ofs + 8, 0x8, token).ConfigureAwait(false);
+            block_ofs = BitConverter.ToUInt64(data, 0);
+
+            var block = await SwitchConnection.ReadBytesAbsoluteAsync(block_ofs, size, token).ConfigureAwait(false);
+            return DecryptBlock(key, block);
+        }
+
+        public async Task<byte[]> ReadSaveBlockObject(ulong BaseBlockKeyPointer, uint key, CancellationToken token)
+        {
+            var header_ofs = await SearchSaveKeyRaid(BaseBlockKeyPointer, key, token).ConfigureAwait(false);
+            var data = await SwitchConnection.ReadBytesAbsoluteAsync(header_ofs + 8, 8, token).ConfigureAwait(false);
+            header_ofs = BitConverter.ToUInt64(data);
+
+            var header = await SwitchConnection.ReadBytesAbsoluteAsync(header_ofs, 5, token).ConfigureAwait(false);
+            header = DecryptBlock(key, header);
+
+            var size = BitConverter.ToUInt32(header.AsSpan()[1..]);
+            var obj = await SwitchConnection.ReadBytesAbsoluteAsync(header_ofs, (int)size + 5, token).ConfigureAwait(false);
+            return DecryptBlock(key, obj)[5..];
+        }
+
+        public async Task<byte[]> ReadBlockDefault(ulong BaseBlockKeyPointer, uint key, string? cache, bool force, CancellationToken token)
+        {
+            var folder = Path.Combine(Directory.GetCurrentDirectory(), "cache");
+            Directory.CreateDirectory(folder);
+
+            var path = Path.Combine(folder, cache ?? "");
+            if (force is false && cache is not null && File.Exists(path))
+                return File.ReadAllBytes(path);
+
+            var bin = await ReadSaveBlockObject(BaseBlockKeyPointer, key, token).ConfigureAwait(false);
+            File.WriteAllBytes(path, bin);
+            return bin;
         }
     }
 }
