@@ -23,7 +23,7 @@ namespace SysBot.Pokemon
         [Category(Hosting), Description("If true, the bot will notify you if you are not on the latest azure-build of NotForkBot.")]
         public bool CheckForUpdatedBuild { get; set; } = true;
 
-        [Category(Hosting), Description("If true, the bot will attempt to auto-generate Raid Parameters from the \"raidsv\" folder.")]
+        [Category(Hosting), Description("If true, the bot will attempt to auto-generate Raid Parameters from the \"raidsv\" folder on botstart.")]
         public bool GenerateParametersFromFile { get; set; } = true;
 
         [Category(Hosting), Description("Raid embed parameters.")]
@@ -99,6 +99,7 @@ namespace SysBot.Pokemon
             public string Seed { get; set; } = string.Empty;
             public string[] PartyPK { get; set; } = Array.Empty<string>();
             public bool ActiveInRotation { get; set; } = true;
+            public bool IsSet { get; set; } = false;
         }
 
         public enum TeraCrystalType: int

@@ -15,7 +15,6 @@ using System.Threading.Tasks;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Pokemon.RaidSettingsSV;
 using RaidCrawler.Core.Structures;
-using Microsoft.VisualBasic;
 
 namespace SysBot.Pokemon
 {
@@ -33,7 +32,7 @@ namespace SysBot.Pokemon
             Settings = hub.Config.RaidSV;
         }
 
-        private const int AzureBuildID = 409;
+        private const int AzureBuildID = 410;
         private int RaidsAtStart;
         private int RaidCount;
         private int WinCount;
@@ -185,7 +184,13 @@ namespace SysBot.Pokemon
                     Log($"Today Seed: {TodaySeed:X8}");
                 }
 
-                await ReadRaids(token).ConfigureAwait(false);
+                if (!Settings.RaidEmbedParameters[RotationCount].IsSet)
+                {
+                    Log($"Preparing parameter for {Settings.RaidEmbedParameters[RotationCount].Species}");
+                    await ReadRaids(token).ConfigureAwait(false);
+                }
+                else
+                    Log($"Parameter for {Settings.RaidEmbedParameters[RotationCount].Species} has been set previously, skipping raid reads.");
 
                 var currentSeed = BitConverter.ToUInt64(await SwitchConnection.ReadBytesAbsoluteAsync(TeraRaidBlockOffset, 8, token).ConfigureAwait(false), 0);
                 if (TodaySeed != currentSeed)
@@ -485,7 +490,8 @@ namespace SysBot.Pokemon
         private async Task<bool> PrepareForRaid(CancellationToken token)
         {
             Log("Preparing lobby...");
-            if (Settings.RaidEmbedParameters[RotationCount].PartyPK.Length > 0)
+            string len = string.Join("", Settings.RaidEmbedParameters[RotationCount].PartyPK.Length);
+            if (len != "1")
             {
                 await SetCurrentBox(0, token).ConfigureAwait(false);
                 var res = string.Join("\n", Settings.RaidEmbedParameters[RotationCount].PartyPK);
@@ -1098,6 +1104,7 @@ namespace SysBot.Pokemon
                         if (encounters[i].ExtraMoves.Length != 0)
                             extramoves = "\n**Extra Moves:**\n" + string.Concat(encounters[i].ExtraMoves.Where(z => z != 0).Select(z => $"{strings.Move[z]}ㅤ\n")).Trim();
                         Settings.RaidEmbedParameters[a].Description = new[] { "\n**Raid Info:**", pkinfo, "\n**Moveset:**", movestr, extramoves, BaseDescription, res };
+                        Settings.RaidEmbedParameters[a].IsSet = true;
                         done = true;
                     }
                 }
