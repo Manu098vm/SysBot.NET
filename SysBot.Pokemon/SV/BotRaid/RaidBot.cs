@@ -3,7 +3,6 @@ using PKHeX.Core;
 using SysBot.Base;
 using SysBot.Pokemon.SV;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -23,7 +22,6 @@ namespace SysBot.Pokemon
         private readonly PokeTradeHub<PK9> Hub;
         private readonly RaidSettingsSV Settings;
         public ICountSettings Counts => Settings;
-        public static ConcurrentQueue<(byte[]?, EmbedBuilder)> EmbedQueue { get; set; } = new();
         private RemoteControlAccessList RaiderBanList => Settings.RaiderBanList;
 
         public RaidBotSV(PokeBotState cfg, PokeTradeHub<PK9> hub) : base(cfg)
@@ -32,7 +30,7 @@ namespace SysBot.Pokemon
             Settings = hub.Config.RaidSV;
         }
 
-        private const int AzureBuildID = 410;
+        private const int AzureBuildID = 411;
         private int RaidsAtStart;
         private int RaidCount;
         private int WinCount;
@@ -53,6 +51,7 @@ namespace SysBot.Pokemon
         private int EventProgress;
         private RaidContainer? container;
         private string BaseDescription = string.Empty;
+        private int EmptyRaid = 0;
 
         public override async Task MainLoop(CancellationToken token)
         {
@@ -119,7 +118,7 @@ namespace SysBot.Pokemon
         {
             var rotationpath = "raidsv.txt";
             if (!File.Exists(rotationpath))
-                File.Create(rotationpath);
+                Log("raidsv.txt not present, skipping parameter generation.");
 
             BaseDescription = string.Empty;
             var filepath = "bodyparam.txt";
@@ -436,9 +435,9 @@ namespace SysBot.Pokemon
                     if (trainers.Count > 0 && Settings.CatchLimit != 0 || TodaySeed != BitConverter.ToUInt64(data.Slice(0, 8)) && RaidsAtStart == seeds.Count && Settings.CatchLimit != 0)
                         ApplyPenalty(trainers);
 
-                    if (RotationCount < Settings.RaidEmbedParameters.Count - 1 && Settings.RaidEmbedParameters.Count > 1)
+                    if (RotationCount < Settings.RaidEmbedParameters.Count && Settings.RaidEmbedParameters.Count > 1)
                         RotationCount++;
-                    if (RotationCount >= Settings.RaidEmbedParameters.Count - 1)
+                    if (RotationCount >= Settings.RaidEmbedParameters.Count && Settings.RaidEmbedParameters.Count > 1)
                     {
                         RotationCount = 0;
                         Log($"Resetting Rotation Count to {RotationCount}");
@@ -489,10 +488,12 @@ namespace SysBot.Pokemon
 
         private async Task<bool> PrepareForRaid(CancellationToken token)
         {
-            Log("Preparing lobby...");
-            string len = string.Join("", Settings.RaidEmbedParameters[RotationCount].PartyPK.Length);
-            if (len != "1")
+            var len = string.Empty;
+            foreach (var l in Settings.RaidEmbedParameters[RotationCount].PartyPK)
+                len += l;
+            if (len.Length > 1)
             {
+                Log("Preparing PartyPK to inject..");
                 await SetCurrentBox(0, token).ConfigureAwait(false);
                 var res = string.Join("\n", Settings.RaidEmbedParameters[RotationCount].PartyPK);
                 if (res.Length > 4096)
@@ -516,6 +517,7 @@ namespace SysBot.Pokemon
                 Log("Battle PK is ready!");
             }
 
+            Log("Preparing lobby...");
             // Make sure we're connected.
             while (!await IsConnectedOnline(ConnectedOffset, token).ConfigureAwait(false))
             {
@@ -525,7 +527,7 @@ namespace SysBot.Pokemon
                     return false;
             }
 
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < 6; i++)
                 await Click(B, 0_500, token).ConfigureAwait(false);
 
             await Task.Delay(1_500, token).ConfigureAwait(false);
@@ -537,8 +539,12 @@ namespace SysBot.Pokemon
             await Click(A, 3_000, token).ConfigureAwait(false);
             await Click(A, 3_000, token).ConfigureAwait(false);
 
-            if (!Settings.RaidEmbedParameters[RotationCount].IsCoded)
+            if (!Settings.RaidEmbedParameters[RotationCount].IsCoded || Settings.RaidEmbedParameters[RotationCount].IsCoded && EmptyRaid is 5)
+            {
+                if (Settings.RaidEmbedParameters[RotationCount].IsCoded && EmptyRaid is 5)
+                    Log("We had 5 empty raids.. Opening this raid to all!");
                 await Click(DDOWN, 1_000, token).ConfigureAwait(false);
+            }
 
             await Click(A, 8_000, token).ConfigureAwait(false);
             return true;
@@ -685,10 +691,13 @@ namespace SysBot.Pokemon
             RaidCount++;
             if (lobbyTrainers.Count == 0)
             {
-                Log("Nobody joined the raid, recovering...");
+                EmptyRaid++;
+                Log($"Nobody joined the raid, recovering...\nEmpty Raid Count #{EmptyRaid}");                
                 return (false, lobbyTrainers);
             }
             Log($"Raid #{RaidCount} is starting!");
+            if (EmptyRaid != 0)
+                EmptyRaid = 0;
             return (true, lobbyTrainers);
         }
 
@@ -783,7 +792,10 @@ namespace SysBot.Pokemon
 
             string code = string.Empty;
             if (names is null && !upnext)
-                code = $"**{(Settings.RaidEmbedParameters[RotationCount].IsCoded ? await GetRaidCode(token).ConfigureAwait(false) : "Free For All")}**";
+                code = $"**{(Settings.RaidEmbedParameters[RotationCount].IsCoded && EmptyRaid < 5 ? await GetRaidCode(token).ConfigureAwait(false) : "Free For All")}**";
+
+            if (EmptyRaid is 5)
+                EmptyRaid = 0;
 
             if (disband) // Wait for trainer to load before disband
                 await Task.Delay(5_000, token).ConfigureAwait(false);
@@ -1008,7 +1020,7 @@ namespace SysBot.Pokemon
         private static async Task<bool> CheckAzureLabel()
         {
             int azurematch;
-            string latestazure = "https://dev.azure.com/zyrocodez/zyro670/_apis/build/builds?definitions=5&$top=1&api-version=5.0-preview.5";
+            string latestazure = "https://dev.azure.com/zyrocodez/zyro670/_apis/build/builds?definitions=2&$top=1&api-version=5.0-preview.5";
             HttpClient client = new();
             var content = await client.GetStringAsync(latestazure);
             int buildId = int.Parse(content.Substring(135, 3));
@@ -1056,7 +1068,6 @@ namespace SysBot.Pokemon
             var encounters = container.Encounters;
             var rewards = container.Rewards;
             bool done = false;
-
             for (int i = 0; i < raids.Count; i++)
             {
                 if (done is true)
@@ -1075,20 +1086,20 @@ namespace SysBot.Pokemon
                         if (string.IsNullOrEmpty(res))
                             res = string.Empty;
                         else
-                            res = Environment.NewLine + "Special Rewards:" + Environment.NewLine + res;
+                            res = Environment.NewLine + "**Special Rewards:**" + Environment.NewLine + res;
                         Log($"Seed {seed:X8} found for {(Species)pk.Species}");
                         Settings.RaidEmbedParameters[a].Seed = $"{seed:X8}";
                         var stars = RaidExtensions.GetStarCount(raids[i], raids[i].Difficulty, StoryProgress, raids[i].IsBlack);
                         string starcount = string.Empty;
                         switch (stars)
                         {
-                            case 1: starcount = "☆"; break;
-                            case 2: starcount = "☆☆"; break;
-                            case 3: starcount = "☆☆☆"; break;
-                            case 4: starcount = "☆☆☆☆"; break;
-                            case 5: starcount = "☆☆☆☆☆"; break;
-                            case 6: starcount = "☆☆☆☆☆☆"; break;
-                            case 7: starcount = "☆☆☆☆☆☆☆"; break;
+                            case 1: starcount = "1 ☆"; break;
+                            case 2: starcount = "2 ☆"; break;
+                            case 3: starcount = "3 ☆"; break;
+                            case 4: starcount = "4 ☆"; break;
+                            case 5: starcount = "5 ☆"; break;
+                            case 6: starcount = "6 ☆"; break;
+                            case 7: starcount = "7 ☆"; break;
                         }
                         Settings.RaidEmbedParameters[a].Title = $"{(Species)pk.Species} {starcount} - {(MoveType)raids[i].TeraType}";
                         Settings.RaidEmbedParameters[a].IsShiny = raids[i].IsShiny;
