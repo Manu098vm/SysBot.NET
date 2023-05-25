@@ -67,6 +67,10 @@ namespace SysBot.Pokemon
 
         [Category(BotEncounter)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
+        public RotatingRaidSettingsSV RotatingRaidSV { get; set; } = new();
+
+        [Category(BotEncounter)]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
         public ArceusBotSettings ArceusLA { get; set; } = new();
 
         [Category(BotEncounter)]

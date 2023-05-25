@@ -1,6 +1,8 @@
 using System;
+using System.Linq;
 using PKHeX.Core;
 using SysBot.Base;
+using SysBot.Pokemon.Discord;
 
 namespace SysBot.Pokemon.Twitch
 {
@@ -105,6 +107,27 @@ namespace SysBot.Pokemon.Twitch
             return detail == null
                 ? "Sorry, you are not currently in the queue."
                 : $"Your trade code is {detail.Trade.Code:0000 0000}";
+        }
+
+        public static string GetRaidList()
+        {
+            var list = SysCord<T>.Runner.Hub.Config.RotatingRaidSV.RaidEmbedParameters.Take(19);
+            string msg = string.Empty;
+            int raidcount = 0;
+            foreach (var s in list)
+            {
+                if (s.ActiveInRotation)
+                {
+                    raidcount++;
+                    msg += $"{raidcount}.) " + s.Title + " - " + s.Seed + " - Status: Active | ";
+                }
+                else
+                {
+                    raidcount++;
+                    msg += $"{raidcount}.) " + s.Title + " - " + s.Seed + " - Status: Inactive | ";
+                }
+            }
+            return "These are the first 20 raids currently in the list:\n" + msg;
         }
     }
 }

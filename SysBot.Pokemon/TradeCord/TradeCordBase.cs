@@ -15,12 +15,12 @@ namespace SysBot.Pokemon
 {
     public abstract class TradeCordBase<T> where T : PKM, new()
     {
-        protected static readonly List<EvolutionTemplate> Evolutions = EvolutionRequirements();
+        protected readonly List<EvolutionTemplate> Evolutions;
         public static Dictionary<ushort, IReadOnlyCollection<byte>> Dex { get; private set; } = new();
         protected TCRng Rng { get; private set; }
         private static bool Connected { get; set; }
 
-        protected static GameVersion Game = typeof(T) == typeof(PK8) ? GameVersion.SWSH : GameVersion.BDSP;
+        protected readonly GameVersion Game;
         private static string DatabasePath = string.Empty;
         private static SQLiteConnection Connection = new();
         protected static readonly Random Random = new();
@@ -65,8 +65,10 @@ namespace SysBot.Pokemon
 
         public TradeCordBase()
         {
+            Game = typeof(T) == typeof(PK8) ? GameVersion.SWSH : GameVersion.BDSP;
             if (Dex.Count is 0)
                 Dex = GetPokedex();
+            Evolutions = EvolutionRequirements();
             Rng = RandomScramble();
         }
 
@@ -88,7 +90,7 @@ namespace SysBot.Pokemon
             };
         }
 
-        private static bool Initialize()
+        private bool Initialize()
         {
             if (Connected)
                 return true;
@@ -158,7 +160,7 @@ namespace SysBot.Pokemon
             return userIDs.ToArray();
         }
 
-        protected bool IsLegendaryOrMythical(ushort species) => Legal.Legends.Contains(species) || Legal.SubLegends.Contains(species) || Legal.Mythicals.Contains(species);
+        protected bool IsLegendaryOrMythical(ushort species) => SpeciesCategory.IsLegendary(species) || SpeciesCategory.IsSubLegendary(species) || SpeciesCategory.IsMythical(species);
 
         protected A GetLookupAsClassObject<A>(ulong id, string table, string filter = "", bool tableJoin = false)
         {
@@ -500,7 +502,7 @@ namespace SysBot.Pokemon
 
         protected bool CreateDB()
         {
-            if (!TradeCordBase<T>.Initialize())
+            if (!Initialize())
                 return false;
 
             bool exists = new FileInfo(DatabasePath).Length > 0;
@@ -680,7 +682,7 @@ namespace SysBot.Pokemon
             if (!wasFixedGmax)
             {
                 Base.LogUtil.LogInfo("Checking for incorrect Gmax flags...", "[SQLite]");
-                TradeCordBase<T>.GmaxFix();
+                GmaxFix();
             }
 
             tran.Commit();
@@ -711,7 +713,7 @@ namespace SysBot.Pokemon
             return str[^1].Replace("'", "''");
         }
 
-        private static Dictionary<ushort, IReadOnlyCollection<byte>> GetPokedex()
+        private Dictionary<ushort, IReadOnlyCollection<byte>> GetPokedex()
         {
             Dictionary<ushort, IReadOnlyCollection<byte>> dex = new();
             var livingDex = Game is GameVersion.SWSH ? new SAV8SWSH().GetLivingDex().OrderBySpecies() : new SAV8BS().GetLivingDex().OrderBySpecies();
@@ -1072,7 +1074,7 @@ namespace SysBot.Pokemon
             Base.EchoUtil.Echo($"Scan complete! Updated {updated} records.");
         }
 
-        private static void GmaxFix()
+        private void GmaxFix()
         {
             Base.EchoUtil.Echo("Beginning to scan for improper Gmax flags. This may take a while.");
             int updated = 0;
@@ -1150,7 +1152,7 @@ namespace SysBot.Pokemon
             return array.Where(x => x > 0).Distinct().OrderBy(x => x).Any(x => x != (i += 1)) ? i : i + 1;
         }
 
-        private static List<EvolutionTemplate> EvolutionRequirements()
+        private List<EvolutionTemplate> EvolutionRequirements()
         {
             var sav = AutoLegalityWrapper.GetTrainerInfo<T>();
             var list = new List<EvolutionTemplate>();

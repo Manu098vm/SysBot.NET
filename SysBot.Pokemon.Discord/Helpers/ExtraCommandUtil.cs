@@ -60,7 +60,7 @@ namespace SysBot.Pokemon.Discord
                 IEmote[] reactions = { new Emoji("⬅️"), new Emoji("➡️"), new Emoji("⬆️"), new Emoji("⬇️") };
                 _ = Task.Run(async () => await msg.AddReactionsAsync(reactions).ConfigureAwait(false));
                 if (!DictWipeRunning)
-                    _ = Task.Run(async () => await DictWipeMonitor().ConfigureAwait(false));
+                    _ = Task.Run(DictWipeMonitor);
             }
         }
 

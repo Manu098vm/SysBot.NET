@@ -1,4 +1,5 @@
 ﻿using PKHeX.Core;
+using System.Collections.Generic;
 using System.ComponentModel;
 
 namespace SysBot.Pokemon
@@ -37,9 +38,10 @@ namespace SysBot.Pokemon
         [Category(Generate), Description("Default language for PKM files that don't match any of the provided PKM files.")]
         public LanguageID GenerateLanguage { get; set; } = LanguageID.English;
 
-        [Category(Generate), Description("If PrioritizeGame is set to \"true\", uses PrioritizeGameVersion to start looking for encounters. If \"false\", uses newest game as the version.")]
+        [Category(Generate), Description("If PrioritizeGame is set to \"True\", uses PrioritizeGameVersion to start looking for encounters. If \"False\", uses newest game as the version. It is recommended to leave this as \"True\".")]
         public bool PrioritizeGame { get; set; } = true;
-        [Category(Generate), Description("Specifies the first game to try and generate encounters before checking other games, or current game if this field is set to \"Any\". Set PrioritizeGame to \"true\" to enable.")]
+
+        [Category(Generate), Description("Specifies the first game to use to generate encounters, or current game if this field is set to \"Any\". Set PrioritizeGame to \"true\" to enable. It is recommended to leave this as \"Any\".")]
         public GameVersion PrioritizeGameVersion { get; set; } = GameVersion.Any;
 
         [Category(Generate), Description("Set all possible legal ribbons for any generated Pokémon.")]
@@ -50,6 +52,9 @@ namespace SysBot.Pokemon
 
         [Category(Generate), Description("Force the specified ball if legal.")]
         public bool ForceSpecifiedBall { get; set; }
+
+        [Category(Generate), Description("The order in which Pokémon encounter types are attempted.")]
+        public List<EncounterTypeGroup> PrioritizeEncounters { get; set; } = new List<EncounterTypeGroup>() { EncounterTypeGroup.Egg, EncounterTypeGroup.Slot, EncounterTypeGroup.Static, EncounterTypeGroup.Mystery, EncounterTypeGroup.Trade };
 
         [Category(Generate), Description("Allow XOROSHIRO when generating Gen 8 Raid Pokémon.")]
         public bool UseXOROSHIRO { get; set; } = true;
@@ -71,7 +76,7 @@ namespace SysBot.Pokemon
 
         // Misc
 
-        [Category(Misc), Description("Zero out HOME tracker regardless of current tracker value. Applies to user requested PKM files as well.")]
-        public bool ResetHOMETracker { get; set; } = true;
+        [Category(Misc), Description("Zero out HOME trackers for cloned and user-requested PKM files. It is recommended to leave this disabled to avoid creating invalid HOME data.")]
+        public bool ResetHOMETracker { get; set; } = false;
     }
 }

@@ -13,9 +13,10 @@ namespace SysBot.Pokemon
                 or PokeRoutineType.Dump
                 => new PokeTradeBotSV(Hub, cfg),
 
-            PokeRoutineType.OverworldBot => new OverworldBotSV(cfg, Hub),
+            PokeRoutineType.OverworldBot => new OverworldBotSV(cfg, Hub),            
             PokeRoutineType.EggFetch => new EggBotSV(cfg, Hub),
             PokeRoutineType.RaidBot => new RaidBotSV(cfg, Hub),
+            PokeRoutineType.RotatingRaidBot => new RotatingRaidBotSV(cfg, Hub),
             PokeRoutineType.RemoteControl => new RemoteControlBotSV(cfg),
             _ => throw new ArgumentException(nameof(cfg.NextRoutineType)),
         };
@@ -31,6 +32,7 @@ namespace SysBot.Pokemon
             PokeRoutineType.OverworldBot => true,
             PokeRoutineType.EggFetch => true,
             PokeRoutineType.RaidBot => true,
+            PokeRoutineType.RotatingRaidBot => true,
             PokeRoutineType.RemoteControl => true,
 
             _ => false,

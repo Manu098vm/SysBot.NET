@@ -917,7 +917,7 @@ namespace SysBot.Pokemon
             return result;
         }
 
-        private static Results TrainerInfoSetHandler(TCUser user, string[] input)
+        private Results TrainerInfoSetHandler(TCUser user, string[] input)
         {
             Results result = new();
             user.TrainerInfo.OTName = input[0];
@@ -941,7 +941,7 @@ namespace SysBot.Pokemon
             return result;
         }
 
-        private static Results TrainerInfoHandler(TCUser user)
+        private Results TrainerInfoHandler(TCUser user)
         {
             Results result = new();
             var sc = user.Items.FirstOrDefault(x => x.Item == TCItems.ShinyCharm);

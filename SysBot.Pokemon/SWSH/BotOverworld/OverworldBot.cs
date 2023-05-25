@@ -356,7 +356,6 @@ namespace SysBot.Pokemon
                             Log($"Unwanted encounter {(Species)check.Species}! Initializing {Settings.Conditions.UnwantedEncounterCorrection}!");
                             var task = Settings.Conditions.UnwantedEncounterCorrection switch
                             {
-                                UnwantedCorrection.ResetGame => ResetGameAsync(token),
                                 UnwantedCorrection.FleeBattle => FleeToOverworld(token),
                                 UnwantedCorrection.KnockOut => KnockOut(token),
                                 _ => ResetGameAsync(token),
@@ -685,6 +684,8 @@ namespace SysBot.Pokemon
             Log("Restarting the game!");
             while (!await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
                 await Click(A, 0_500, token).ConfigureAwait(false);
+
+            OverworldOffset = await SwitchConnection.PointerAll(Offsets.OverworldPointer, token).ConfigureAwait(false);
         }
         private async Task RolloverCorrection(CancellationToken token, bool gameClosed = false)
         {
@@ -890,7 +891,6 @@ namespace SysBot.Pokemon
                 Log($"Unwanted encounter! Initializing {Settings.Conditions.UnwantedEncounterCorrection}!");
                 var task = Settings.Conditions.UnwantedEncounterCorrection switch
                 {
-                    UnwantedCorrection.ResetGame => ResetGameAsync(token),
                     UnwantedCorrection.FleeBattle => FleeToOverworld(token),
                     UnwantedCorrection.KnockOut => KnockOut(token),
                     _ => ResetGameAsync(token),
@@ -916,7 +916,6 @@ namespace SysBot.Pokemon
                 Log($"Unwanted encounter! Initializing {Settings.Conditions.UnwantedEncounterCorrection}!");
                 var task = Settings.Conditions.UnwantedEncounterCorrection switch
                 {
-                    UnwantedCorrection.ResetGame => ResetGameAsync(token),
                     UnwantedCorrection.FleeBattle => FleeToOverworld(token),
                     UnwantedCorrection.KnockOut => KnockOut(token),
                     _ => ResetGameAsync(token),
@@ -942,7 +941,6 @@ namespace SysBot.Pokemon
                 Log($"Unwanted encounter! Initializing {Settings.Conditions.UnwantedEncounterCorrection}!");
                 var task = Settings.Conditions.UnwantedEncounterCorrection switch
                 {
-                    UnwantedCorrection.ResetGame => ResetGameAsync(token),
                     UnwantedCorrection.FleeBattle => FleeToOverworld(token),
                     UnwantedCorrection.KnockOut => KnockOut(token),
                     _ => ResetGameAsync(token),

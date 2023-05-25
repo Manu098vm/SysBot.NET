@@ -71,8 +71,11 @@
         /// <summary> Performs and rolls group battles as a host. </summary>
         RollingRaid = 6008,
 
+        /// <summary> Performs and rotates group battles as a host. </summary>
+        RotatingRaidBot = 6009,
+
         /// <summary> Dump trade method for permutations in Legends Arceus. </summary>
-        EtumrepDump = 6009,
+        EtumrepDump = 6010,
 
         /// <summary> Perform various ways to encounter Pokémon in Legends Arceus. </summary>
         ArceusBot = 9001,

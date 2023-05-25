@@ -216,5 +216,13 @@ namespace SysBot.Pokemon
             if (TradeCordHelper<T>.TradeCordTrades.TryGetValue(detail.UserID, out _))
                 TradeCordHelper<T>.TradeCordTrades.Remove(detail.UserID);
         }
+
+        public IEnumerable<string> GetRaidList(string fmt)
+        {
+            lock (_sync)
+            {
+                return Hub.Config.RotatingRaidSV.RaidEmbedParameters.Select(z => string.Format(fmt, z.Title, z.Species));
+            }
+        }
     }
 }

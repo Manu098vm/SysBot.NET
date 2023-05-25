@@ -4,10 +4,11 @@ using SysBot.Base;
 using System.Threading;
 using System.Collections.Generic;
 using System;
+using static SysBot.Pokemon.RaidSettingsSV;
 
 namespace SysBot.Pokemon
 {
-    public class RaidSettingsSV : IBotStateSettings, ICountSettings
+    public class RotatingRaidSettingsSV : IBotStateSettings, ICountSettings
     {
         private const string Hosting = nameof(Hosting);
         private const string Counts = nameof(Counts);
@@ -30,7 +31,7 @@ namespace SysBot.Pokemon
         public bool UsePresetFile { get; set; } = true;
 
         [Category(Hosting), Description("Raid embed parameters.")]
-        public List<RaidParameters> RaidEmbedParameters { get; set; } = new();
+        public List<RotatingRaidParameters> RaidEmbedParameters { get; set; } = new();
 
         [Category(Hosting), Description("Catch limit per player before they get added to the ban list automatically. If set to 0 this setting will be ignored.")]
         public int CatchLimit { get; set; } = 0;
@@ -90,14 +91,7 @@ namespace SysBot.Pokemon
                 yield return $"Started Raids: {CompletedRaids}";
         }
 
-        public enum DTFormat
-        { 
-            MMDDYY,
-            DDMMYY,
-            YYMMDD,
-        }
-
-        public class RaidParameters
+        public class RotatingRaidParameters
         {
             public override string ToString() => $"{Title}";
             public string Title { get; set; } = string.Empty;
@@ -110,15 +104,8 @@ namespace SysBot.Pokemon
             public bool SpriteAlternateArt { get; set; } = false;
             public string Seed { get; set; } = "0";
             public string[] PartyPK { get; set; } = Array.Empty<string>();
+            public bool ActiveInRotation { get; set; } = true;
             public bool IsSet { get; set; } = false;
-        }
-
-        public enum TeraCrystalType: int
-        {
-            Base = 0,
-            Black = 1,
-            Distribution = 2,
-            Might = 3,
         }
     }    
 }

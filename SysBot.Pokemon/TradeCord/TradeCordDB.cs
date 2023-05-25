@@ -658,7 +658,7 @@ namespace SysBot.Pokemon
 
         private static bool CanHatchTradeCord(ushort species) => Breeding.CanHatchAsEgg(species) || species is (ushort)Species.Ditto;
 
-        private static bool SameEvoTree(PKM pkm1, PKM pkm2)
+        private bool SameEvoTree(PKM pkm1, PKM pkm2)
         {
             var tree = EvolutionTree.GetEvolutionTree(pkm1.Context);
             var evos = tree.GetValidPreEvolutions(pkm1, 100, 8, true);
@@ -777,7 +777,7 @@ namespace SysBot.Pokemon
             }
         }
 
-        private static bool IsCottonCandy(ushort species, byte form)
+        private bool IsCottonCandy(ushort species, byte form)
         {
             var color = (PersonalColor)(Game is GameVersion.SWSH ? PersonalTable.SWSH.GetFormEntry(species, form).Color : PersonalTable.BDSP.GetFormEntry(species, form).Color);
             return (ShinyMap[(Species)species] is PersonalColor.Blue or PersonalColor.Red or PersonalColor.Pink or PersonalColor.Purple or PersonalColor.Yellow) &&

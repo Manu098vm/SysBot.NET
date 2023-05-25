@@ -246,7 +246,7 @@ namespace SysBot.Pokemon
             };
 
             IngredientPouch = await Connection.ReadBytesAsync(IngredientPouchOffset, 100, token).ConfigureAwait(false);
-            var pouch = GetItemPouch(IngredientPouch, InventoryType.Ingredients, ingredients, 999, 0, ingredients.Length);
+            var pouch = GetItemPouch(IngredientPouch, InventoryType.Ingredients, 999, 0, ingredients.Length);
             var item = pouch.Items.FirstOrDefault(x => x.Index == (int)Settings.Ingredient && x.Count > 0);
             if (item == default)
                 item = pouch.Items.FirstOrDefault(x => x.Count > 0);
@@ -270,7 +270,7 @@ namespace SysBot.Pokemon
             };
 
             BerryPouch = await Connection.ReadBytesAsync(BerryPouchOffset, 212, token).ConfigureAwait(false);
-            var pouch = GetItemPouch(BerryPouch, InventoryType.Berries, berries, 999, 0, berries.Length);
+            var pouch = GetItemPouch(BerryPouch, InventoryType.Berries, 999, 0, berries.Length);
             var item = pouch.Items.FirstOrDefault(x => x.Index == (int)Settings.Berry && x.Count > 0);
             if (item == default)
                 item = pouch.Items.FirstOrDefault(x => x.Count >= 10);
@@ -281,9 +281,9 @@ namespace SysBot.Pokemon
             return ScrollUpBerry ? pouch.Items.Length - index : index;
         }
 
-        private static InventoryPouch8 GetItemPouch(byte[] data, InventoryType type, ushort[] items, int maxCount, int offset, int length)
+        private static InventoryPouch8 GetItemPouch(byte[] data, InventoryType type, int maxCount, int offset, int length)
         {
-            var pouch = new InventoryPouch8(type, items, maxCount, offset, length);
+            var pouch = new InventoryPouch8(type, ItemStorage8SWSH.Instance, maxCount, offset, length);
             pouch.GetPouch(data);
             return pouch;
         }

@@ -3,7 +3,9 @@ using SysBot.Base;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using static SysBot.Base.SwitchButton;
@@ -37,6 +39,7 @@ namespace SysBot.Pokemon
         private ulong PlayerOnMountOffset;
         private bool GameWasReset = false;
         private int SandwichCounter;
+        private SAV9SV TrainerSav = new();
 
         public OverworldBotSV(PokeBotState cfg, PokeTradeHub<PK9> hub) : base(cfg)
         {
@@ -51,7 +54,7 @@ namespace SysBot.Pokemon
         {
             await InitializeHardware(Hub.Config.OverworldSV, token).ConfigureAwait(false);
             Log("Identifying trainer data of the host console.");
-            await IdentifyTrainer(token).ConfigureAwait(false);
+            TrainerSav = await IdentifyTrainer(token).ConfigureAwait(false);
             Log("Starting main OverworldBotSV loop.");
             Config.IterateNextRoutine();
 
@@ -117,7 +120,7 @@ namespace SysBot.Pokemon
             var palcount = UnionPalsCount.Count > 1 ? "friends" : "a friend";
             var msg = UnionPalsCount.Count is 0 ? "We are hunting alone." : $"Hunting in a Union Circle with {palcount}.";
             Log(msg);
-            
+
             return UnionPalsCount.Count is 0 ? false : true;
         }
 
@@ -129,7 +132,7 @@ namespace SysBot.Pokemon
             await StartGame(Hub.Config, token).ConfigureAwait(false);
             await InitializeSessionOffsets(token).ConfigureAwait(false);
         }
-
+        
         private async Task Preparize(CancellationToken token)
         {
             Log("Navigating to picnic..");
@@ -372,7 +375,7 @@ namespace SysBot.Pokemon
 
             if (pk.IsShiny)
             {
-                Settings.AddShinyScans();
+                Settings.AddShinyScans();                
                 DumpPokemon(DumpSetting.DumpFolder, "overworld", pk);
             }
 
@@ -407,6 +410,36 @@ namespace SysBot.Pokemon
             if (!string.IsNullOrWhiteSpace(Hub.Config.StopConditions.MatchFoundEchoMention))
                 ping = Hub.Config.StopConditions.MatchFoundEchoMention;
 
+            if (Settings.StopOnMinMaxScale)
+            {
+                if (pk.Scale > 0 && pk.Scale < 255)
+                {
+                    Log("Undesired size found..");
+                    url = TradeExtensions<PK9>.PokeImg(pk, false, false);
+                    EchoUtil.EchoEmbed("", print, url, markurl, false);
+                    return true;
+                }
+
+                else if (pk.Scale is 0 or 255)
+                {
+                    string scalemsg = pk.Scale is 0 ? "XXXS" : "XXXL";
+                    string ress = $"A special sized {scalemsg} {(Species)pk.Species} has been found!\n";
+                    Log(ress);
+                    url = TradeExtensions<PK9>.PokeImg(pk, false, false);
+                    EchoUtil.EchoEmbed(ping, ress + print, url, markurl, true);
+                    return false;
+                }
+            }
+
+            StopConditionSettings.HasMark(pk, out RibbonIndex specialmark);
+            if (Settings.SpecialMarksOnly && specialmark is >= RibbonIndex.MarkLunchtime and <= RibbonIndex.MarkMisty || Settings.SpecialMarksOnly && specialmark is RibbonIndex.MarkUncommon)
+            {
+                Log($"Undesired {specialmark} found..");
+                url = TradeExtensions<PK9>.PokeImg(pk, false, false);
+                EchoUtil.EchoEmbed("", print, url, markurl, false);
+                return true;
+            }
+
             if (Settings.StopOnOneInOneHundredOnly)
             {
                 if ((Species)pk.Species is Species.Dunsparce or Species.Dudunsparce or Species.Tandemaus or Species.Maushold && pk.EncryptionConstant % 100 != 0)
@@ -430,27 +463,6 @@ namespace SysBot.Pokemon
                 }
             }
 
-            if (Settings.StopOnMinMaxScale)
-            {
-                if (pk.Scale > 0 && pk.Scale < 255)
-                {
-                    Log("Undesired size found..");
-                    url = TradeExtensions<PK9>.PokeImg(pk, false, false);
-                    EchoUtil.EchoEmbed("", print, url, markurl, false);
-                    return true;
-                }
-
-                else if (pk.Scale is 0 or 255)
-                {
-                    string scalemsg = pk.Scale is 0 ? "XXXS" : "XXXL";
-                    string ress = $"A special sized {scalemsg} {(Species)pk.Species} has been found!\n";
-                    Log(ress);
-                    url = TradeExtensions<PK9>.PokeImg(pk, false, false);
-                    EchoUtil.EchoEmbed(ping, ress + print, url, markurl, true);
-                    return false;
-                }
-            }
-
             var text = Settings.SpeciesToHunt.Replace(" ", "");
             string[] monlist = text.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
             if (monlist.Length != 0)
@@ -463,15 +475,6 @@ namespace SysBot.Pokemon
                     EchoUtil.EchoEmbed("", print, url, markurl, false);
                     return true;
                 }
-            }
-
-            StopConditionSettings.HasMark(pk, out RibbonIndex specialmark);
-            if (Settings.SpecialMarksOnly && specialmark is >= RibbonIndex.MarkLunchtime and <= RibbonIndex.MarkMisty || Settings.SpecialMarksOnly && specialmark is RibbonIndex.MarkUncommon)
-            {
-                Log($"Undesired {specialmark} found..");
-                url = TradeExtensions<PK9>.PokeImg(pk, false, false);
-                EchoUtil.EchoEmbed("", print, url, markurl, false);
-                return true;
             }
 
             var mode = Settings.ContinueAfterMatch;
@@ -655,7 +658,7 @@ namespace SysBot.Pokemon
             Log($"Returning to entrance from {Settings.LocationSelection}..");
             await Click(Y, 2_500, token).ConfigureAwait(false);
             await Click(ZR, 1_000, token).ConfigureAwait(false);
-            await SetStick(LEFT, 0, 5000, Settings.LocationSelection is Location.SecretCave ? 0_550 : 0_450, token).ConfigureAwait(false); // reposition to fly point
+            await SetStick(LEFT, 0, 5000, Settings.LocationSelection is Location.SecretCave ? 0_550 : Settings.LocationSelection is Location.ResearchStation4 ? 0_250 : 0_450, token).ConfigureAwait(false); // reposition to fly point
             await SetStick(LEFT, 0, 0, 0, token).ConfigureAwait(false);
             await Task.Delay(1_000, token).ConfigureAwait(false);
             for (int i = 0; i < 4; i++)
@@ -679,7 +682,6 @@ namespace SysBot.Pokemon
                 await Click(A, 0_500, token).ConfigureAwait(false);
             while (!await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false)) // fly animation
                 await Click(A, 6_000, token).ConfigureAwait(false);
-
         }
 
         private async Task RepositionToGate(CancellationToken token)
@@ -693,7 +695,7 @@ namespace SysBot.Pokemon
             await SetStick(LEFT, 0, 32000, 3_000, token).ConfigureAwait(false); // walk up
             await SetStick(LEFT, 0, 0, 0, token).ConfigureAwait(false);
             await Task.Delay(1_000, token).ConfigureAwait(false);
-            await SetStick(RIGHT, 30000, 0, 0_200, token).ConfigureAwait(false); // reposition to fly point
+            await SetStick(RIGHT, 30000, 0, 0_300, token).ConfigureAwait(false); // reposition to fly point
             await SetStick(RIGHT, 0, 0, 0, token).ConfigureAwait(false);
             await Task.Delay(1_000, token).ConfigureAwait(false);
             await SetStick(LEFT, 0, 32000, 6_000, token).ConfigureAwait(false); // walk up
