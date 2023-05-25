@@ -30,7 +30,7 @@ namespace SysBot.Pokemon
             Settings = hub.Config.RaidSV;
         }
 
-        private const int AzureBuildID = 413;
+        private const int AzureBuildID = 416;
         private int RaidsAtStart;
         private int RaidCount;
         private int WinCount;
