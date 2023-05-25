@@ -580,7 +580,7 @@ namespace SysBot.Pokemon
             string[] raidDescription = Array.Empty<string>();
 
             if (description.Length > 0)            
-                raidDescription = description.Skip(1).ToArray(); // Skip the first element and create a new array with the rest of the lines            
+                raidDescription = description.ToArray();         
 
             string markEntryText = "";
             string markTitle = "";
@@ -591,6 +591,7 @@ namespace SysBot.Pokemon
             string shiny = pk.ShinyXor <= 16 ? "Shiny" : "";
             string species = SpeciesName.GetSpeciesNameGeneration(pk.Species, 2, 9);
             string IVList = $"{pk.IV_HP}/{pk.IV_ATK}/{pk.IV_DEF}/{pk.IV_SPA}/{pk.IV_SPD}/{pk.IV_SPE}";
+            string MaxIV = "";
             string HP = pk.IV_HP.ToString();
             string ATK = pk.IV_ATK.ToString();
             string DEF = pk.IV_DEF.ToString();
@@ -598,11 +599,14 @@ namespace SysBot.Pokemon
             string SPD = pk.IV_SPD.ToString();
             string SPE = pk.IV_SPE.ToString();
             string nature = $"{(Nature)pk.Nature}";
-            string genderSymbol = pk.Gender == 0 ? "♀" : pk.Gender == 1 ? "♂" : "⚥";
+            string genderSymbol = pk.Gender == 0 ? "♂" : pk.Gender == 1 ? "♀" : "⚥";
             string genderText = $"{(Gender)pk.Gender}";
             string ability = $"{(Ability)pk.Ability}";
             string move = moveset;
             string extra = extramoveset;
+
+            if (pk.IV_HP == 31 && pk.IV_ATK == 31 && pk.IV_DEF == 31 && pk.IV_SPA == 31 && pk.IV_SPD == 31 && pk.IV_SPE == 31)            
+                MaxIV = "6IV";            
 
             StopConditionSettings.HasMark((IRibbonIndex)pk, out RibbonIndex mark);
             if (mark == RibbonIndex.MarkMightiest)
@@ -626,7 +630,7 @@ namespace SysBot.Pokemon
             for (int i = 0; i < raidDescription.Length; i++)
             raidDescription[i] = raidDescription[i].Replace("{markEntryText}", markEntryText)
                     .Replace("{markTitle}", markTitle).Replace("{scaleText}", scaleText).Replace("{scaleNumber}", scaleNumber).Replace("{shinySymbol}", shinySymbol).Replace("{shinySymbolText}", shinySymbolText)
-                    .Replace("{shinyText}", shiny).Replace("{species}", species).Replace("{IVList}", IVList).Replace("{HP}", HP).Replace("{ATK}", ATK).Replace("{DEF}", DEF).Replace("{SPA}", SPA)
+                    .Replace("{shinyText}", shiny).Replace("{species}", species).Replace("{IVList}", IVList).Replace("{MaxIV}",MaxIV).Replace("{HP}", HP).Replace("{ATK}", ATK).Replace("{DEF}", DEF).Replace("{SPA}", SPA)
                     .Replace("{SPD}", SPD).Replace("{SPE}", SPE).Replace("{nature}", nature).Replace("{ability}", ability).Replace("{genderSymbol}", genderSymbol).Replace("{genderText}", genderText)
                     .Replace("{moveset}", move).Replace("{extramoves}", extra);
 

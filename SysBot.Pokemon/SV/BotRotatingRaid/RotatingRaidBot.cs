@@ -15,6 +15,7 @@ using static SysBot.Base.SwitchButton;
 using static SysBot.Pokemon.RotatingRaidSettingsSV;
 using RaidCrawler.Core.Structures;
 using static SysBot.Pokemon.RaidSettingsSV;
+using System.Text.RegularExpressions;
 
 namespace SysBot.Pokemon
 {
@@ -31,7 +32,7 @@ namespace SysBot.Pokemon
             Settings = hub.Config.RotatingRaidSV;
         }
 
-        private const int AzureBuildID = 416;
+        private const int AzureBuildID = 417;
         private int RaidsAtStart;
         private int RaidCount;
         private int WinCount;
@@ -1072,7 +1073,7 @@ namespace SysBot.Pokemon
             {
                 Log($"Rotation for {Settings.RaidEmbedParameters[RotationCount].Species} has been found.\nAttempting to override seed.");
                 await OverrideSeedIndex(SeedIndexToReplace, token).ConfigureAwait(false);
-                await RestoreDenIDs(SeedIndexToReplace, token).ConfigureAwait(false);
+                //await RestoreDenIDs(SeedIndexToReplace, token).ConfigureAwait(false);
                 Log("Seed override completed.");
             }
 
@@ -1254,6 +1255,7 @@ namespace SysBot.Pokemon
                                 .Replace("{difficulty}", $"{stars}")
                                 .Replace("{stars}", starcount) // Replace placeholder with Variable
                                 .Trim();
+                                raidDescription[j] = Regex.Replace(raidDescription[j], @"\s+", " ");
                             }
                             Settings.RaidEmbedParameters[a].Description = raidDescription;
                         }

@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Pokemon.RaidSettingsSV;
 using RaidCrawler.Core.Structures;
+using System.Text.RegularExpressions;
 
 namespace SysBot.Pokemon
 {
@@ -30,7 +31,7 @@ namespace SysBot.Pokemon
             Settings = hub.Config.RaidSV;
         }
 
-        private const int AzureBuildID = 416;
+        private const int AzureBuildID = 417;
         private int RaidsAtStart;
         private int RaidCount;
         private int WinCount;
@@ -1080,6 +1081,7 @@ namespace SysBot.Pokemon
                             .Replace("{difficulty}", $"{stars}")
                             .Replace("{stars}", starcount)
                             .Trim();
+                            raidDescription[j] = Regex.Replace(raidDescription[j], @"\s+", " ");
                         }
                         Settings.RaidEmbedParameters[0].Description = raidDescription;
                     }
