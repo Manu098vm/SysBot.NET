@@ -31,7 +31,7 @@ namespace SysBot.Pokemon
             Settings = hub.Config.RaidSV;
         }
 
-        private const int AzureBuildID = 417;
+        private const int AzureBuildID = 418;
         private int RaidsAtStart;
         private int RaidCount;
         private int WinCount;
@@ -790,7 +790,7 @@ namespace SysBot.Pokemon
 
             string code = string.Empty;
             if (names is null && !upnext)
-                code = $"**{(Settings.RaidEmbedParameters[0].IsCoded && EmptyRaid < 5 ? await GetRaidCode(token).ConfigureAwait(false) : "Free For All")}**";
+                code = $"**{(Settings.RaidEmbedParameters[0].IsCoded && EmptyRaid < Settings.EmptyRaidLimit ? await GetRaidCode(token).ConfigureAwait(false) : "Free For All")}**";
 
             if (EmptyRaid == Settings.EmptyRaidLimit)
                 EmptyRaid = 0;
