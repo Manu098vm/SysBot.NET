@@ -1,21 +1,20 @@
-﻿using Google.FlatBuffers;
-using PKHeX.Core;
+﻿using PKHeX.Core;
 using SysBot.Base;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 using static SysBot.Base.SwitchButton;
-using static SysBot.Pokemon.PokeDataOffsets;
+using static SysBot.Pokemon.PokeDataOffsetsSWSH;
 
 namespace SysBot.Pokemon
 {
-    public class RaidBot : PokeRoutineExecutor8, ICountBot
+    public class RaidBotSWSH : PokeRoutineExecutor8SWSH, ICountBot
     {
         private readonly PokeTradeHub<PK8> Hub;
         private readonly RaidSettings Settings;
         public ICountSettings Counts => Settings;
 
-        public RaidBot(PokeBotState cfg, PokeTradeHub<PK8> hub) : base(cfg)
+        public RaidBotSWSH(PokeBotState cfg, PokeTradeHub<PK8> hub) : base(cfg)
         {
             Hub = hub;
             Settings = hub.Config.RaidSWSH;
@@ -54,7 +53,7 @@ namespace SysBot.Pokemon
                 Log(e.Message);
             }
 
-            Log($"Ending {nameof(RaidBot)} loop.");
+            Log($"Ending {nameof(RaidBotSWSH)} loop.");
             await HardStop().ConfigureAwait(false);
         }
 

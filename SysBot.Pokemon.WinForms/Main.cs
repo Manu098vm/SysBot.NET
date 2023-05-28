@@ -1,5 +1,7 @@
 ﻿using PKHeX.Core;
 using SysBot.Base;
+using SysBot.Pokemon.Discord;
+using SysBot.Pokemon.Z3;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,8 +10,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using SysBot.Pokemon.Z3;
-using SysBot.Pokemon.Discord;
 
 namespace SysBot.Pokemon.WinForms
 {
@@ -23,7 +23,7 @@ namespace SysBot.Pokemon.WinForms
         public Main()
         {
             InitializeComponent();
-            PokeTradeBot.SeedChecker = new Z3SeedSearchHandler<PK8>();
+            PokeTradeBotSWSH.SeedChecker = new Z3SeedSearchHandler<PK8>();
             if (File.Exists(Program.ConfigPath))
             {
                 var lines = File.ReadAllText(Program.ConfigPath);
@@ -50,7 +50,7 @@ namespace SysBot.Pokemon.WinForms
 
         private static IPokeBotRunner GetRunner(ProgramConfig cfg) => cfg.Mode switch
         {
-            ProgramMode.SWSH => new PokeBotRunnerImpl<PK8>(cfg.Hub, new BotFactory8()),
+            ProgramMode.SWSH => new PokeBotRunnerImpl<PK8>(cfg.Hub, new BotFactory8SWSH()),
             ProgramMode.BDSP => new PokeBotRunnerImpl<PB8>(cfg.Hub, new BotFactory8BS()),
             ProgramMode.LA => new PokeBotRunnerImpl<PA8>(cfg.Hub, new BotFactory8LA()),
             ProgramMode.SV => new PokeBotRunnerImpl<PK9>(cfg.Hub, new BotFactory9SV()),

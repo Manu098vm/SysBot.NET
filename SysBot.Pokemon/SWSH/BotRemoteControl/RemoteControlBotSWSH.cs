@@ -5,9 +5,9 @@ using SysBot.Base;
 
 namespace SysBot.Pokemon
 {
-    public class RemoteControlBot : PokeRoutineExecutor8
+    public class RemoteControlBotSWSH : PokeRoutineExecutor8SWSH
     {
-        public RemoteControlBot(PokeBotState cfg) : base(cfg)
+        public RemoteControlBotSWSH(PokeBotState cfg) : base(cfg)
         {
         }
 
@@ -31,7 +31,7 @@ namespace SysBot.Pokemon
                 Log(e.Message);
             }
 
-            Log($"Ending {nameof(PokeTradeBot)} loop.");
+            Log($"Ending {nameof(PokeTradeBotSWSH)} loop.");
             await HardStop().ConfigureAwait(false);
         }
 

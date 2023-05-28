@@ -4,6 +4,7 @@ using SysBot.Base;
 using System.Threading;
 using System.Collections.Generic;
 using System;
+using static SysBot.Pokemon.RotatingRaidSettingsSV;
 
 namespace SysBot.Pokemon
 {
@@ -29,8 +30,14 @@ namespace SysBot.Pokemon
         [Category(Hosting), Description("If true, the bot will attempt to auto-generate Raid Embeds based on the\"preset.txt\" file.")]
         public bool UsePresetFile { get; set; } = true;
 
-        [Category(Hosting), Description("Raid embed parameters.")]
-        public List<RaidParameters> RaidEmbedParameters { get; set; } = new();
+        [Category(Hosting), Description("Preset Filters"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
+        public RaidPresetFiltersCategory PresetFilters { get; set; } = new();
+
+        [Category(Hosting), Description("Raid Embed Filters"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
+        public RaidEmbedFiltersCategory RaidEmbedFilters { get; set; } = new();
+
+        [Category(Hosting), Description("When enabled, the bot will use the superior sprite art courtesy of SHA.")]
+        public bool SpriteAlternateArt { get; set; } = true;
 
         [Category(Hosting), Description("Catch limit per player before they get added to the ban list automatically. If set to 0 this setting will be ignored.")]
         public int CatchLimit { get; set; } = 0;
@@ -97,9 +104,19 @@ namespace SysBot.Pokemon
             YYMMDD,
         }
 
-        public class RaidParameters
+        public enum TeraCrystalType: int
         {
-            public override string ToString() => $"{Title}";
+            Base = 0,
+            Black = 1,
+            Distribution = 2,
+            Might = 3,
+        }
+
+        [Category(Hosting)]
+        [TypeConverter(typeof(RaidEmbedFiltersCategoryConverter))]
+        public class RaidEmbedFiltersCategory
+        {
+            public override string ToString() => "Raid Embed Filters";
             public string Title { get; set; } = string.Empty;
             public string[] Description { get; set; } = Array.Empty<string>();
             public Species Species { get; set; } = Species.None;
@@ -107,18 +124,52 @@ namespace SysBot.Pokemon
             public bool IsShiny { get; set; } = true;
             public TeraCrystalType CrystalType { get; set; } = TeraCrystalType.Base;
             public bool IsCoded { get; set; } = true;
-            public bool SpriteAlternateArt { get; set; } = false;
             public string Seed { get; set; } = "0";
             public string[] PartyPK { get; set; } = Array.Empty<string>();
             public bool IsSet { get; set; } = false;
         }
 
-        public enum TeraCrystalType: int
+        [Category(Hosting)]
+        [TypeConverter(typeof(RaidPresetFiltersCategoryConverter))]
+        public class RaidPresetFiltersCategory
         {
-            Base = 0,
-            Black = 1,
-            Distribution = 2,
-            Might = 3,
+            public override string ToString() => "Preset Filters";
+
+            [Category(Hosting), Description("If true, the bot will attempt to auto-generate Raid Embeds based on the \"preset.txt\" file.")]
+            public bool UsePresetFile { get; set; } = true;
+
+            [Category(Hosting), Description("If true, the bot will use the first line of preset as title.")]
+            public bool TitleFromPreset { get; set; } = true;
+
+            [Category(Hosting), Description("If true, the bot will overwrite any set Title with the new one.")]
+            public bool ForceTitle { get; set; } = true;
+
+            [Category(Hosting), Description("If true, the bot will overwrite any set Description with the new one.")]
+            public bool ForceDescription { get; set; } = true;
+
+            [Category(Hosting), Description("If true, the bot will append the moves to the preset Description.")]
+            public bool IncludeMoves { get; set; } = true;
+
+            [Category(Hosting), Description("If true, the bot will append the Special Rewards to the preset Description.")]
+            public bool IncludeRewards { get; set; } = true;
+        }
+
+        public class RaidEmbedFiltersCategoryConverter : TypeConverter
+        {
+            public override bool GetPropertiesSupported(ITypeDescriptorContext? context) => true;
+
+            public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext? context, object? value, Attribute[]? attributes) => TypeDescriptor.GetProperties(typeof(RaidEmbedFiltersCategory));
+
+            public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType) => destinationType != typeof(string) && base.CanConvertTo(context, destinationType);
+        }
+
+        public class RaidPresetFiltersCategoryConverter : TypeConverter
+        {
+            public override bool GetPropertiesSupported(ITypeDescriptorContext? context) => true;
+
+            public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext? context, object? value, Attribute[]? attributes) => TypeDescriptor.GetProperties(typeof(RaidPresetFiltersCategory));
+
+            public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType) => destinationType != typeof(string) && base.CanConvertTo(context, destinationType);
         }
     }    
 }

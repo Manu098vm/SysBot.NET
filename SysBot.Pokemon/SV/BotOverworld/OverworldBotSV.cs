@@ -425,9 +425,6 @@ namespace SysBot.Pokemon
                     string scalemsg = pk.Scale is 0 ? "XXXS" : "XXXL";
                     string ress = $"A special sized {scalemsg} {(Species)pk.Species} has been found!\n";
                     Log(ress);
-                    url = TradeExtensions<PK9>.PokeImg(pk, false, false);
-                    EchoUtil.EchoEmbed(ping, ress + print, url, markurl, true);
-                    return false;
                 }
             }
 
@@ -457,9 +454,6 @@ namespace SysBot.Pokemon
                     string segmsg = (Species)pk.Species is Species.Dunsparce or Species.Dudunsparce ? "3-Segment" : "Family Of 3";
                     string res3 = $"A special {segmsg} {(Species)pk.Species} has been found!\n";
                     Log(res3);
-                    url = TradeExtensions<PK9>.PokeImg(pk, false, false);
-                    EchoUtil.EchoEmbed(ping, res3 + print, url, markurl, true);
-                    return false;
                 }
             }
 

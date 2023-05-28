@@ -1,15 +1,15 @@
-﻿using System.Threading;
+﻿using PKHeX.Core;
+using System.Threading;
 using System.Threading.Tasks;
-using PKHeX.Core;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Base.SwitchStick;
-using static SysBot.Pokemon.PokeDataOffsets;
+using static SysBot.Pokemon.PokeDataOffsetsSWSH;
 
 namespace SysBot.Pokemon
 {
-    public sealed class EncounterBotDog : EncounterBot
+    public sealed class EncounterBotDogSWSH : EncounterBotSWSH
     {
-        public EncounterBotDog(PokeBotState cfg, PokeTradeHub<PK8> hub) : base(cfg, hub)
+        public EncounterBotDogSWSH(PokeBotState cfg, PokeTradeHub<PK8> hub) : base(cfg, hub)
         {
         }
 

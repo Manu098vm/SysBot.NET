@@ -1,14 +1,14 @@
 ﻿using PKHeX.Core;
 using SysBot.Base;
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Threading;
+using System.Threading.Tasks;
 using static SysBot.Pokemon.PokeDataOffsetsSV;
 using static SysBot.Base.SwitchButton;
 using static System.Buffers.Binary.BinaryPrimitives;
-using System.IO;
 using RaidCrawler.Core.Structures;
 
 namespace SysBot.Pokemon
@@ -575,7 +575,7 @@ namespace SysBot.Pokemon
             return s;
         }
 
-        public static string[] ProcessRaidPlaceholders(string[] description, PKM pk, string moveset, string extramoveset)
+        public static string[] ProcessRaidPlaceholders(string[] description, PKM pk)
         {
             string[] raidDescription = Array.Empty<string>();
 
@@ -602,8 +602,6 @@ namespace SysBot.Pokemon
             string genderSymbol = pk.Gender == 0 ? "♂" : pk.Gender == 1 ? "♀" : "⚥";
             string genderText = $"{(Gender)pk.Gender}";
             string ability = $"{(Ability)pk.Ability}";
-            string move = moveset;
-            string extra = extramoveset;
 
             if (pk.IV_HP == 31 && pk.IV_ATK == 31 && pk.IV_DEF == 31 && pk.IV_SPA == 31 && pk.IV_SPD == 31 && pk.IV_SPE == 31)            
                 MaxIV = "6IV";            
@@ -631,8 +629,7 @@ namespace SysBot.Pokemon
             raidDescription[i] = raidDescription[i].Replace("{markEntryText}", markEntryText)
                     .Replace("{markTitle}", markTitle).Replace("{scaleText}", scaleText).Replace("{scaleNumber}", scaleNumber).Replace("{shinySymbol}", shinySymbol).Replace("{shinySymbolText}", shinySymbolText)
                     .Replace("{shinyText}", shiny).Replace("{species}", species).Replace("{IVList}", IVList).Replace("{MaxIV}",MaxIV).Replace("{HP}", HP).Replace("{ATK}", ATK).Replace("{DEF}", DEF).Replace("{SPA}", SPA)
-                    .Replace("{SPD}", SPD).Replace("{SPE}", SPE).Replace("{nature}", nature).Replace("{ability}", ability).Replace("{genderSymbol}", genderSymbol).Replace("{genderText}", genderText)
-                    .Replace("{moveset}", move).Replace("{extramoves}", extra);
+                    .Replace("{SPD}", SPD).Replace("{SPE}", SPE).Replace("{nature}", nature).Replace("{ability}", ability).Replace("{genderSymbol}", genderSymbol).Replace("{genderText}", genderText);
 
             return (raidDescription);
         }

@@ -3,7 +3,7 @@ using PKHeX.Core;
 
 namespace SysBot.Pokemon
 {
-    public sealed class BotFactory8 : BotFactory<PK8>
+    public sealed class BotFactory8SWSH : BotFactory<PK8>
     {
         public override PokeRoutineExecutorBase CreateBot(PokeTradeHub<PK8> Hub, PokeBotState cfg) => cfg.NextRoutineType switch
         {
@@ -15,23 +15,23 @@ namespace SysBot.Pokemon
                 or PokeRoutineType.SeedCheck
                 or PokeRoutineType.FixOT
                 or PokeRoutineType.TradeCord
-                => new PokeTradeBot(Hub, cfg),
+                => new PokeTradeBotSWSH(Hub, cfg),
 
-            PokeRoutineType.EggFetch => new EggBot(cfg, Hub),
-            PokeRoutineType.FossilBot => new FossilBot(cfg, Hub),
-            PokeRoutineType.RaidBot => new RaidBot(cfg, Hub),
-            PokeRoutineType.EncounterLine => new EncounterBotLine(cfg, Hub),
-            PokeRoutineType.Reset => new EncounterBotReset(cfg, Hub),
-            PokeRoutineType.DogBot => new EncounterBotDog(cfg, Hub),
-            PokeRoutineType.LairBot => new LairBot(cfg, Hub),
-            PokeRoutineType.DenBot => new DenBot(cfg, Hub),
-            PokeRoutineType.BoolBot => new BoolBot(cfg, Hub),
-            PokeRoutineType.SoJCamp => new SoJCamp(cfg, Hub),
-            PokeRoutineType.CurryBot => new CurryBot(cfg, Hub),
-            PokeRoutineType.RollingRaid => new RollingRaidBot(cfg, Hub),
-            PokeRoutineType.OverworldBot => new OverworldBot(cfg, Hub),
+            PokeRoutineType.EggFetch => new EncounterBotEggSWSH(cfg, Hub),
+            PokeRoutineType.FossilBot => new EncounterBotFossilSWSH(cfg, Hub),
+            PokeRoutineType.RaidBot => new RaidBotSWSH(cfg, Hub),
+            PokeRoutineType.EncounterLine => new EncounterBotLineSWSH(cfg, Hub),
+            PokeRoutineType.Reset => new EncounterBotResetSWSH(cfg, Hub),
+            PokeRoutineType.DogBot => new EncounterBotDogSWSH(cfg, Hub),
+            PokeRoutineType.LairBot => new LairBotSWSH(cfg, Hub),
+            PokeRoutineType.DenBot => new DenBotSWSH(cfg, Hub),
+            PokeRoutineType.BoolBot => new BoolBotSWSH(cfg, Hub),
+            PokeRoutineType.SoJCamp => new SoJCampSWSH(cfg, Hub),
+            PokeRoutineType.CurryBot => new CurryBotSWSH(cfg, Hub),
+            PokeRoutineType.RollingRaid => new RollingRaidBotSWSH(cfg, Hub),
+            PokeRoutineType.OverworldBot => new OverworldBotSWSH(cfg, Hub),
 
-            PokeRoutineType.RemoteControl => new RemoteControlBot(cfg),
+            PokeRoutineType.RemoteControl => new RemoteControlBotSWSH(cfg),
             _ => throw new ArgumentException(nameof(cfg.NextRoutineType)),
         };
 

@@ -1,13 +1,12 @@
-﻿using Discord.Commands;
+﻿using Discord;
+using Discord.Commands;
 using Discord.WebSocket;
 using SysBot.Base;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Discord;
-using PKHeX.Core;
-using System.IO;
 
 namespace SysBot.Pokemon.Discord
 {

@@ -373,7 +373,7 @@ namespace SysBot.Pokemon
             var rew = string.Empty;
             switch (type)
             {
-                case 0: rew = hub.Config.RaidSV.RaidEmbedParameters[i].Description.Last(); break;
+                case 0: rew = hub.Config.RaidSV.RaidEmbedFilters.Description.Last(); break;
                 case 1: rew = hub.Config.RotatingRaidSV.RaidEmbedParameters[i].Description.Last(); break;
             }
             var value = string.Format(RaidRewardsInQueueFormat, rew);
@@ -386,7 +386,7 @@ namespace SysBot.Pokemon
             var rew = string.Empty;
             switch (type)
             {
-                case 0: rew = hub.Config.RotatingRaidSV.RaidEmbedParameters[i].Description[1]; break;
+                case 0: rew = hub.Config.RaidSV.RaidEmbedFilters.Description[1]; break;
                 case 1: rew = hub.Config.RotatingRaidSV.RaidEmbedParameters[i].Description[1]; break;
             }
             var value = string.Format(RaidInfoFormat, rew);
@@ -400,7 +400,7 @@ namespace SysBot.Pokemon
             string extra = string.Empty;
             switch (type)
             {
-                case 0: moves = hub.Config.RaidSV.RaidEmbedParameters[i].Description[3]; extra = hub.Config.RaidSV.RaidEmbedParameters[i].Description[4]; break;
+                case 0: moves = hub.Config.RaidSV.RaidEmbedFilters.Description[3]; extra = hub.Config.RaidSV.RaidEmbedFilters.Description[4]; break;
                 case 1: moves = hub.Config.RotatingRaidSV.RaidEmbedParameters[i].Description[3]; extra = hub.Config.RotatingRaidSV.RaidEmbedParameters[i].Description[4]; break;
             }
             if (!string.IsNullOrEmpty(extra))

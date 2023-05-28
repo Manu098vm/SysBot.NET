@@ -142,11 +142,22 @@ namespace SysBot.Pokemon.Twitch
             LogUtil.LogText($"[{client.TwitchUsername}] - Connected {e.AutoJoinChannel} as {e.BotUsername}");
         }
 
-        private void Client_OnDisconnected(object? sender, OnDisconnectedEventArgs e)
+        private async void Client_OnDisconnected(object? sender, OnDisconnectedEventArgs e)
         {
             LogUtil.LogText($"[{client.TwitchUsername}] - Disconnected.");
+            await Task.Delay(5_000, System.Threading.CancellationToken.None).ConfigureAwait(false);
             while (!client.IsConnected)
-                client.Reconnect();
+            {
+                try
+                {
+                    client.Connect();
+                }
+                catch (Exception ex)
+                {
+                    LogUtil.LogError($"Error reconnecting: {ex.Message}", "TwitchBot");
+                }
+            }
+            await Task.Delay(5_000, System.Threading.CancellationToken.None).ConfigureAwait(false);
         }
 
         private void Client_OnJoinedChannel(object? sender, OnJoinedChannelArgs e)

@@ -242,7 +242,7 @@ namespace SysBot.Pokemon
             var set = $"{(pk.ShinyXor == 0 ? "■ - " : pk.ShinyXor <= 16 ? "★ - " : "")}{SpeciesName.GetSpeciesNameGeneration(pk.Species, 2, 9)}{TradeExtensions<PK9>.FormOutput(pk.Species, pk.Form, out _)}{markEntryText}{gender}\nIVs: {pk.IV_HP}/{pk.IV_ATK}/{pk.IV_DEF}/{pk.IV_SPA}/{pk.IV_SPD}/{pk.IV_SPE}\nNature: {(Nature)pk.Nature} | Ability: {(Ability)pk.Ability}";
             if (pk is PK9 pk9)
             {
-                set += $"\nScale: {PokeSizeDetailedUtil.GetSizeRating(pk9.Scale)}";
+                set += $"\nScale: {PokeSizeDetailedUtil.GetSizeRating(pk9.Scale)} ({pk9.Scale})";
             }
             return set;
         }

@@ -6,12 +6,12 @@ using System.Threading.Tasks;
 using SysBot.Base;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Base.SwitchStick;
-using static SysBot.Pokemon.PokeDataOffsets;
+using static SysBot.Pokemon.PokeDataOffsetsSWSH;
 using System.Linq;
 
 namespace SysBot.Pokemon
 {
-    public sealed class OverworldBot : PokeRoutineExecutor8, IEncounterBot
+    public sealed class OverworldBotSWSH : PokeRoutineExecutor8SWSH, IEncounterBot
     {
         private readonly PokeTradeHub<PK8> Hub;
         private readonly IDumper DumpSetting;
@@ -22,7 +22,7 @@ namespace SysBot.Pokemon
         public readonly IReadOnlyList<string> UnwantedMarks;
         private readonly byte[] BattleMenuReady = { 0, 0, 0, 255 };
 
-        public OverworldBot(PokeBotState cfg, PokeTradeHub<PK8> hub) : base(cfg)
+        public OverworldBotSWSH(PokeBotState cfg, PokeTradeHub<PK8> hub) : base(cfg)
         {
             Hub = hub;
             Settings = hub.Config.OverworldSWSH;

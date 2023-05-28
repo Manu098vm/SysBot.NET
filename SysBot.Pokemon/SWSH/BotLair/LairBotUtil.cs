@@ -120,7 +120,7 @@ namespace SysBot.Pokemon
             int selectIndex = -1;
             for (int i = 0; i < pk.Moves.Length; i++)
             {
-                if (Enum.IsDefined(typeof(PriorityMoves), (Move)pk.Moves[i]))
+                if (Enum.IsDefined(typeof(PriorityMoves), pk.Moves[i]))
                 {
                     selectIndex = i;
                     break;
@@ -274,8 +274,7 @@ namespace SysBot.Pokemon
                     _ => 1.0,
                 };
 
-                double usefulStatus =
-                    (!dmax && ((move.MoveID == (int)Move.Toxic && lairPk.Status_Condition != (int)StatusCondition.Poisoned) || move.MoveID == (int)Move.Counter || move.MoveID == (int)Move.LifeDew ||
+                double usefulStatus = (!dmax && ((move.MoveID == (int)Move.Toxic && lairPk.Status_Condition != (int)StatusCondition.Poisoned) || move.MoveID == (int)Move.Counter || move.MoveID == (int)Move.LifeDew ||
                     move.MoveID == (int)Move.WideGuard || (move.MoveID == (int)Move.Yawn && lairPk.Status_Condition != (int)StatusCondition.Asleep)))
                     || (move.MoveID == (int)Move.Protect && dmax) ? 1.2 : 1.0;
 

@@ -27,8 +27,8 @@ namespace SysBot.Pokemon
         [Category(Hosting), Description("If true, the bot will attempt to auto-generate Raid Parameters from the \"raidsv.txt\" file on botstart.")]
         public bool GenerateParametersFromFile { get; set; } = true;
 
-        [Category(Hosting), Description("If true, the bot will attempt to auto-generate Raid Embeds based on the\"preset.txt\" file.")]
-        public bool UsePresetFile { get; set; } = true;
+        [Category(Hosting), Description("RotatingRaid Preset Filters"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
+        public RotatingRaidPresetFiltersCategory PresetFilters { get; set; } = new();
 
         [Category(Hosting), Description("Raid embed parameters.")]
         public List<RotatingRaidParameters> RaidEmbedParameters { get; set; } = new();
@@ -36,11 +36,11 @@ namespace SysBot.Pokemon
         [Category(Hosting), Description("Catch limit per player before they get added to the ban list automatically. If set to 0 this setting will be ignored.")]
         public int CatchLimit { get; set; } = 0;
 
-        [Category(Hosting), Description("Empty raid limit per parameter before the bot hosts and uncoded raid. Default is 3 raids.")]
-        public int EmptyRaidLimit { get; set; } = 3;
-
         [Category(Hosting), Description("Minimum amount of seconds to wait before starting a raid.")]
         public int TimeToWait { get; set; } = 90;
+
+        [Category(Hosting), Description("Lobby Options"), DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
+        public LobbyFiltersCategory LobbyOptions { get; set; } = new();
 
         [Category(FeatureToggle), Description("If true, the bot will attempt take screenshots for the Raid Embeds. If you experience crashes often about \"Size/Parameter\" try setting this to false.")]
         public bool TakeScreenshot { get; set; } = true;
@@ -106,6 +106,72 @@ namespace SysBot.Pokemon
             public string[] PartyPK { get; set; } = Array.Empty<string>();
             public bool ActiveInRotation { get; set; } = true;
             public bool IsSet { get; set; } = false;
+        }
+
+        public enum LobbyMethodOptions
+        {
+            OpenLobby,
+            SkipRaid,
+            ContinueRaid,
+        }
+
+        [Category(Hosting)]
+        [TypeConverter(typeof(RotatingRaidPresetFiltersCategoryConverter))]
+        public class RotatingRaidPresetFiltersCategory
+        {
+            public override string ToString() => "Preset filters.";
+
+            [Category(Hosting), Description("If true, the bot will attempt to auto-generate Raid Embeds based on the \"preset.txt\" file.")]
+            public bool UsePresetFile { get; set; } = true;
+
+            [Category(Hosting), Description("If true, the bot will use the first line of preset as title.")]
+            public bool TitleFromPreset { get; set; } = true;
+
+            [Category(Hosting), Description("If true, the bot will overwrite any set Title with the new one.")]
+            public bool ForceTitle { get; set; } = true;
+
+            [Category(Hosting), Description("If true, the bot will overwrite any set Description with the new one.")]
+            public bool ForceDescription { get; set; } = true;
+
+            [Category(Hosting), Description("If true, the bot will append the moves to the preset Description.")]
+            public bool IncludeMoves { get; set; } = true;
+
+            [Category(Hosting), Description("If true, the bot will append the Special Rewards to the preset Description.")]
+            public bool IncludeRewards { get; set; } = true;
+        }
+
+        [Category(Hosting)]
+        [TypeConverter(typeof(LobbyFiltersCategoryConverter))]
+        public class LobbyFiltersCategory
+        {
+            public override string ToString() => "Lobby Filters";
+
+            [Category(Hosting), Description("OpenLobby - Opens the Lobby after x Empty Lobbies\nSkipRaid - Moves on after x losses/empty Lobbies\nContinue - Continues hosting the raid")]
+            public LobbyMethodOptions LobbyMethodOptions { get; set; } = LobbyMethodOptions.OpenLobby;
+
+            [Category(Hosting), Description("Empty raid limit per parameter before the bot hosts and uncoded raid. Default is 3 raids.")]
+            public int EmptyRaidLimit { get; set; } = 3;
+
+            [Category(Hosting), Description("Empty/Lost raid limit per parameter before the bot moves on to the next one. Default is 3 raids.")]
+            public int SkipRaidLimit { get; set; } = 3;
+        }
+
+        public class RotatingRaidPresetFiltersCategoryConverter : TypeConverter
+        {
+            public override bool GetPropertiesSupported(ITypeDescriptorContext? context) => true;
+
+            public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext? context, object? value, Attribute[]? attributes) => TypeDescriptor.GetProperties(typeof(RotatingRaidPresetFiltersCategory));
+
+            public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType) => destinationType != typeof(string) && base.CanConvertTo(context, destinationType);
+        }
+
+        public class LobbyFiltersCategoryConverter : TypeConverter
+        {
+            public override bool GetPropertiesSupported(ITypeDescriptorContext? context) => true;
+
+            public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext? context, object? value, Attribute[]? attributes) => TypeDescriptor.GetProperties(typeof(LobbyFiltersCategory));
+
+            public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType) => destinationType != typeof(string) && base.CanConvertTo(context, destinationType);
         }
     }    
 }
