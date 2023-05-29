@@ -1,10 +1,9 @@
 ﻿using PKHeX.Core;
-using System.ComponentModel;
-using SysBot.Base;
-using System.Threading;
-using System.Collections.Generic;
 using System;
-using static SysBot.Pokemon.RotatingRaidSettingsSV;
+using SysBot.Base;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Threading;
 
 namespace SysBot.Pokemon
 {
@@ -97,36 +96,21 @@ namespace SysBot.Pokemon
                 yield return $"Started Raids: {CompletedRaids}";
         }
 
-        public enum DTFormat
-        { 
-            MMDDYY,
-            DDMMYY,
-            YYMMDD,
-        }
-
-        public enum TeraCrystalType: int
-        {
-            Base = 0,
-            Black = 1,
-            Distribution = 2,
-            Might = 3,
-        }
-
         [Category(Hosting)]
         [TypeConverter(typeof(RaidEmbedFiltersCategoryConverter))]
         public class RaidEmbedFiltersCategory
         {
             public override string ToString() => "Raid Embed Filters";
-            public string Title { get; set; } = string.Empty;
+            public TeraCrystalType CrystalType { get; set; } = TeraCrystalType.Base;
             public string[] Description { get; set; } = Array.Empty<string>();
+            public bool IsCoded { get; set; } = true;
+            public bool IsSet { get; set; } = false;
+            public bool IsShiny { get; set; } = true;
+            public string[] PartyPK { get; set; } = Array.Empty<string>();
             public Species Species { get; set; } = Species.None;
             public int SpeciesForm { get; set; } = 0;
-            public bool IsShiny { get; set; } = true;
-            public TeraCrystalType CrystalType { get; set; } = TeraCrystalType.Base;
-            public bool IsCoded { get; set; } = true;
             public string Seed { get; set; } = "0";
-            public string[] PartyPK { get; set; } = Array.Empty<string>();
-            public bool IsSet { get; set; } = false;
+            public string Title { get; set; } = string.Empty;
         }
 
         [Category(Hosting)]

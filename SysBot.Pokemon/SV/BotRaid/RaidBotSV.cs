@@ -1,5 +1,5 @@
-using Discord;
 using PKHeX.Core;
+using Discord;
 using SysBot.Base;
 using SysBot.Pokemon.SV;
 using System;
@@ -12,9 +12,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using static SysBot.Base.SwitchButton;
-using static SysBot.Pokemon.RaidSettingsSV;
 using RaidCrawler.Core.Structures;
+using static SysBot.Base.SwitchButton;
 
 namespace SysBot.Pokemon
 {
@@ -31,28 +30,27 @@ namespace SysBot.Pokemon
             Settings = hub.Config.RaidSV;
         }
 
-        private const int AzureBuildID = 419;
+        private const int AzureBuildID = 421;
         private int RaidsAtStart;
         private int RaidCount;
         private int WinCount;
         private int LossCount;
         private int EmptyRaid;
-        private readonly Dictionary<ulong, int> RaidTracker = new();
-        private SAV9SV HostSAV = new();
-        private DateTime StartTime = DateTime.Now;
-
+        private int StoryProgress;
+        private int EventProgress;
         private ulong TodaySeed;
         private ulong OverworldOffset;
         private ulong ConnectedOffset;
         private ulong TeraRaidBlockOffset;
         private readonly ulong[] TeraNIDOffsets = new ulong[3];
         private string TeraRaidCode { get; set; } = string.Empty;
-        private int StoryProgress;
-        private int EventProgress;
-        private RaidContainer? container;
         private string BaseDescription = string.Empty;
         private string[] PresetDescription = Array.Empty<string>();
         private string[] ModDescription = Array.Empty<string>();
+        private readonly Dictionary<ulong, int> RaidTracker = new();
+        private SAV9SV HostSAV = new();
+        private DateTime StartTime = DateTime.Now;
+        private RaidContainer? container;
 
         public override async Task MainLoop(CancellationToken token)
         {
@@ -194,7 +192,7 @@ namespace SysBot.Pokemon
                     "7" => TeraCrystalType.Might,
                     _ => TeraCrystalType.Base,
                 };
-                RaidEmbedFiltersCategory param = new()
+                RaidSettingsSV.RaidEmbedFiltersCategory param = new()
                 {
                     Seed = monseed,
                     Title = montitle,
@@ -611,7 +609,6 @@ namespace SysBot.Pokemon
             return false;
         }
 
-        // This is messy, needs a way to check if player X is ready, and when we're in a raid, in order to avoid adding players that may have disconnected or quit. Players get shifted down as they leave.
         private async Task<(bool, List<(ulong, TradeMyStatus)>)> ReadTrainers(CancellationToken token)
         {
             await EnqueueEmbed(null, "", false, false, false, token).ConfigureAwait(false);
@@ -624,7 +621,6 @@ namespace SysBot.Pokemon
 
             while (!full && (DateTime.Now < endTime))
             {
-                // Loop through trainers
                 for (int i = 0; i < 3; i++)
                 {
                     var player = i + 2;
@@ -1055,10 +1051,10 @@ namespace SysBot.Pokemon
                     if (Settings.UsePresetFile)
                     {
                         string tera = $"{(MoveType)raids[i].TeraType}";
-                        if (!string.IsNullOrEmpty(Settings.RaidEmbedFilters.Title))
+                        if (!string.IsNullOrEmpty(Settings.RaidEmbedFilters.Title) && !Settings.PresetFilters.ForceTitle)
                             ModDescription[0] = Settings.RaidEmbedFilters.Title;
 
-                        if (Settings.RaidEmbedFilters.Description.Length > 0)
+                        if (Settings.RaidEmbedFilters.Description.Length > 0 && !Settings.PresetFilters.ForceDescription)
                         {
                             string[] presetOverwrite = new string[Settings.RaidEmbedFilters.Description.Length + 1];
                             presetOverwrite[0] = ModDescription[0];
@@ -1076,7 +1072,6 @@ namespace SysBot.Pokemon
                             .Replace("{tera}", tera)
                             .Replace("{difficulty}", $"{stars}")
                             .Replace("{stars}", starcount)
-                            .Replace("{rewards}", res)
                             .Trim();
                             raidDescription[j] = Regex.Replace(raidDescription[j], @"\s+", " ");
                         }

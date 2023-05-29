@@ -689,14 +689,14 @@ namespace SysBot.Pokemon.Discord
 
             RotatingRaidSettingsSV.RotatingRaidParameters newparam = new()
             {
-                CrystalType = (RaidSettingsSV.TeraCrystalType)type,                
+                CrystalType = (TeraCrystalType)type,                
                 Description = new[] { description },
                 PartyPK = new[] { data },
                 Species = parse,
                 SpeciesForm = 0,
                 Seed = seed,
                 IsCoded = true,
-                Title = $"{parse} ☆ - {(RaidSettingsSV.TeraCrystalType)type}",
+                Title = $"{parse} ☆ - {(TeraCrystalType)type}",
             };
 
             SysCord<T>.Runner.Hub.Config.RotatingRaidSV.RaidEmbedParameters.Add(newparam);
