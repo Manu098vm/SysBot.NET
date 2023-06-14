@@ -6,16 +6,13 @@ namespace SysBot.Pokemon
 {
     public sealed class TradePartnerSV
     {
-        public string TID7 { get; }
-        public string SID7 { get; }
-        public string TrainerName { get; }
+        public TradeMyStatus Info { get; private set; }
 
-        public TradePartnerSV(TradeMyStatus info)
-        {
-            TID7 = info.DisplayTID.ToString("D6");
-            SID7 = info.DisplaySID.ToString("D4");
-            TrainerName = info.OT;
-        }
+        public string TID7 { get => $"{Info.DisplayTID:D6}"; }
+        public string SID7 { get => $"{Info.DisplaySID:D4}"; }
+        public string TrainerName { get => Info.OT; }
+
+        public TradePartnerSV(TradeMyStatus info) => Info = info;
     }
 
     public sealed class TradeMyStatus
