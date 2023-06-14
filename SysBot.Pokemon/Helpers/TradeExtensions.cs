@@ -142,7 +142,7 @@ namespace SysBot.Pokemon
                 PK9 => 30023,
                 _ => 60002, //PK8
             };
-            pk.MetDate = DateOnly.Parse("2020/10/20");
+            pk.MetDate = DateOnly.FromDateTime(DateTime.Now);
             pk.EggMetDate = pk.MetDate;
             pk.HeldItem = 0;
             pk.CurrentLevel = 1;
@@ -358,14 +358,14 @@ namespace SysBot.Pokemon
         {
             var pkMet = (T)pkm.Clone();
             if (pkMet.Version is not (int)GameVersion.GO)
-                pkMet.MetDate = DateOnly.Parse("2020/10/20");
+                pkMet.MetDate = DateOnly.FromDateTime(DateTime.Now);
 
             var analysis = new LegalityAnalysis(pkMet);
             var pkTrash = (T)pkMet.Clone();
             if (analysis.Valid)
             {
                 pkTrash.IsNicknamed = true;
-                pkTrash.Nickname = "KOIKOIKOIKOI";
+                pkTrash.Nickname = "MANUMANUMANU";
                 pkTrash.SetDefaultNickname(la ?? new LegalityAnalysis(pkTrash));
             }
 
