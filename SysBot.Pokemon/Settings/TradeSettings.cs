@@ -50,6 +50,9 @@ namespace SysBot.Pokemon
         [Category(TradeConfig), Description("Select default species for \"ItemTrade\", if configured.")]
         public Species ItemTradeSpecies { get; set; } = Species.None;
 
+        [Category(TradeConfig), Description("Use Trade Partner details (OT, TID and SID), when legally possible.")]
+        public bool UseTradePartnerDetails { get; set; } = false;
+
         [Category(TradeConfig), Description("Silly, useless feature to post a meme when certain illegal or disallowed trade requests are made.")]
         public bool Memes { get; set; } = false;
 

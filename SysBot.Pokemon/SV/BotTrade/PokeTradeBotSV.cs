@@ -9,6 +9,10 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Pokemon.PokeDataOffsetsSV;
+using System.Security.Cryptography.X509Certificates;
+using System.Net.WebSockets;
+using System.Reflection.Metadata.Ecma335;
+using PKHeX.Core.AutoMod;
 
 namespace SysBot.Pokemon
 {
@@ -339,6 +343,10 @@ namespace SysBot.Pokemon
                 return partnerCheck;
             }
 
+            if (Hub.Config.Trade.UseTradePartnerDetails)
+                if (CanUsePartnerDetails(toSend, sav, tradePartner, out var toSendEdited))
+                    toSend = toSendEdited;
+
             poke.SendNotification(this, $"Found Link Trade partner: {tradePartner.TrainerName}. Waiting for a Pokémon...");
 
             if (poke.Type == PokeTradeType.Dump)
@@ -413,6 +421,67 @@ namespace SysBot.Pokemon
 
             await ExitTradeToPortal(false, token).ConfigureAwait(false);
             return PokeTradeResult.Success;
+        }
+
+        bool CanUsePartnerDetails(PK9 pk, SAV9SV sav, TradePartnerSV partner, out PK9 res)
+        {
+            res = pk.Clone();
+
+            //Current handler cannot be past gen OT
+            if (!pk.IsNative) 
+            {
+                Log("Can not apply Partner details: Current handler cannot be past gen OT.");
+                return false;
+            }
+
+            //Don't override Ditto, usually requested for Masuda method
+            if ((Species)pk.Species is Species.Ditto) 
+            {
+                Log("Can not apply Partner details: Requested species is Ditto, which is usually used for Masuda method.");
+                return false;
+            }
+
+            var def_trainer = new SimpleTrainerInfo(sav.Version)
+            {
+                OT = Hub.Config.Legality.GenerateOT,
+                TID16 = Hub.Config.Legality.GenerateTID16,
+                SID16 = Hub.Config.Legality.GenerateSID16,
+                Gender = (int)Hub.Config.Legality.GenerateLanguage,
+            };
+
+            var alm_trainer = Hub.Config.Legality.GeneratePathTrainerInfo != string.Empty ?
+                TrainerSettings.GetSavedTrainerData(sav.Version, sav.Generation, sav, (LanguageID)sav.Language) : null;
+
+            //Only override trainer details if user didn't specify OT in the Showdown/PK9 request
+            if (!pk.OT_Name.Equals(def_trainer.OT) && !pk.OT_Name.Equals(alm_trainer?.OT)) 
+            {
+                Log("Can not apply Partner details: Requested Pokémon already has set Trainer details.");
+                return false;
+            }
+
+            res.OT_Name = partner.TrainerName;
+            res.OT_Gender = partner.Info.Gender;
+            res.TrainerTID7 = partner.Info.DisplayTID;
+            res.TrainerSID7 = partner.Info.DisplaySID;
+            res.Language = partner.Info.Language;
+            res.Version = partner.Info.Game;
+
+            if (pk.IsShiny) 
+                res.SetShiny();
+
+            if (!pk.ChecksumValid) 
+                res.RefreshChecksum();
+
+            var la = new LegalityAnalysis(res);
+
+            if (!la.Valid)
+            {
+                Log("Can not apply Partner details:");
+                Log(la.Report());
+                return false;
+            }
+
+            return true;
         }
 
         private void UpdateCountsAndExport(PokeTradeDetail<PK9> poke, PK9 received, PK9 toSend)
