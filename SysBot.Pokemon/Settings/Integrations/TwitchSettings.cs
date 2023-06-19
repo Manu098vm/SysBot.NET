@@ -28,6 +28,18 @@ namespace SysBot.Pokemon
         [Category(Operation), Description("Message sent when the Barrier is released.")]
         public string MessageStart { get; set; } = string.Empty;
 
+        [Category(Operation), Description("Discord Server Link.")]
+        public string DiscordLink { get; set; } = string.Empty;
+
+        [Category(Operation), Description("Donation Link.")]
+        public string DonationLink { get; set; } = string.Empty;
+
+        [Category(Operation), Description("Bot usage tutorial text.")]
+        public string TutorialText { get; set; } = string.Empty;
+
+        [Category(Operation), Description("Bot usage tutorial Link.")]
+        public string TutorialLink { get; set; } = string.Empty;
+
         // Messaging
 
         [Category(Operation), Description("Throttle the bot from sending messages if X messages have been sent in the past Y seconds.")]
