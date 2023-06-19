@@ -34,6 +34,12 @@ namespace SysBot.Pokemon
         [Category(Operation), Description("Custom message the bot will reply with when a user says hello to it. Use string formatting to mention the user in the reply.")]
         public string HelloResponse { get; set; } = "Hi {0}!";
 
+        [Category(Operation), Description("Stream link.")]
+        public string StreamLink { get; set; } = string.Empty;
+
+        [Category(Operation), Description("Donation link.")]
+        public string DonationLink { get; set; } = string.Empty;
+
         // Whitelists
 
         [Category(Roles), Description("Users with this role are allowed to enter the Trade queue.")]
