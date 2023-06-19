@@ -203,8 +203,26 @@ namespace SysBot.Pokemon.Discord
                 await ReplyAsync("Provided Pokémon content is blocked from trading!").ConfigureAwait(false);
                 return;
             }
-
+            
             var la = new LegalityAnalysis(pk);
+
+            if (!la.Valid && la.Results.Any(m => m.Identifier is CheckIdentifier.Memory))
+            {
+                var clone = (T)pk.Clone();
+
+                clone.HT_Name = pk.OT_Name;
+                clone.HT_Gender = pk.OT_Gender;
+
+                if (clone is PK8 or PA8 or PB8 or PK9)
+                    ((dynamic)clone).HT_Language = (byte)pk.Language;
+
+                clone.CurrentHandler = 1;
+                
+                la = new LegalityAnalysis(clone);
+
+                if (la.Valid) pk = clone;
+            }
+
             if (!la.Valid)
             {
                 await ReplyAsync($"{typeof(T).Name} attachment is not legal, and cannot be traded!").ConfigureAwait(false);
