@@ -29,7 +29,7 @@ namespace SysBot.Pokemon.Discord
             // Download the resource and load the bytes into a buffer.
             var buffer = await DownloadFromUrlAsync(url).ConfigureAwait(false);
 
-            var pkm = isMyg ? MysteryGift.GetMysteryGift(buffer, result.SanitizedFileName)?.ConvertToPKM(new SimpleTrainerInfo()) :
+            var pkm = isMyg ? MysteryGift.GetMysteryGift(buffer, System.IO.Path.GetExtension(result.SanitizedFileName))?.ConvertToPKM(new SimpleTrainerInfo()) :
                 EntityFormat.GetFromBytes(buffer, EntityFileExtension.GetContextFromExtension(result.SanitizedFileName, EntityContext.None));
 
             if (pkm == null)
