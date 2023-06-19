@@ -1,5 +1,6 @@
 ﻿using Discord;
 using PKHeX.Core;
+using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -13,7 +14,7 @@ namespace SysBot.Pokemon.Discord
             return await client.GetByteArrayAsync(url).ConfigureAwait(false);
         }
 
-        public static async Task<Download<PKM>> DownloadPKMAsync(IAttachment att)
+        public static async Task<Download<PKM>> DownloadPKMAsync(IAttachment att, SimpleTrainerInfo? defTrainer = null)
         {
             var result = new Download<PKM> { SanitizedFileName = Format.Sanitize(att.Filename) };
             var isMyg = MysteryGift.IsMysteryGift(att.Size);
@@ -29,10 +30,19 @@ namespace SysBot.Pokemon.Discord
             // Download the resource and load the bytes into a buffer.
             var buffer = await DownloadFromUrlAsync(url).ConfigureAwait(false);
 
-            var pkm = isMyg ? MysteryGift.GetMysteryGift(buffer, System.IO.Path.GetExtension(result.SanitizedFileName))?.ConvertToPKM(new SimpleTrainerInfo()) :
-                EntityFormat.GetFromBytes(buffer, EntityFileExtension.GetContextFromExtension(result.SanitizedFileName, EntityContext.None));
+            PKM? pkm = null;
 
-            if (pkm == null)
+            try
+            {
+                pkm = isMyg ? MysteryGift.GetMysteryGift(buffer, System.IO.Path.GetExtension(result.SanitizedFileName))?.ConvertToPKM(defTrainer is null ? new SimpleTrainerInfo() : defTrainer) :
+                    EntityFormat.GetFromBytes(buffer, EntityFileExtension.GetContextFromExtension(result.SanitizedFileName, EntityContext.None));
+            }
+            catch (ArgumentException) 
+            {
+                //Item wondercard
+            }
+
+            if (pkm is null)
             {
                 result.ErrorMessage = $"{result.SanitizedFileName}: Invalid pkm attachment.";
                 return result;

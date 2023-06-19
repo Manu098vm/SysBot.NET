@@ -172,8 +172,17 @@ namespace SysBot.Pokemon.Discord
                 await ReplyAsync("No attachment provided!").ConfigureAwait(false);
                 return;
             }
-            
-            var att = await NetUtil.DownloadPKMAsync(attachment).ConfigureAwait(false);
+
+            var settings = SysCord<T>.Runner.Hub.Config.Legality;
+            var defTrainer = new SimpleTrainerInfo()
+            {
+                OT = settings.GenerateOT,
+                TID16 = settings.GenerateTID16,
+                SID16 = settings.GenerateSID16,
+                Language = (int)settings.GenerateLanguage,
+            };
+
+            var att = await NetUtil.DownloadPKMAsync(attachment, defTrainer).ConfigureAwait(false);
             var pk = GetRequest(att);
             if (pk == null)
             {
