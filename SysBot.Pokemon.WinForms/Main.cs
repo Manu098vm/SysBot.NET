@@ -98,7 +98,7 @@ namespace SysBot.Pokemon.WinForms
             LogUtil.Forwarders.Add(AppendLog);
             if (Config.Mode is not ProgramMode.LA)
                 Tab_Results.Dispose();
-            else 
+            else
                 ResultsUtil.Forwarders.Add(AppendResults);
         }
 
@@ -208,6 +208,24 @@ namespace SysBot.Pokemon.WinForms
             SendAll(cmd);
         }
 
+        private void B_RebootStop_Click(object sender, EventArgs e)
+        {
+            B_Stop_Click(sender, e);
+            Task.Run(async () =>
+            {
+                await Task.Delay(3_500).ConfigureAwait(false);
+                SaveCurrentConfig();
+
+                LogUtil.LogInfo("Restarting all the consoles...", "Form");
+                RunningEnvironment.InitializeStart();
+                SendAll(BotControlCommand.RebootAndStop);
+                Tab_Logs.Select();
+
+                if (Bots.Count == 0)
+                    WinFormsUtil.Alert("No bots configured, but all supporting services have been issued the reboot command.");
+            });
+        }
+
         private void B_New_Click(object sender, EventArgs e)
         {
             var cfg = CreateNewBotConfig();
@@ -284,7 +302,7 @@ namespace SysBot.Pokemon.WinForms
             var cfg = BotConfigUtil.GetConfig<SwitchConnectionConfig>(ip, port);
             cfg.Protocol = (SwitchProtocol)WinFormsUtil.GetIndex(CB_Protocol);
 
-            var pk = new PokeBotState {Connection = cfg};
+            var pk = new PokeBotState { Connection = cfg };
             var type = (PokeRoutineType)WinFormsUtil.GetIndex(CB_Routine);
             pk.Initialize(type);
             return pk;

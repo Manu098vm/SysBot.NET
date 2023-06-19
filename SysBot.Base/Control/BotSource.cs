@@ -31,6 +31,21 @@ namespace SysBot.Base
             });
         }
 
+        public void RebootAndStop()
+        {
+            if (IsPaused)
+                Stop(); // can't soft-resume; just re-launch
+
+            if (IsRunning || IsStopping)
+                return;
+
+            Task.Run(() => Bot.RebootAndStopAsync(Source.Token)
+                .ContinueWith(ReportFailure, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously)
+                .ContinueWith(_ => IsRunning = false));
+
+            IsRunning = true;
+        }
+
         public void Pause()
         {
             if (!IsRunning || IsStopping)

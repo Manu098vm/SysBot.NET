@@ -41,6 +41,12 @@ namespace SysBot.Pokemon
             await CleanExit(CancellationToken.None).ConfigureAwait(false);
         }
 
+        public override async Task RebootAndStop(CancellationToken t)
+        {
+            await ReOpenGame(new PokeTradeHubConfig(), t).ConfigureAwait(false);
+            await HardStop().ConfigureAwait(false);
+        }
+
         private class DummyReset : IBotStateSettings
         {
             public bool ScreenOff => true;

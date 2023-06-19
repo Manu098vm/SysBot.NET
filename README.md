@@ -3,11 +3,13 @@
 
 ## Support Discords:
 
-For specific support for this fork of ForkBot's fork of kwsch's SysBot.NET repo feel free to join! (No support will be provided in the official PKHeX or PA Discord, please don't bother the devs)
+For specific support for this fork of [Zyro](https://github.com/zyro670)'s [NotForkBot.NET](https://github.com/zyro670/NotForkBot.NET) fork of [Koi](https://github.com/Koi-3088)'s [ForkBot.NET](https://github.com/Koi-3088/ForkBot.NET) of [kwsch](https://github.com/kwsch)'s [SysBot.NET](https://github.com/kwsch/SysBot.NET) repo feel free to join! (No support will be provided in the official PKHeX or PA Discord, please don't bother the devs)
 
-[Support Server: Rosé Garden](https://discord.gg/G23Mx85Mdz)
+[Support Server: Manu's Server](https://discord.com/invite/yWveAjKbKt)
 
-[USB-Botbase](https://github.com/Koi-3088/USB-Botbase) client for remote USB control for this fork.
+[<img src="https://canary.discordapp.com/api/guilds/693083823197519873/widget.png?style=banner2">](https://discord.gg/yWveAjKbKt)
+
+[usb-Botbase](https://github.com/Koi-3088/USB-Botbase) client for remote USB control for this fork.
 
 [sys-botbase](https://github.com/olliz0r/sys-botbase) client for remote control automation of Nintendo Switch consoles.
 
@@ -48,5 +50,10 @@ Uses [Discord.Net](https://github.com/discord-net/Discord.Net) , [TwitchLib](htt
 Pokémon API logic is provided by [PKHeX](https://github.com/kwsch/PKHeX/), and template generation is provided by [AutoMod](https://github.com/architdate/PKHeX-Plugins/).
 
 Permutation generation provided by [PermuteMMO](https://github.com/kwsch/PermuteMMO).
+
+## Special Credits:
+This SysBot fork is an agglomeration of different forks and other PKHeX/SysBot based programs.
+Thanks to [Zyro](https://github.com/zyro670), [Koi](https://github.com/Koi-3088), [Berichan](https://github.com/berichan), [Anubis](https://github.com/Lusamine), [Archit](https://github.com/architdate), [Kurt](https://github.com/kwsch) and all the developers that contributed and will contribute to their repositories!
+
 # License
 Refer to the `License.md` for details regarding licensing.

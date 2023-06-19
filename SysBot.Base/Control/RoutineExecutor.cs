@@ -45,9 +45,18 @@ namespace SysBot.Base
             Connection.Disconnect();
         }
 
+        public async Task RebootAndStopAsync(CancellationToken token)
+        {
+            Connection.Connect();
+            await InitialStartup(token).ConfigureAwait(false);
+            await RebootAndStop(token).ConfigureAwait(false);
+            Connection.Disconnect();
+        }
+
         public abstract Task MainLoop(CancellationToken token);
         public abstract Task InitialStartup(CancellationToken token);
         public abstract void SoftStop();
         public abstract Task HardStop();
+        public abstract Task RebootAndStop(CancellationToken token);
     }
 }

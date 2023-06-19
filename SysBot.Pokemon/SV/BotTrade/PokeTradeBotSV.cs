@@ -103,6 +103,12 @@ namespace SysBot.Pokemon
             await CleanExit(CancellationToken.None).ConfigureAwait(false);
         }
 
+        public override async Task RebootAndStop(CancellationToken t)
+        {
+            await ReOpenGame(Hub.Config, t).ConfigureAwait(false);
+            await HardStop().ConfigureAwait(false);
+        }
+
         private async Task InnerLoop(SAV9SV sav, CancellationToken token)
         {
             while (!token.IsCancellationRequested)
@@ -343,9 +349,11 @@ namespace SysBot.Pokemon
                 return partnerCheck;
             }
 
-            if (Hub.Config.Trade.UseTradePartnerDetails)
-                if (CanUsePartnerDetails(toSend, sav, tradePartner, out var toSendEdited))
-                    toSend = toSendEdited;
+            if (Hub.Config.Trade.UseTradePartnerDetails && CanUsePartnerDetails(toSend, sav, tradePartner, out var toSendEdited))
+            {
+                toSend = toSendEdited;
+                await SetBoxPokemonAbsolute(BoxStartOffset, toSend, token, sav).ConfigureAwait(false);
+            }
 
             poke.SendNotification(this, $"Found Link Trade partner: {tradePartner.TrainerName}. Waiting for a Pokémon...");
 

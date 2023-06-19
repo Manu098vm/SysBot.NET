@@ -187,6 +187,12 @@ namespace SysBot.Pokemon
             await CleanExit(CancellationToken.None).ConfigureAwait(false);
         }
 
+        public override async Task RebootAndStop(CancellationToken t)
+        {
+            await ReOpenGame(Hub.Config, t).ConfigureAwait(false);
+            await HardStop().ConfigureAwait(false);
+        }
+
         private async Task<bool> AutoRollDen(int code, CancellationToken token)
         {
             if (!softLock && !hardLock)

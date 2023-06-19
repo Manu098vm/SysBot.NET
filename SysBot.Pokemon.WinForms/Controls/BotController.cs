@@ -157,6 +157,7 @@ namespace SysBot.Pokemon.WinForms
                 case BotControlCommand.Idle: bot.Pause(); break;
                 case BotControlCommand.Start: bot.Start(); break;
                 case BotControlCommand.Stop: bot.Stop(); break;
+                case BotControlCommand.RebootAndStop: bot.RebootAndStop(); break;
                 case BotControlCommand.Resume: bot.Resume(); break;
                 case BotControlCommand.Restart:
                     {
@@ -213,6 +214,7 @@ namespace SysBot.Pokemon.WinForms
         Idle,
         Resume,
         Restart,
+        RebootAndStop,
     }
 
     public static class BotControlCommandExtensions

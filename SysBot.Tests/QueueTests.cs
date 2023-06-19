@@ -85,6 +85,7 @@ namespace SysBot.Tests
             public override Task MainLoop(CancellationToken token) => Task.CompletedTask;
             public override void SoftStop() { }
             public override Task HardStop() => Task.CompletedTask;
+            public override Task RebootAndStop(CancellationToken token) => HardStop();
 
             public override Task<T> ReadPokemon(ulong offset, CancellationToken token) => Task.Run(() => new T(), token);
             public override Task<T> ReadPokemon(ulong offset, int size, CancellationToken token) => Task.Run(() => new T(), token);

@@ -110,6 +110,12 @@ namespace SysBot.Pokemon
             await CleanExit(CancellationToken.None).ConfigureAwait(false);
         }
 
+        public override async Task RebootAndStop(CancellationToken token)
+        {
+            await ReOpenGame(new PokeTradeHubConfig(), token).ConfigureAwait(false);
+            await HardStop().ConfigureAwait(false);
+        }
+
         private bool IsWaiting;
         private bool IsWaitingConfirmation;
         public void Acknowledge() => IsWaiting = false;

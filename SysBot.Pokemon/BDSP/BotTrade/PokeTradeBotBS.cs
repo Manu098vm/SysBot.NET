@@ -89,6 +89,12 @@ namespace SysBot.Pokemon
             await CleanExit(CancellationToken.None).ConfigureAwait(false);
         }
 
+        public override async Task RebootAndStop(CancellationToken t)
+        {
+            await ReOpenGame(Hub.Config, t).ConfigureAwait(false);
+            await HardStop().ConfigureAwait(false);
+        }
+
         private async Task InnerLoop(SAV8BS sav, CancellationToken token)
         {
             while (!token.IsCancellationRequested)

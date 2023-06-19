@@ -113,6 +113,12 @@ namespace SysBot.Pokemon
             await HardStop().ConfigureAwait(false);
         }
 
+        public override async Task RebootAndStop(CancellationToken t)
+        {
+            await ReOpenGame(Hub.Config, t).ConfigureAwait(false);
+            await HardStop().ConfigureAwait(false);
+        }
+
         private void LoadDefaultFile()
         {
             var folder = "raidfilessv";
