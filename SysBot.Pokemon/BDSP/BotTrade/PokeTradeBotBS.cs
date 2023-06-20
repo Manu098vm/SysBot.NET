@@ -297,7 +297,7 @@ namespace SysBot.Pokemon
             RecordUtil<PokeTradeBotBS>.Record($"Initiating\t{trainerNID:X16}\t{tradePartner.TrainerName}\t{poke.Trainer.TrainerName}\t{poke.Trainer.ID}\t{poke.ID}\t{toSend.EncryptionConstant:X8}");
             Log($"Found Link Trade partner: {tradePartner.TrainerName}-{tradePartner.TID7}");
 
-            var partnerCheck = await CheckPartnerReputation(this, poke, trainerNID, tradePartner.TrainerName, AbuseSettings, PreviousUsers, PreviousUsersDistribution, EncounteredUsers, token);
+            var partnerCheck = await CheckPartnerReputation(this, poke, trainerNID, tradePartner.TrainerName, AbuseSettings, token);
             if (partnerCheck != PokeTradeResult.Success)
                 return PokeTradeResult.SuspiciousActivity;
 
@@ -357,6 +357,9 @@ namespace SysBot.Pokemon
 
             // Only log if we completed the trade.
             UpdateCountsAndExport(poke, received, toSend);
+
+            // Log for Trade Abuse tracking.
+            LogSuccessfulTrades(poke, trainerNID, tradePartner.TrainerName);
 
             // Still need to wait out the trade animation.
             for (var i = 0; i < 30; i++)
