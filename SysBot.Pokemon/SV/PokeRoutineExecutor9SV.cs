@@ -16,7 +16,12 @@ namespace SysBot.Pokemon
     public abstract class PokeRoutineExecutor9SV : PokeRoutineExecutor<PK9>
     {
         protected PokeDataOffsetsSV Offsets { get; } = new();
+
         public ulong returnOfs = 0;
+
+        protected const int HidWaitTime = 46;
+        protected const int KeyboardPressTime = 20;
+
         protected PokeRoutineExecutor9SV(PokeBotState cfg) : base(cfg)
         {
         }
@@ -137,6 +142,10 @@ namespace SysBot.Pokemon
                 Log("Turning off screen.");
                 await SetScreen(ScreenState.Off, token).ConfigureAwait(false);
             }
+
+            Log($"Setting SV-specific hid waits");
+            await Connection.SendAsync(SwitchCommand.Configure(SwitchConfigureParameter.keySleepTime, KeyboardPressTime), token).ConfigureAwait(false);
+            await Connection.SendAsync(SwitchCommand.Configure(SwitchConfigureParameter.pollRate, HidWaitTime), token).ConfigureAwait(false);
         }
 
         public async Task CleanExit(CancellationToken token)
@@ -148,13 +157,15 @@ namespace SysBot.Pokemon
 
         protected virtual async Task EnterLinkCode(int code, PokeTradeHubConfig config, CancellationToken token)
         {
-            // Default implementation to just press directional arrows. Can do via Hid keys, but users are slower than bots at even the default code entry.
-            var keys = TradeUtil.GetPresses(code);
-            foreach (var key in keys)
-            {
-                int delay = config.Timings.KeypressTime;
-                await Click(key, delay, token).ConfigureAwait(false);
-            }
+            //Thanks Berichan
+            //https://github.com/berichan/SysBot.PokemonScarletViolet/blob/234739c7b2c47bf3a7ced779172dd9083a73c7a5/SysBot.Pokemon/SV/PokeRoutineExecutor9.cs#LL140C14-L140C14
+            var codeChars = $"{code:00000000}".ToCharArray();
+            var keysToPress = new HidKeyboardKey[codeChars.Length];
+            for (var i = 0; i < codeChars.Length; ++i)
+                keysToPress[i] = (HidKeyboardKey)Enum.Parse(typeof(HidKeyboardKey), codeChars[i] >= 'A' && codeChars[i] <= 'Z' ? $"{codeChars[i]}" : $"D{codeChars[i]}");
+
+            await Connection.SendAsync(SwitchCommand.TypeMultipleKeys(keysToPress), token).ConfigureAwait(false);
+            await Task.Delay((HidWaitTime * 8) + 0_200, token).ConfigureAwait(false);
             // Confirm Code outside of this method (allow synchronization)
         }
 
@@ -353,7 +364,7 @@ namespace SysBot.Pokemon
                 returnOfs = address;
                 Log($"Init Address found at {returnOfs}");
             }
-  
+
             var header = await SwitchConnection.ReadBytesAbsoluteAsync(returnOfs, 5, token).ConfigureAwait(false);
             header = DecryptBlock(block.Key, header);
             var size = ReadUInt32LittleEndian(header.AsSpan()[1..]);
@@ -579,8 +590,8 @@ namespace SysBot.Pokemon
         {
             string[] raidDescription = Array.Empty<string>();
 
-            if (description.Length > 0)            
-                raidDescription = description.ToArray();         
+            if (description.Length > 0)
+                raidDescription = description.ToArray();
 
             string markEntryText = "";
             string markTitle = "";
@@ -603,8 +614,8 @@ namespace SysBot.Pokemon
             string genderText = $"{(Gender)pk.Gender}";
             string ability = $"{(Ability)pk.Ability}";
 
-            if (pk.IV_HP == 31 && pk.IV_ATK == 31 && pk.IV_DEF == 31 && pk.IV_SPA == 31 && pk.IV_SPD == 31 && pk.IV_SPE == 31)            
-                MaxIV = "6IV";            
+            if (pk.IV_HP == 31 && pk.IV_ATK == 31 && pk.IV_DEF == 31 && pk.IV_SPA == 31 && pk.IV_SPD == 31 && pk.IV_SPE == 31)
+                MaxIV = "6IV";
 
             StopConditionSettings.HasMark((IRibbonIndex)pk, out RibbonIndex mark);
             if (mark == RibbonIndex.MarkMightiest)
@@ -626,10 +637,10 @@ namespace SysBot.Pokemon
             }
 
             for (int i = 0; i < raidDescription.Length; i++)
-            raidDescription[i] = raidDescription[i].Replace("{markEntryText}", markEntryText)
-                    .Replace("{markTitle}", markTitle).Replace("{scaleText}", scaleText).Replace("{scaleNumber}", scaleNumber).Replace("{shinySymbol}", shinySymbol).Replace("{shinySymbolText}", shinySymbolText)
-                    .Replace("{shinyText}", shiny).Replace("{species}", species).Replace("{IVList}", IVList).Replace("{MaxIV}",MaxIV).Replace("{HP}", HP).Replace("{ATK}", ATK).Replace("{DEF}", DEF).Replace("{SPA}", SPA)
-                    .Replace("{SPD}", SPD).Replace("{SPE}", SPE).Replace("{nature}", nature).Replace("{ability}", ability).Replace("{genderSymbol}", genderSymbol).Replace("{genderText}", genderText);
+                raidDescription[i] = raidDescription[i].Replace("{markEntryText}", markEntryText)
+                        .Replace("{markTitle}", markTitle).Replace("{scaleText}", scaleText).Replace("{scaleNumber}", scaleNumber).Replace("{shinySymbol}", shinySymbol).Replace("{shinySymbolText}", shinySymbolText)
+                        .Replace("{shinyText}", shiny).Replace("{species}", species).Replace("{IVList}", IVList).Replace("{MaxIV}", MaxIV).Replace("{HP}", HP).Replace("{ATK}", ATK).Replace("{DEF}", DEF).Replace("{SPA}", SPA)
+                        .Replace("{SPD}", SPD).Replace("{SPE}", SPE).Replace("{nature}", nature).Replace("{ability}", ability).Replace("{genderSymbol}", genderSymbol).Replace("{genderText}", genderText);
 
             return (raidDescription);
         }
