@@ -9,11 +9,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Pokemon.PokeDataOffsetsSV;
-using System.Security.Cryptography.X509Certificates;
-using System.Net.WebSockets;
-using System.Reflection.Metadata.Ecma335;
 using PKHeX.Core.AutoMod;
-using System.Runtime.CompilerServices;
 
 namespace SysBot.Pokemon
 {
@@ -432,7 +428,7 @@ namespace SysBot.Pokemon
             return PokeTradeResult.Success;
         }
 
-        bool CanUsePartnerDetails(PK9 pk, SAV9SV sav, TradePartnerSV partner, PokeTradeDetail<PK9> trade, out PK9 res)
+        private bool CanUsePartnerDetails(PK9 pk, SAV9SV sav, TradePartnerSV partner, PokeTradeDetail<PK9> trade, out PK9 res)
         {
             res = pk.Clone();
 
@@ -444,14 +440,14 @@ namespace SysBot.Pokemon
             }
 
             //Current handler cannot be past gen OT
-            if (!pk.IsNative) 
+            if (!pk.IsNative)
             {
                 Log("Can not apply Partner details: Current handler cannot be past gen OT.");
                 return false;
             }
 
             //Only override trainer details if user didn't specify OT details in the Showdown/PK9 request
-            if (HasSetDetails(pk, fallback: sav)) 
+            if (HasSetDetails(pk, fallback: sav))
             {
                 Log("Can not apply Partner details: Requested Pokémon already has set Trainer details.");
                 return false;
@@ -464,10 +460,10 @@ namespace SysBot.Pokemon
             res.Language = partner.Info.Language;
             res.Version = partner.Info.Game;
 
-            if (pk.IsShiny) 
+            if (pk.IsShiny)
                 res.SetShiny();
 
-            if (!pk.ChecksumValid) 
+            if (!pk.ChecksumValid)
                 res.RefreshChecksum();
 
             var la = new LegalityAnalysis(res);
