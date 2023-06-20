@@ -13,6 +13,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Net.WebSockets;
 using System.Reflection.Metadata.Ecma335;
 using PKHeX.Core.AutoMod;
+using System.Runtime.CompilerServices;
 
 namespace SysBot.Pokemon
 {
@@ -349,7 +350,7 @@ namespace SysBot.Pokemon
                 return partnerCheck;
             }
 
-            if (Hub.Config.Trade.UseTradePartnerDetails && CanUsePartnerDetails(toSend, sav, tradePartner, out var toSendEdited))
+            if (Hub.Config.Trade.UseTradePartnerDetails && CanUsePartnerDetails(toSend, sav, tradePartner, poke, out var toSendEdited))
             {
                 toSend = toSendEdited;
                 await SetBoxPokemonAbsolute(BoxStartOffset, toSend, token, sav).ConfigureAwait(false);
@@ -431,9 +432,16 @@ namespace SysBot.Pokemon
             return PokeTradeResult.Success;
         }
 
-        bool CanUsePartnerDetails(PK9 pk, SAV9SV sav, TradePartnerSV partner, out PK9 res)
+        bool CanUsePartnerDetails(PK9 pk, SAV9SV sav, TradePartnerSV partner, PokeTradeDetail<PK9> trade, out PK9 res)
         {
             res = pk.Clone();
+
+            //Invalid trade request. Ditto is often requested for Masuda method, better to not apply partner details.
+            if ((Species)pk.Species is Species.None or Species.Ditto || trade.Type is not PokeTradeType.Specific)
+            {
+                Log("Can not apply Partner details: Not a specific trade request.");
+                return false;
+            }
 
             //Current handler cannot be past gen OT
             if (!pk.IsNative) 
@@ -442,26 +450,8 @@ namespace SysBot.Pokemon
                 return false;
             }
 
-            //Don't override Ditto, usually requested for Masuda method
-            if ((Species)pk.Species is Species.Ditto) 
-            {
-                Log("Can not apply Partner details: Requested species is Ditto, which is usually used for Masuda method.");
-                return false;
-            }
-
-            var def_trainer = new SimpleTrainerInfo(sav.Version)
-            {
-                OT = Hub.Config.Legality.GenerateOT,
-                TID16 = Hub.Config.Legality.GenerateTID16,
-                SID16 = Hub.Config.Legality.GenerateSID16,
-                Gender = (int)Hub.Config.Legality.GenerateLanguage,
-            };
-
-            var alm_trainer = Hub.Config.Legality.GeneratePathTrainerInfo != string.Empty ?
-                TrainerSettings.GetSavedTrainerData(sav.Version, sav.Generation, sav, (LanguageID)sav.Language) : null;
-
-            //Only override trainer details if user didn't specify OT in the Showdown/PK9 request
-            if (!pk.OT_Name.Equals(def_trainer.OT) && !pk.OT_Name.Equals(alm_trainer?.OT)) 
+            //Only override trainer details if user didn't specify OT details in the Showdown/PK9 request
+            if (HasSetDetails(pk, fallback: sav)) 
             {
                 Log("Can not apply Partner details: Requested Pokémon already has set Trainer details.");
                 return false;
@@ -488,6 +478,55 @@ namespace SysBot.Pokemon
                 Log(la.Report());
                 return false;
             }
+
+            return true;
+        }
+
+        private bool HasSetDetails(PKM set, ITrainerInfo fallback)
+        {
+            var set_trainer = new SimpleTrainerInfo((GameVersion)set.Version)
+            {
+                OT = set.OT_Name,
+                TID16 = set.TID16,
+                SID16 = set.SID16,
+                Gender = set.OT_Gender,
+                Language = set.Language,
+            };
+
+            var def_trainer = new SimpleTrainerInfo((GameVersion)fallback.Game)
+            {
+                OT = Hub.Config.Legality.GenerateOT,
+                TID16 = Hub.Config.Legality.GenerateTID16,
+                SID16 = Hub.Config.Legality.GenerateSID16,
+                Gender = Hub.Config.Legality.GenerateGenderOT,
+                Language = (int)Hub.Config.Legality.GenerateLanguage,
+            };
+
+            var alm_trainer = Hub.Config.Legality.GeneratePathTrainerInfo != string.Empty ?
+                TrainerSettings.GetSavedTrainerData(fallback.Generation, (GameVersion)fallback.Game, fallback, (LanguageID)fallback.Language) : null;
+
+            return !IsEqualTInfo(set_trainer, def_trainer) && !IsEqualTInfo(set_trainer, alm_trainer);
+        }
+
+        private static bool IsEqualTInfo(ITrainerInfo trainerInfo, ITrainerInfo? compareInfo)
+        {
+            if (compareInfo is null)
+                return false;
+
+            if (!trainerInfo.OT.Equals(compareInfo.OT))
+                return false;
+
+            if (trainerInfo.Gender != compareInfo.Gender)
+                return false;
+
+            if (trainerInfo.Language != compareInfo.Language) 
+                return false;
+
+            if (trainerInfo.TID16 != compareInfo.TID16) 
+                return false;
+
+            if (trainerInfo.SID16 != compareInfo.SID16) 
+                return false;
 
             return true;
         }

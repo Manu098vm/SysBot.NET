@@ -35,8 +35,11 @@ namespace SysBot.Pokemon
         [Category(Generate), Description("Default 16-bit Secret ID (SID) for requests that don't match any of the provided trainer data files. This should be a 5-digit number.")]
         public ushort GenerateSID16 { get; set; } = 54321;
 
-        [Category(Generate), Description("Default language for PKM files that don't match any of the provided PKM files.")]
+        [Category(Generate), Description("Default language for PKM files that don't match any of the provided trainer data files.")]
         public LanguageID GenerateLanguage { get; set; } = LanguageID.English;
+
+        [Category(Generate), Description("Default OT Gender for PKM files that don't match any of the provided trainer data files.")]
+        public byte GenerateGenderOT { get; set; } = 0;
 
         [Category(Generate), Description("If PrioritizeGame is set to \"True\", uses PrioritizeGameVersion to start looking for encounters. If \"False\", uses newest game as the version. It is recommended to leave this as \"True\".")]
         public bool PrioritizeGame { get; set; } = true;

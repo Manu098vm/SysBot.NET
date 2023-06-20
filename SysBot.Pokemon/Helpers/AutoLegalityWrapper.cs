@@ -61,6 +61,7 @@ namespace SysBot.Pokemon
             ushort TID = cfg.GenerateTID16;
             ushort SID = cfg.GenerateSID16;
             int lang = (int)cfg.GenerateLanguage;
+            byte gender = cfg.GenerateGenderOT;
 
             var externalSource = cfg.GeneratePathTrainerInfo;
             if (!string.IsNullOrWhiteSpace(externalSource) && Directory.Exists(externalSource))
@@ -78,6 +79,7 @@ namespace SysBot.Pokemon
                         SID16 = SID,
                         OT = OT,
                         Generation = i,
+                        Gender = gender,
                     };
                     var exist = TrainerSettings.GetSavedTrainerData(v, i, fallback);
                     if (exist is SimpleTrainerInfo) // not anything from files; this assumes ALM returns SimpleTrainerInfo for non-user-provided fake templates.
