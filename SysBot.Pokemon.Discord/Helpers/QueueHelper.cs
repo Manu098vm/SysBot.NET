@@ -113,7 +113,7 @@ namespace SysBot.Pokemon.Discord
 
             var pokeName = "";
             if ((t == PokeTradeType.Specific || t == PokeTradeType.TradeCord || t == PokeTradeType.SupportTrade || t == PokeTradeType.Giveaway) && pk.Species != 0)
-                pokeName = $" Receiving: {(t == PokeTradeType.SupportTrade && pk.Species != (int)Species.Ditto && pk.HeldItem != 0 ? $"{(Species)pk.Species} ({ShowdownParsing.GetShowdownText(pk).Split('@','\n')[1].Trim()})" : $"{(Species)pk.Species}")}.";
+                pokeName = $" Receiving: {(t == PokeTradeType.SupportTrade && pk.Species != (int)Species.Ditto && pk.HeldItem != 0 ? $"{GameInfo.GetStrings(1).Species[pk.Species]} ({ShowdownParsing.GetShowdownText(pk).Split('@','\n')[1].Trim()})" : $"{GameInfo.GetStrings(1).Species[pk.Species]}")}.";
             msg = $"{user.Mention} - Added to the {type} queue{ticketID}. Current Position: {position.Position}.{pokeName}";
 
             var botct = Info.Hub.Bots.Count;
