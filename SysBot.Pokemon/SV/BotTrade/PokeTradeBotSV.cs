@@ -350,6 +350,7 @@ namespace SysBot.Pokemon
             {
                 toSend = toSendEdited;
                 await SetBoxPokemonAbsolute(BoxStartOffset, toSend, token, sav).ConfigureAwait(false);
+                TradeExtensions<PK9>.SVTrade = toSend;
             }
 
             poke.SendNotification(this, $"Found Link Trade partner: {tradePartner.TrainerName}. Waiting for a Pokémon...");
