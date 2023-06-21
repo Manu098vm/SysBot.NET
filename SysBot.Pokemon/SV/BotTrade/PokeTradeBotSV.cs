@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Pokemon.PokeDataOffsetsSV;
 using PKHeX.Core.AutoMod;
+using System.IO;
 
 namespace SysBot.Pokemon
 {
@@ -174,6 +175,16 @@ namespace SysBot.Pokemon
                 Log("Nothing to check, waiting for new users...");
             }
 
+            // More often than needed the console gets disconnected while waiting in the Poképortal
+            while (!await IsConnectedOnline(ConnectedOffset, token).ConfigureAwait(false))
+            {
+                while (!await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
+                {
+                    await RecoverToOverworld(token).ConfigureAwait(false);
+                    await ConnectAndEnterPortal(token).ConfigureAwait(false);
+                }
+            }
+
             await Task.Delay(1_000, token).ConfigureAwait(false);
         }
 
@@ -251,10 +262,13 @@ namespace SysBot.Pokemon
                 }
             }
 
-            else if (StartFromOverworld && !await ConnectAndEnterPortal(token).ConfigureAwait(false))
+            else if (StartFromOverworld && !await IsConnectedOnline(ConnectedOffset, token).ConfigureAwait(false))
             {
-                await RecoverToOverworld(token).ConfigureAwait(false);
-                return PokeTradeResult.RecoverStart;
+                if (!await ConnectAndEnterPortal(token).ConfigureAwait(false))
+                {
+                    await RecoverToOverworld(token).ConfigureAwait(false);
+                    return PokeTradeResult.RecoverStart;
+                }
             }
 
             var toSend = poke.TradeData;
@@ -350,6 +364,7 @@ namespace SysBot.Pokemon
             {
                 toSend = toSendEdited;
                 await SetBoxPokemonAbsolute(BoxStartOffset, toSend, token, sav).ConfigureAwait(false);
+                TradeExtensions<PK9>.SVTrade = toSend;
             }
 
             poke.SendNotification(this, $"Found Link Trade partner: {tradePartner.TrainerName}. Waiting for a Pokémon...");
@@ -478,6 +493,9 @@ namespace SysBot.Pokemon
                 return false;
             }
 
+            Log($"Applying trade partner details: {partner.TrainerName} ({(partner.Info.Gender == 0 ? "M" : "F")}," +
+                $"TID: {partner.TID7}, SID: {partner.SID7}, {(LanguageID)partner.Info.Language} ({(GameVersion)partner.Info.Game})");
+
             return true;
         }
 
@@ -547,9 +565,11 @@ namespace SysBot.Pokemon
             if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
             {
                 var subfolder = poke.Type.ToString().ToLower();
+                var service = poke.Notifier.GetType().ToString().ToLower();
+                var tradedFolder = service.Contains("twitch") ? Path.Combine("traded", "twitch") : service.Contains("discord") ? Path.Combine("traded", "discord") : "traded";
                 DumpPokemon(DumpSetting.DumpFolder, subfolder, received); // received by bot
                 if (poke.Type is PokeTradeType.Specific or PokeTradeType.Clone)
-                    DumpPokemon(DumpSetting.DumpFolder, "traded", toSend); // sent to partner
+                    DumpPokemon(DumpSetting.DumpFolder, tradedFolder, toSend); // sent to partner
             }
         }
 
