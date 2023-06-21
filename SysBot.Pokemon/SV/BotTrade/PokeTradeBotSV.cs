@@ -246,7 +246,7 @@ namespace SysBot.Pokemon
             Hub.Config.Stream.EndEnterCode(this);
 
             // StartFromOverworld can be true on first pass or if something went wrong last trade.
-            if (StartFromOverworld && !await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
+            if (StartFromOverworld && !await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false)) 
                 await RecoverToOverworld(token).ConfigureAwait(false);
 
             // Handles getting into the portal. Will retry this until successful.
@@ -262,13 +262,10 @@ namespace SysBot.Pokemon
                 }
             }
 
-            else if (StartFromOverworld && !await IsConnectedOnline(ConnectedOffset, token).ConfigureAwait(false))
+            else if (StartFromOverworld && !await ConnectAndEnterPortal(token).ConfigureAwait(false))
             {
-                if (!await ConnectAndEnterPortal(token).ConfigureAwait(false))
-                {
-                    await RecoverToOverworld(token).ConfigureAwait(false);
-                    return PokeTradeResult.RecoverStart;
-                }
+                await RecoverToOverworld(token).ConfigureAwait(false);
+                return PokeTradeResult.RecoverStart;
             }
 
             var toSend = poke.TradeData;
