@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Pokemon.PokeDataOffsetsSV;
 using PKHeX.Core.AutoMod;
+using System.IO;
 
 namespace SysBot.Pokemon
 {
@@ -558,9 +559,11 @@ namespace SysBot.Pokemon
             if (DumpSetting.Dump && !string.IsNullOrEmpty(DumpSetting.DumpFolder))
             {
                 var subfolder = poke.Type.ToString().ToLower();
+                var service = poke.Notifier.GetType().ToString().ToLower();
+                var tradedFolder = service.Contains("twitch") ? Path.Combine("traded", "twitch") : service.Contains("discord") ? Path.Combine("traded", "discord") : "traded";
                 DumpPokemon(DumpSetting.DumpFolder, subfolder, received); // received by bot
                 if (poke.Type is PokeTradeType.Specific or PokeTradeType.Clone)
-                    DumpPokemon(DumpSetting.DumpFolder, "traded", toSend); // sent to partner
+                    DumpPokemon(DumpSetting.DumpFolder, tradedFolder, toSend); // sent to partner
             }
         }
 
