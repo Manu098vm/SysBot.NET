@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Discord.Commands;
-using MathNet.Numerics;
 
 namespace SysBot.Pokemon.Discord
 {
