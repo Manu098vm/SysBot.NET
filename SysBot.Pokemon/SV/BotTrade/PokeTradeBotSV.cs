@@ -268,6 +268,17 @@ namespace SysBot.Pokemon
                 return PokeTradeResult.RecoverStart;
             }
 
+            //If we reach there, we chould be correctly connected. Bot will crash if not. Extra connection online check just to be sure.
+            if (!await IsConnectedOnline(ConnectedOffset, token).ConfigureAwait(false))
+            {
+                Log("Disconnection detected. Trying to reinitialize...");
+                await RecoverToOverworld(token).ConfigureAwait(false);
+                await ConnectAndEnterPortal(token).ConfigureAwait(false);
+                await RecoverToOverworld(token).ConfigureAwait(false);
+                StartFromOverworld = true;
+                return PokeTradeResult.RecoverStart;
+            }
+
             var toSend = poke.TradeData;
             if (toSend.Species != 0)
                 await SetBoxPokemonAbsolute(BoxStartOffset, toSend, token, sav).ConfigureAwait(false);
