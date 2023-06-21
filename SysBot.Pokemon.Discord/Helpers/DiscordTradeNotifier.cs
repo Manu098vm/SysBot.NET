@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Discord.Commands;
+using MathNet.Numerics;
 
 namespace SysBot.Pokemon.Discord
 {
@@ -78,23 +79,6 @@ namespace SysBot.Pokemon.Discord
 
             if (fin.Species != 0 && Hub.Config.Trade.TradeDisplay)
             {
-                var shiny = fin.ShinyXor == 0 ? "■" : fin.ShinyXor <= 16 ? "★" : "";
-                var set = new ShowdownSet($"{fin.Species}");
-                var ballImg = $"https://raw.githubusercontent.com/BakaKaito/HomeImages/main/Ballimg/50x50/" + $"{(Ball)fin.Ball}ball".ToLower() + ".png";
-                var gender = fin.Gender == 0 ? " - (M)" : fin.Gender == 1 ? " - (F)" : "";
-                var pokeImg = TradeExtensions<T>.PokeImg(fin, false, false);
-                var trademessage = $"Pokémon IVs: {fin.IV_HP}/{fin.IV_ATK}/{fin.IV_DEF}/{fin.IV_SPA}/{fin.IV_SPD}/{fin.IV_SPE}\n" +
-                    $"Ability: {(Ability)fin.Ability}\n" +
-                    $"{(Nature)fin.Nature} Nature\n" +
-                    (StopConditionSettings.HasMark((IRibbonIndex)fin, out RibbonIndex mark) ? $"\nPokémon Mark: {mark.ToString().Replace("Mark", "")}{Environment.NewLine}" : "");
-
-                string markEntryText = "";
-                var index = (int)mark - (int)RibbonIndex.MarkLunchtime;
-                if (index > 0)
-                    markEntryText = MarkTitle[index];
-
-                var specitem = fin.HeldItem != 0 ? $"{SpeciesName.GetSpeciesNameGeneration(fin.Species, 2, fin.Generation <= 8 ? 8 : 9)}{TradeExtensions<T>.FormOutput(fin.Species, fin.Form, out _) + " (" + ShowdownParsing.GetShowdownText(fin).Split('@', '\n')[1].Trim() + ")"}" : $"{SpeciesName.GetSpeciesNameGeneration(fin.Species, 2, fin.Generation <= 8 ? 8 : 9) + TradeExtensions<T>.FormOutput(fin.Species, fin.Form, out _)}{markEntryText}";
-
                 var msg = "Displaying your ";
                 var mode = info.Type;
                 switch (mode)
@@ -107,19 +91,8 @@ namespace SysBot.Pokemon.Discord
                     case PokeTradeType.FixOT: msg += $"fixed OT!"; break;
                     case PokeTradeType.TradeCord: msg += $"prize!"; break;
                 }
-                string TIDFormatted = fin.Generation >= 7 ? $"{fin.TrainerTID7:000000}" : $"{fin.TID16:00000}";
-                var footer = new EmbedFooterBuilder { Text = $"Trainer Info: {fin.OT_Name}/{TIDFormatted}" };
-                var author = new EmbedAuthorBuilder { Name = $"{Context.User.Username}'s Pokémon" };
-                if (!Hub.Config.TradeCord.UseLargerPokeBalls)                
-                    ballImg = "";                
-                author.IconUrl = ballImg;
-                var embed = new EmbedBuilder { Color = fin.IsShiny && fin.ShinyXor == 0 ? Color.Gold : fin.IsShiny ? Color.LighterGrey : Color.Teal, Author = author, Footer = footer, ThumbnailUrl = pokeImg };
-                embed.AddField(x =>
-                {
-                    x.Name = $"{shiny} {specitem}{gender}";
-                    x.Value = trademessage;
-                    x.IsInline = false;
-                });
+
+                var embed = GenerateEntityEmbed(fin, Context.User.Username, Hub.Config.TradeCord.UseLargerPokeBalls);
 
                 Context.Channel.SendMessageAsync(Trader.Username + " - " + msg, embed: embed.Build()).ConfigureAwait(false);
                 switch (fin)
@@ -128,8 +101,41 @@ namespace SysBot.Pokemon.Discord
                     case PA8: TradeExtensions<PA8>.LATrade = new(); break;
                     case PB8: TradeExtensions<PB8>.BDSPTrade = new(); break;
                     case PK8: TradeExtensions<PK8>.SWSHTrade = new(); break;
-                }    
+                }
             }
+        }
+
+        public static EmbedBuilder GenerateEntityEmbed(PKM pk, string user, bool largerBalls)
+        {
+            var fin = pk;
+            var shiny = fin.ShinyXor == 0 ? "■" : fin.ShinyXor <= 16 ? "★" : "";
+            var set = new ShowdownSet($"{fin.Species}");
+            var ballImg = $"https://raw.githubusercontent.com/BakaKaito/HomeImages/main/Ballimg/50x50/" + $"{(Ball)fin.Ball}ball".ToLower() + ".png";
+            var gender = fin.Gender == 0 ? " - (M)" : fin.Gender == 1 ? " - (F)" : "";
+            var pokeImg = TradeExtensions<T>.PokeImg(fin, false, false);
+            var trademessage = $"Pokémon IVs: {fin.IV_HP}/{fin.IV_ATK}/{fin.IV_DEF}/{fin.IV_SPA}/{fin.IV_SPD}/{fin.IV_SPE}\n" +
+            $"Ability: {(Ability)fin.Ability}\n" +
+            $"{(Nature)fin.Nature} Nature\n" +
+            (StopConditionSettings.HasMark((IRibbonIndex)fin, out RibbonIndex mark) ? $"\nPokémon Mark: {mark.ToString().Replace("Mark", "")}{Environment.NewLine}" : "");
+            string markEntryText = "";
+            var index = (int)mark - (int)RibbonIndex.MarkLunchtime;
+            if (index > 0)
+                markEntryText = MarkTitle[index];
+            var specitem = fin.HeldItem != 0 ? $"{SpeciesName.GetSpeciesNameGeneration(fin.Species, 2, fin.Generation <= 8 ? 8 : 9)}{TradeExtensions<T>.FormOutput(fin.Species, fin.Form, out _) + " (" + ShowdownParsing.GetShowdownText(fin).Split('@', '\n')[1].Trim() + ")"}" : $"{SpeciesName.GetSpeciesNameGeneration(fin.Species, 2, fin.Generation <= 8 ? 8 : 9) + TradeExtensions<T>.FormOutput(fin.Species, fin.Form, out _)}{markEntryText}";
+            string TIDFormatted = fin.Generation >= 7 ? $"{fin.TrainerTID7:000000}" : $"{fin.TID16:00000}";
+            var footer = new EmbedFooterBuilder { Text = $"Trainer Info: {fin.OT_Name}/{TIDFormatted}" };
+            var author = new EmbedAuthorBuilder { Name = $"{user}'s Pokémon" };
+            if (!largerBalls)
+                ballImg = "";
+            author.IconUrl = ballImg;
+            var embed = new EmbedBuilder { Color = fin.IsShiny && fin.ShinyXor == 0 ? Color.Gold : fin.IsShiny ? Color.LighterGrey : Color.Teal, Author = author, Footer = footer, ThumbnailUrl = pokeImg };
+            embed.AddField(x =>
+            {
+                x.Name = $"{shiny} {specitem}{gender}";
+                x.Value = trademessage;
+                x.IsInline = false;
+            });
+            return embed;
         }
 
         public void SendNotification(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, string message)
@@ -160,7 +166,6 @@ namespace SysBot.Pokemon.Discord
         private void SendNotificationZ3(SeedSearchResult r)
         {
             var lines = r.ToString();
-
             var embed = new EmbedBuilder { Color = Color.LighterGrey };
             embed.AddField(x =>
             {
@@ -182,7 +187,6 @@ namespace SysBot.Pokemon.Discord
                 var name = Util.CleanFileName(pk.FileName);
                 list.Add(new(ms, name));
             }
-
             var embed = new EmbedBuilder
             {
                 Color = Color.Blue,
@@ -199,7 +203,7 @@ namespace SysBot.Pokemon.Discord
             _ = Task.Run(() => EtumrepUtil.SendEtumrepEmbedAsync(Trader, pkms).ConfigureAwait(false));
         }
 
-        public readonly string[] MarkTitle =
+        public static readonly string[] MarkTitle =
 {
             " the Peckish"," the Sleepy"," the Dozy"," the Early Riser"," the Cloud Watcher"," the Sodden"," the Thunderstruck"," the Snow Frolicker"," the Shivering"," the Parched"," the Sandswept"," the Mist Drifter",
             " the Chosen One"," the Catch of the Day"," the Curry Connoisseur"," the Sociable"," the Recluse"," the Rowdy"," the Spacey"," the Anxious"," the Giddy"," the Radiant"," the Serene"," the Feisty"," the Daydreamer",

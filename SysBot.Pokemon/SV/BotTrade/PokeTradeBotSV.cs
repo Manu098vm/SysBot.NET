@@ -174,6 +174,16 @@ namespace SysBot.Pokemon
                 Log("Nothing to check, waiting for new users...");
             }
 
+            // More often than needed the console gets disconnected while waiting in the Poképortal
+            while (!await IsConnectedOnline(ConnectedOffset, token).ConfigureAwait(false))
+            {
+                while (!await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
+                {
+                    await RecoverToOverworld(token).ConfigureAwait(false);
+                    await ConnectAndEnterPortal(token).ConfigureAwait(false);
+                }
+            }
+
             await Task.Delay(1_000, token).ConfigureAwait(false);
         }
 
@@ -251,10 +261,13 @@ namespace SysBot.Pokemon
                 }
             }
 
-            else if (StartFromOverworld && !await ConnectAndEnterPortal(token).ConfigureAwait(false))
+            else if (StartFromOverworld && !await IsConnectedOnline(ConnectedOffset, token).ConfigureAwait(false))
             {
-                await RecoverToOverworld(token).ConfigureAwait(false);
-                return PokeTradeResult.RecoverStart;
+                if (!await ConnectAndEnterPortal(token).ConfigureAwait(false))
+                {
+                    await RecoverToOverworld(token).ConfigureAwait(false);
+                    return PokeTradeResult.RecoverStart;
+                }
             }
 
             var toSend = poke.TradeData;
