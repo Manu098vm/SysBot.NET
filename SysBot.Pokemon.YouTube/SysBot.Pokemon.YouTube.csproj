@@ -7,7 +7,6 @@
 		<PackageReference Include="Google.Apis.Core" Version="1.60.0" />
 		<PackageReference Include="Google.Apis.YouTube.v3" Version="1.60.0.3064" />
 		<PackageReference Include="Google.Apis.YouTubePartner.v1" Version="1.35.1.1334" />
-		<PackageReference Include="PKHeX.Core" Version="23.6.3" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -21,6 +20,9 @@
 		</Reference>
 		<Reference Include="YouTube.Base">
 			<HintPath>deps\YouTube.Base.dll</HintPath>
+		</Reference>
+		<Reference Include="PKHeX.Core">
+			<HintPath>..\SysBot.Pokemon\deps\PKHeX.Core.dll</HintPath>
 		</Reference>
 	</ItemGroup>
 
