@@ -501,7 +501,7 @@ namespace SysBot.Pokemon
                 return false;
             }
 
-            Log($"Applying trade partner details: {partner.TrainerName} ({(partner.Info.Gender == 0 ? "M" : "F")}," +
+            Log($"Applying trade partner details: {partner.TrainerName} ({(partner.Info.Gender == 0 ? "M" : "F")})," +
                 $"TID: {partner.TID7}, SID: {partner.SID7}, {(LanguageID)partner.Info.Language} ({(GameVersion)partner.Info.Game})");
 
             return true;
