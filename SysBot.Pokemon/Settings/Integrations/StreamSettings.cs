@@ -369,6 +369,14 @@ namespace SysBot.Pokemon
             }
         }
 
+        public void RaidCode(string raidCode)
+        {
+            if (!CreateAssets)
+                return;
+
+            File.WriteAllText("raidcode.txt", raidCode);
+        }
+
         public void EndRaid()
         {
             if (!CreateAssets)

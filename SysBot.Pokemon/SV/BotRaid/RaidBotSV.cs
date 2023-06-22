@@ -42,6 +42,7 @@ namespace SysBot.Pokemon
         private ulong OverworldOffset;
         private ulong ConnectedOffset;
         private ulong TeraRaidBlockOffset;
+        private MoveType CurrentTera = MoveType.Any;
         private readonly ulong[] TeraNIDOffsets = new ulong[3];
         private string TeraRaidCode { get; set; } = string.Empty;
         private string BaseDescription = string.Empty;
@@ -115,6 +116,9 @@ namespace SysBot.Pokemon
 
         public override async Task RebootAndStop(CancellationToken t)
         {
+            if (Hub.Config.Stream.CreateAssets)
+                Hub.Config.Stream.EndRaid();
+
             await ReOpenGame(Hub.Config, t).ConfigureAwait(false);
             await HardStop().ConfigureAwait(false);
         }
@@ -266,6 +270,9 @@ namespace SysBot.Pokemon
                 // Connect online and enter den.
                 if (!await PrepareForRaid(token).ConfigureAwait(false))
                 {
+                    if (Hub.Config.Stream.CreateAssets)
+                        Hub.Config.Stream.EndRaid();
+
                     Log("Failed to prepare the raid, rebooting the game.");
                     await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
                     continue;
@@ -352,9 +359,12 @@ namespace SysBot.Pokemon
                     var dupe = lobbyTrainersFinal.Count > 1 && nidDupe.Distinct().Count() == 1;
                     if (dupe)
                     {
+                        if (Hub.Config.Stream.CreateAssets)
+                            Hub.Config.Stream.EndRaid();
+
                         // We read bad data, reset game to end early and recover.
                         var msg = "Oops! Something went wrong, resetting to recover.";
-                        await EnqueueEmbed(null, msg, false, false, false, token).ConfigureAwait(false);
+                        await EnqueueEmbed(null, msg, false, false, false, null, token).ConfigureAwait(false);
                         await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
                         return;
                     }
@@ -363,7 +373,7 @@ namespace SysBot.Pokemon
                     bool hatTrick = lobbyTrainersFinal.Count == 3 && names.Distinct().Count() == 1;
 
                     await Task.Delay(15_000, token).ConfigureAwait(false);
-                    await EnqueueEmbed(names, "", hatTrick, false, false, token).ConfigureAwait(false);
+                    await EnqueueEmbed(names, "", hatTrick, false, false, null, token).ConfigureAwait(false);
                 }
 
                 while (await IsConnectedToLobby(token).ConfigureAwait(false))
@@ -452,7 +462,7 @@ namespace SysBot.Pokemon
                     if (trainers.Count > 0 && Settings.CatchLimit != 0 || TodaySeed != BitConverter.ToUInt64(data.Slice(0, 8)) && RaidsAtStart == seeds.Count && Settings.CatchLimit != 0)
                         ApplyPenalty(trainers);
                     
-                    await EnqueueEmbed(null, "", false, false, true, token).ConfigureAwait(false);
+                    await EnqueueEmbed(null, "", false, false, true, null, token).ConfigureAwait(false);
                     return true;
                 }
 
@@ -547,6 +557,9 @@ namespace SysBot.Pokemon
                 x++;
                 if (x == 45)
                 {
+                    if (Hub.Config.Stream.CreateAssets)
+                        Hub.Config.Stream.EndRaid();
+
                     Log("Failed to connect to lobby, restarting game incase we were in battle/bad connection.");
                     await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
                     Log("Attempting to restart routine!");
@@ -593,14 +606,14 @@ namespace SysBot.Pokemon
                     Log(msg);
                     RaiderBanList.List.Add(new() { ID = nid, Name = trainer.OT, Comment = msg });
                     blockResult = false;
-                    await EnqueueEmbed(null, $"Penalty #{val}\n" + msg, false, true, false, token).ConfigureAwait(false);
+                    await EnqueueEmbed(null, $"Penalty #{val}\n" + msg, false, true, false, null, token).ConfigureAwait(false);
                     return true;
                 }
                 if (blockResult && !isBanned)
                 {
                     msg = $"Penalty #{val}\n{trainer.OT} has already reached the catch limit.\nPlease do not join again.\nRepeated attempts to join like this will result in a ban from future raids.";
                     Log(msg);
-                    await EnqueueEmbed(null, msg, false, true, false, token).ConfigureAwait(false);
+                    await EnqueueEmbed(null, msg, false, true, false, null, token).ConfigureAwait(false);
                     return true;
                 }
             }
@@ -609,7 +622,7 @@ namespace SysBot.Pokemon
             {
                 msg = banResultCC.Item1 ? banResultCC.Item2 : $"Penalty #{val}\n{banResultCFW!.Name} was found in the host's ban list.\n{banResultCFW.Comment}";
                 Log(msg);
-                await EnqueueEmbed(null, msg, false, true, false, token).ConfigureAwait(false);
+                await EnqueueEmbed(null, msg, false, true, false, null, token).ConfigureAwait(false);
                 return true;
             }
             return false;
@@ -617,7 +630,33 @@ namespace SysBot.Pokemon
 
         private async Task<(bool, List<(ulong, TradeMyStatus)>)> ReadTrainers(CancellationToken token)
         {
-            await EnqueueEmbed(null, "", false, false, false, token).ConfigureAwait(false);
+            var teraColor = CurrentTera switch
+            {
+                MoveType.Normal => Color.LighterGrey,
+                MoveType.Fighting => Color.Orange,
+                MoveType.Flying => Color.DarkTeal,
+                MoveType.Poison => Color.Purple,
+                MoveType.Ground => Color.DarkOrange,
+                MoveType.Rock => Color.LightOrange,
+                MoveType.Bug => Color.DarkGreen,
+                MoveType.Ghost => Color.DarkPurple,
+                MoveType.Steel => Color.DarkGrey,
+                MoveType.Fire => Color.Red,
+                MoveType.Water => Color.Blue,
+                MoveType.Grass => Color.Green,
+                MoveType.Electric => Color.Gold,
+                MoveType.Psychic => Color.Magenta,
+                MoveType.Ice => Color.Teal,
+                MoveType.Dragon => Color.DarkBlue,
+                MoveType.Dark => Color.DarkerGrey,
+                MoveType.Fairy => Color.DarkMagenta,
+                _ => (Color?)null,
+            };
+
+            await EnqueueEmbed(null, "", false, false, false, teraColor, token).ConfigureAwait(false);
+
+            if (Hub.Config.Stream.CreateAssets)
+                Hub.Config.Stream.RaidCode(TeraRaidCode);
 
             List<(ulong, TradeMyStatus)> lobbyTrainers = new();
             var wait = TimeSpan.FromSeconds(Settings.TimeToWait);
@@ -683,6 +722,10 @@ namespace SysBot.Pokemon
             Log($"Raid #{RaidCount} is starting!");
             if (EmptyRaid != 0)
                 EmptyRaid = 0;
+
+            if (Hub.Config.Stream.CreateAssets)
+                Hub.Config.Stream.EndRaid();
+
             return (true, lobbyTrainers);
         }
 
@@ -771,7 +814,7 @@ namespace SysBot.Pokemon
             Log("Caching offsets complete!");
         }
 
-        private async Task EnqueueEmbed(List<string>? names, string message, bool hatTrick, bool disband, bool upnext, CancellationToken token)
+        private async Task EnqueueEmbed(List<string>? names, string message, bool hatTrick, bool disband, bool upnext, Color? overrideColor, CancellationToken token)
         {
             // Title can only be up to 256 characters.
             var title = hatTrick && names is not null ? $"**🪄🎩✨ {names[0]} with the Hat Trick! ✨🎩🪄**" : Settings.RaidEmbedFilters.Title.Length > 0 ? Settings.RaidEmbedFilters.Title : "Tera Raid Notification";
@@ -925,6 +968,9 @@ namespace SysBot.Pokemon
             // We didn't make it for some reason.
             if (!await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
             {
+                if (Hub.Config.Stream.CreateAssets)
+                    Hub.Config.Stream.EndRaid();
+
                 Log("Failed to recover to overworld, rebooting the game.");
                 await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
             }
@@ -993,6 +1039,7 @@ namespace SysBot.Pokemon
 
             StoryProgress = await GetStoryProgress(BaseBlockKeyPointer, token).ConfigureAwait(false);
             EventProgress = Math.Min(StoryProgress, 3);
+            CurrentTera = MoveType.Any;
 
             await ReadEventRaids(BaseBlockKeyPointer, container, token).ConfigureAwait(false);
 
@@ -1023,7 +1070,8 @@ namespace SysBot.Pokemon
                         res = "**Special Rewards:**\n" + res;
                     Log($"Seed {seed:X8} found for {(Species)pk.Species}");
                     Settings.RaidEmbedFilters.Seed = $"{seed:X8}";
-                    var stars = RaidExtensions.GetStarCount(raids[i], raids[i].Difficulty, StoryProgress, raids[i].IsBlack);
+                    var stars = raids[i].IsEvent ? encounters[i].Stars : RaidExtensions.GetStarCount(raids[i], raids[i].Difficulty, StoryProgress, raids[i].IsBlack);
+                    CurrentTera = (MoveType)raids[i].TeraType;
                     string starcount = string.Empty;
                     switch (stars)
                     {
@@ -1036,7 +1084,8 @@ namespace SysBot.Pokemon
                         case 7: starcount = "7 ☆"; break;
                     }
                     Settings.RaidEmbedFilters.IsShiny = raids[i].IsShiny;
-                    Settings.RaidEmbedFilters.CrystalType = raids[i].IsBlack ? TeraCrystalType.Black : raids[i].IsEvent ? TeraCrystalType.Might : TeraCrystalType.Base;
+                    Settings.RaidEmbedFilters.CrystalType = raids[i].IsBlack ? TeraCrystalType.Black : raids[i].IsEvent && stars == 7 ?
+                            TeraCrystalType.Might : raids[i].IsEvent ? TeraCrystalType.Distribution : TeraCrystalType.Base;
                     Settings.RaidEmbedFilters.Species = (Species)pk.Species;
                     Settings.RaidEmbedFilters.SpeciesForm = pk.Form;
                     var catchlimit = Settings.CatchLimit;
