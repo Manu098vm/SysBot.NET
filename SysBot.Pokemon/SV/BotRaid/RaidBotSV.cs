@@ -966,7 +966,7 @@ namespace SysBot.Pokemon
                 CommonEdits.SetIsShiny(pk, false);
             PK9 pknext = new();
 
-            await Hub.Config.Stream.StartRaid(this, pk, pknext, 0, Hub, 0, token).ConfigureAwait(false);
+            await Hub.Config.Stream.StartRaid(this, pk, pknext, 0, Hub, 0, TeraRaidCode, token).ConfigureAwait(false);
         }
 
         #region RaidCrawler

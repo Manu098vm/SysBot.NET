@@ -41,6 +41,7 @@ namespace SysBot.Pokemon
         private int EventProgress;
         private int EmptyRaid = 0;
         private int LostRaid = 0;
+        private MoveType CurrentTera = MoveType.Any;
         private ulong TodaySeed;
         private ulong OverworldOffset;
         private ulong ConnectedOffset;
@@ -270,6 +271,8 @@ namespace SysBot.Pokemon
                 // Connect online and enter den.
                 if (!await PrepareForRaid(token).ConfigureAwait(false))
                 {
+                    if (Hub.Config.Stream.CreateAssets)
+                        Hub.Config.Stream.EndRaid();
                     Log("Failed to prepare the raid, rebooting the game.");
                     await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
                     continue;
@@ -294,6 +297,8 @@ namespace SysBot.Pokemon
 
                     if (!await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
                     {
+                        if (Hub.Config.Stream.CreateAssets)
+                            Hub.Config.Stream.EndRaid();
                         Log("Something went wrong, attempting to recover.");
                         await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
                         continue;
@@ -320,6 +325,8 @@ namespace SysBot.Pokemon
 
         public override async Task RebootAndStop(CancellationToken t)
         {
+            if (Hub.Config.Stream.CreateAssets)
+                Hub.Config.Stream.EndRaid();
             await ReOpenGame(Hub.Config, t).ConfigureAwait(false);
             await HardStop().ConfigureAwait(false);
         }
@@ -369,8 +376,10 @@ namespace SysBot.Pokemon
                     if (dupe)
                     {
                         // We read bad data, reset game to end early and recover.
+                        if (Hub.Config.Stream.CreateAssets)
+                            Hub.Config.Stream.EndRaid();
                         var msg = "Oops! Something went wrong, resetting to recover.";
-                        await EnqueueEmbed(null, msg, false, false, false, token).ConfigureAwait(false);
+                        await EnqueueEmbed(null, msg, false, false, false, null, token).ConfigureAwait(false);
                         await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
                         return;
                     }
@@ -379,7 +388,7 @@ namespace SysBot.Pokemon
                     bool hatTrick = lobbyTrainersFinal.Count == 3 && names.Distinct().Count() == 1;
 
                     await Task.Delay(15_000, token).ConfigureAwait(false);
-                    await EnqueueEmbed(names, "", hatTrick, false, false, token).ConfigureAwait(false);
+                    await EnqueueEmbed(names, "", hatTrick, false, false, null, token).ConfigureAwait(false);
                 }
 
                 while (await IsConnectedToLobby(token).ConfigureAwait(false))
@@ -518,7 +527,7 @@ namespace SysBot.Pokemon
                         Log($"Replacing seed at location {SeedIndexToReplace}.");
                         await SanitizeRotationCount(token).ConfigureAwait(false);
                     }
-                    await EnqueueEmbed(null, "", false, false, true, token).ConfigureAwait(false);
+                    await EnqueueEmbed(null, "", false, false, true, null, token).ConfigureAwait(false);
                     return true;
                 }
 
@@ -534,7 +543,7 @@ namespace SysBot.Pokemon
                     {
                         Log($"We had {Settings.LobbyOptions.SkipRaidLimit} lost/empty raids.. Moving on!");
                         await SanitizeRotationCount(token).ConfigureAwait(false);
-                        await EnqueueEmbed(null, "", false, false, true, token).ConfigureAwait(false);
+                        await EnqueueEmbed(null, "", false, false, true, null, token).ConfigureAwait(false);
                         return true;
                     }
                 }
@@ -657,6 +666,8 @@ namespace SysBot.Pokemon
                 x++;
                 if (x == 45)
                 {
+                    if (Hub.Config.Stream.CreateAssets)
+                        Hub.Config.Stream.EndRaid();
                     Log("Failed to connect to lobby, restarting game incase we were in battle/bad connection.");
                     await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
                     Log("Attempting to restart routine!");
@@ -703,14 +714,14 @@ namespace SysBot.Pokemon
                     Log(msg);
                     RaiderBanList.List.Add(new() { ID = nid, Name = trainer.OT, Comment = msg });
                     blockResult = false;
-                    await EnqueueEmbed(null, $"Penalty #{val}\n" + msg, false, true, false, token).ConfigureAwait(false);
+                    await EnqueueEmbed(null, $"Penalty #{val}\n" + msg, false, true, false, null, token).ConfigureAwait(false);
                     return true;
                 }
                 if (blockResult && !isBanned)
                 {
                     msg = $"Penalty #{val}\n{trainer.OT} has already reached the catch limit.\nPlease do not join again.\nRepeated attempts to join like this will result in a ban from future raids.";
                     Log(msg);
-                    await EnqueueEmbed(null, msg, false, true, false, token).ConfigureAwait(false);
+                    await EnqueueEmbed(null, msg, false, true, false, null, token).ConfigureAwait(false);
                     return true;
                 }
             }
@@ -719,7 +730,7 @@ namespace SysBot.Pokemon
             {
                 msg = banResultCC.Item1 ? banResultCC.Item2 : $"Penalty #{val}\n{banResultCFW!.Name} was found in the host's ban list.\n{banResultCFW.Comment}";
                 Log(msg);
-                await EnqueueEmbed(null, msg, false, true, false, token).ConfigureAwait(false);
+                await EnqueueEmbed(null, msg, false, true, false, null, token).ConfigureAwait(false);
                 return true;
             }
             return false;
@@ -727,7 +738,30 @@ namespace SysBot.Pokemon
 
         private async Task<(bool, List<(ulong, TradeMyStatus)>)> ReadTrainers(CancellationToken token)
         {
-            await EnqueueEmbed(null, "", false, false, false, token).ConfigureAwait(false);
+            var teraColor = CurrentTera switch
+            {
+                MoveType.Normal => Color.LighterGrey,
+                MoveType.Fighting => Color.Orange,
+                MoveType.Flying => Color.DarkTeal,
+                MoveType.Poison => Color.Purple,
+                MoveType.Ground => Color.DarkOrange,
+                MoveType.Rock => Color.LightOrange,
+                MoveType.Bug => Color.DarkGreen,
+                MoveType.Ghost => Color.DarkPurple,
+                MoveType.Steel => Color.DarkGrey,
+                MoveType.Fire => Color.Red,
+                MoveType.Water => Color.Blue,
+                MoveType.Grass => Color.Green,
+                MoveType.Electric => Color.Gold,
+                MoveType.Psychic => Color.Magenta,
+                MoveType.Ice => Color.Teal,
+                MoveType.Dragon => Color.DarkBlue,
+                MoveType.Dark => Color.DarkerGrey,
+                MoveType.Fairy => Color.DarkMagenta,
+                _ => (Color?) null,
+            };
+           
+            await EnqueueEmbed(null, "", false, false, false, teraColor, token).ConfigureAwait(false);
 
             List<(ulong, TradeMyStatus)> lobbyTrainers = new();
             var wait = TimeSpan.FromSeconds(Settings.TimeToWait);
@@ -802,6 +836,10 @@ namespace SysBot.Pokemon
             Log($"Raid #{RaidCount} is starting!");
             if (EmptyRaid != 0)
                 EmptyRaid = 0;
+
+            if (Hub.Config.Stream.CreateAssets)
+                Hub.Config.Stream.EndRaid();
+
             return (true, lobbyTrainers);
         }
 
@@ -890,7 +928,7 @@ namespace SysBot.Pokemon
             Log("Caching offsets complete!");
         }
 
-        private async Task EnqueueEmbed(List<string>? names, string message, bool hatTrick, bool disband, bool upnext, CancellationToken token)
+        private async Task EnqueueEmbed(List<string>? names, string message, bool hatTrick, bool disband, bool upnext, Color? overrideColor, CancellationToken token)
         {
             // Title can only be up to 256 characters.
             var title = hatTrick && names is not null ? $"**🪄🎩✨ {names[0]} with the Hat Trick! ✨🎩🪄**" : Settings.RaidEmbedParameters[RotationCount].Title.Length > 0 ? Settings.RaidEmbedParameters[RotationCount].Title : "Tera Raid Notification";
@@ -934,7 +972,7 @@ namespace SysBot.Pokemon
             var embed = new EmbedBuilder()
             {
                 Title = disband ? $"**Raid canceled: [{TeraRaidCode}]**" : title,
-                Color = disband ? Color.Red : hatTrick ? Color.Purple : Color.Green,
+                Color =  disband ? Color.Red : overrideColor is not null ? overrideColor : hatTrick ? Color.Purple : Color.Green,
                 Description = disband ? message : upnext ? Settings.RaidEmbedParameters[RotationCount].Title : description,
                 ImageUrl = bytes.Length > 0 ? "attachment://zap.jpg" : default,
             }.WithFooter(new EmbedFooterBuilder()
@@ -1058,6 +1096,8 @@ namespace SysBot.Pokemon
             // We didn't make it for some reason.
             if (!await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
             {
+                if (Hub.Config.Stream.CreateAssets)
+                    Hub.Config.Stream.EndRaid();
                 Log("Failed to recover to overworld, rebooting the game.");
                 await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
             }
@@ -1163,7 +1203,7 @@ namespace SysBot.Pokemon
             else
                 CommonEdits.SetIsShiny(pknext, false);
 
-            await Hub.Config.Stream.StartRaid(this, pk, pknext, RotationCount, Hub, 1, token).ConfigureAwait(false);
+            await Hub.Config.Stream.StartRaid(this, pk, pknext, RotationCount, Hub, 1, TeraRaidCode, token).ConfigureAwait(false);
         }
 
         #region RaidCrawler
@@ -1190,6 +1230,7 @@ namespace SysBot.Pokemon
 
             StoryProgress = await GetStoryProgress(BaseBlockKeyPointer, token).ConfigureAwait(false);
             EventProgress = Math.Min(StoryProgress, 3);
+            CurrentTera = MoveType.Any;
 
             await ReadEventRaids(BaseBlockKeyPointer, container, token).ConfigureAwait(false);
 
@@ -1225,7 +1266,8 @@ namespace SysBot.Pokemon
                             res = "**Special Rewards:**\n" + res;
                         Log($"Seed {seed:X8} found for {(Species)pk.Species}");
                         Settings.RaidEmbedParameters[a].Seed = $"{seed:X8}";
-                        var stars = RaidExtensions.GetStarCount(raids[i], raids[i].Difficulty, StoryProgress, raids[i].IsBlack);
+                        var stars = raids[i].IsEvent ? encounters[i].Stars : RaidExtensions.GetStarCount(raids[i], raids[i].Difficulty, StoryProgress, raids[i].IsBlack);
+                        CurrentTera = (MoveType)raids[i].TeraType;
                         string starcount = string.Empty;
                         switch (stars)
                         {
@@ -1238,7 +1280,8 @@ namespace SysBot.Pokemon
                             case 7: starcount = "7 ☆"; break;
                         }
                         Settings.RaidEmbedParameters[a].IsShiny = raids[i].IsShiny;
-                        Settings.RaidEmbedParameters[a].CrystalType = raids[i].IsBlack ? TeraCrystalType.Black : raids[i].IsEvent ? TeraCrystalType.Might : TeraCrystalType.Base;
+                        Settings.RaidEmbedParameters[a].CrystalType = raids[i].IsBlack ? TeraCrystalType.Black : raids[i].IsEvent && stars == 7 ?
+                            TeraCrystalType.Might : raids[i].IsEvent ? TeraCrystalType.Distribution : TeraCrystalType.Base;
                         Settings.RaidEmbedParameters[a].Species = (Species)pk.Species;
                         Settings.RaidEmbedParameters[a].SpeciesForm = pk.Form;
                         var pkinfo = Hub.Config.StopConditions.GetRaidPrintName(pk);
