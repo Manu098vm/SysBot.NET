@@ -763,6 +763,9 @@ namespace SysBot.Pokemon
            
             await EnqueueEmbed(null, "", false, false, false, teraColor, token).ConfigureAwait(false);
 
+            if (Hub.Config.Stream.CreateAssets)
+                Hub.Config.Stream.RaidCode(TeraRaidCode);
+
             List<(ulong, TradeMyStatus)> lobbyTrainers = new();
             var wait = TimeSpan.FromSeconds(Settings.TimeToWait);
             var endTime = DateTime.Now + wait;
