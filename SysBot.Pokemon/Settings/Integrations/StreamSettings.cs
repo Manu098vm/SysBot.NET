@@ -342,14 +342,13 @@ namespace SysBot.Pokemon
             File.WriteAllText("completed.txt", msg);
         }
 
-        public async Task StartRaid(PokeRoutineExecutorBase b, PK9 pk, PK9 pknext, int i, PokeTradeHub<PK9> hub, int type, string raidCode, CancellationToken token)
+        public async Task StartRaid(PokeRoutineExecutorBase b, PK9 pk, PK9 pknext, int i, PokeTradeHub<PK9> hub, int type, CancellationToken token)
         {
             if (!CreateAssets)
                 return;
 
             try
             {
-                File.WriteAllText("raidcode.txt", raidCode);
                 if (CreateRaidOnDeck)
                 {
                     await GenerateRaidInfo(i, hub, type, token).ConfigureAwait(false);
