@@ -1225,7 +1225,7 @@ namespace SysBot.Pokemon
                             res = "**Special Rewards:**\n" + res;
                         Log($"Seed {seed:X8} found for {(Species)pk.Species}");
                         Settings.RaidEmbedParameters[a].Seed = $"{seed:X8}";
-                        var stars = RaidExtensions.GetStarCount(raids[i], raids[i].Difficulty, StoryProgress, raids[i].IsBlack);
+                        var stars = raids[i].IsEvent ? encounters[i].Stars : RaidExtensions.GetStarCount(raids[i], raids[i].Difficulty, StoryProgress, raids[i].IsBlack);
                         string starcount = string.Empty;
                         switch (stars)
                         {
@@ -1238,7 +1238,8 @@ namespace SysBot.Pokemon
                             case 7: starcount = "7 ☆"; break;
                         }
                         Settings.RaidEmbedParameters[a].IsShiny = raids[i].IsShiny;
-                        Settings.RaidEmbedParameters[a].CrystalType = raids[i].IsBlack ? TeraCrystalType.Black : raids[i].IsEvent ? TeraCrystalType.Might : TeraCrystalType.Base;
+                        Settings.RaidEmbedParameters[a].CrystalType = raids[i].IsBlack ? TeraCrystalType.Black : raids[i].IsEvent && stars == 7 ?
+                            TeraCrystalType.Might : raids[i].IsEvent ? TeraCrystalType.Distribution : TeraCrystalType.Base;
                         Settings.RaidEmbedParameters[a].Species = (Species)pk.Species;
                         Settings.RaidEmbedParameters[a].SpeciesForm = pk.Form;
                         var pkinfo = Hub.Config.StopConditions.GetRaidPrintName(pk);
