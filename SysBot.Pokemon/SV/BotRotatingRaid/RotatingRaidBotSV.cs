@@ -1206,7 +1206,7 @@ namespace SysBot.Pokemon
             else
                 CommonEdits.SetIsShiny(pknext, false);
 
-            await Hub.Config.Stream.StartRaid(this, pk, pknext, RotationCount, Hub, 1, TeraRaidCode, token).ConfigureAwait(false);
+            await Hub.Config.Stream.StartRaid(this, pk, pknext, RotationCount, Hub, 1, token).ConfigureAwait(false);
         }
 
         #region RaidCrawler
