@@ -271,6 +271,8 @@ namespace SysBot.Pokemon
                 // Connect online and enter den.
                 if (!await PrepareForRaid(token).ConfigureAwait(false))
                 {
+                    if (Hub.Config.Stream.CreateAssets)
+                        Hub.Config.Stream.EndRaid();
                     Log("Failed to prepare the raid, rebooting the game.");
                     await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
                     continue;
@@ -295,6 +297,8 @@ namespace SysBot.Pokemon
 
                     if (!await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
                     {
+                        if (Hub.Config.Stream.CreateAssets)
+                            Hub.Config.Stream.EndRaid();
                         Log("Something went wrong, attempting to recover.");
                         await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
                         continue;
@@ -321,6 +325,8 @@ namespace SysBot.Pokemon
 
         public override async Task RebootAndStop(CancellationToken t)
         {
+            if (Hub.Config.Stream.CreateAssets)
+                Hub.Config.Stream.EndRaid();
             await ReOpenGame(Hub.Config, t).ConfigureAwait(false);
             await HardStop().ConfigureAwait(false);
         }
@@ -370,6 +376,8 @@ namespace SysBot.Pokemon
                     if (dupe)
                     {
                         // We read bad data, reset game to end early and recover.
+                        if (Hub.Config.Stream.CreateAssets)
+                            Hub.Config.Stream.EndRaid();
                         var msg = "Oops! Something went wrong, resetting to recover.";
                         await EnqueueEmbed(null, msg, false, false, false, null, token).ConfigureAwait(false);
                         await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
@@ -658,6 +666,8 @@ namespace SysBot.Pokemon
                 x++;
                 if (x == 45)
                 {
+                    if (Hub.Config.Stream.CreateAssets)
+                        Hub.Config.Stream.EndRaid();
                     Log("Failed to connect to lobby, restarting game incase we were in battle/bad connection.");
                     await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
                     Log("Attempting to restart routine!");
@@ -826,6 +836,10 @@ namespace SysBot.Pokemon
             Log($"Raid #{RaidCount} is starting!");
             if (EmptyRaid != 0)
                 EmptyRaid = 0;
+
+            if (Hub.Config.Stream.CreateAssets)
+                Hub.Config.Stream.EndRaid();
+
             return (true, lobbyTrainers);
         }
 
@@ -1082,6 +1096,8 @@ namespace SysBot.Pokemon
             // We didn't make it for some reason.
             if (!await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
             {
+                if (Hub.Config.Stream.CreateAssets)
+                    Hub.Config.Stream.EndRaid();
                 Log("Failed to recover to overworld, rebooting the game.");
                 await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
             }
@@ -1187,7 +1203,7 @@ namespace SysBot.Pokemon
             else
                 CommonEdits.SetIsShiny(pknext, false);
 
-            await Hub.Config.Stream.StartRaid(this, pk, pknext, RotationCount, Hub, 1, token).ConfigureAwait(false);
+            await Hub.Config.Stream.StartRaid(this, pk, pknext, RotationCount, Hub, 1, TeraRaidCode, token).ConfigureAwait(false);
         }
 
         #region RaidCrawler
