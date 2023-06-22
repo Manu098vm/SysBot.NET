@@ -382,8 +382,7 @@ namespace SysBot.Pokemon
             if (!CreateAssets)
                 return;
 
-            if (File.Exists("raidcode.txt"))
-                File.Delete("raidcode.txt");
+            File.WriteAllText("raidcode.txt", string.Empty);
         }
 
         private async Task GenerateRaidRewards(int i, PokeTradeHub<PK9> hub, int type, CancellationToken token)
