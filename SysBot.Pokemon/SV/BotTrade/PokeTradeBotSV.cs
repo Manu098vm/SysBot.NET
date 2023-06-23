@@ -11,6 +11,8 @@ using static SysBot.Base.SwitchButton;
 using static SysBot.Pokemon.PokeDataOffsetsSV;
 using PKHeX.Core.AutoMod;
 using System.IO;
+using System.Security.Cryptography;
+using MathNet.Numerics.LinearAlgebra.Factorization;
 
 namespace SysBot.Pokemon
 {
@@ -487,13 +489,29 @@ namespace SysBot.Pokemon
             res.Version = partner.Info.Game;
 
             if (pk.IsShiny)
-                res.SetShiny();
+            {
+                //if from Tera Raid, recalculate PID
+                if (pk.Met_Location == 30024)
+                {
+                    var seed = Tera9RNG.GetOriginalSeed(res);
+                    var xoro = new Xoroshiro128Plus(seed);
+                    _ = xoro.NextInt(); //personalRand
+                    _ = xoro.NextInt(); //fakeTrainer
+                    var rareRnd = (uint)xoro.NextInt();
+
+                    if (!((ushort)(res.SID16 ^ res.TID16 ^ (rareRnd >> 16) ^ rareRnd) < 16))
+                        rareRnd = (((uint)res.TID16 ^ (uint)res.SID16 ^ (rareRnd & 0xFFFF) ^ 1) << 16) | (rareRnd & 0xFFFF);
+
+                    res.PID = rareRnd;
+                }
+                else
+                    res.SetShiny();
+            }
 
             if (!pk.ChecksumValid)
                 res.RefreshChecksum();
 
             var la = new LegalityAnalysis(res);
-
             if (!la.Valid)
             {
                 Log("Can not apply Partner details:");

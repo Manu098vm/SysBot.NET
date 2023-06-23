@@ -223,6 +223,7 @@ namespace SysBot.Pokemon.Twitch
                 case "discord":
                     return Settings.DiscordLink.Length > 0 ? $"Here's the Discord Server Link, have a nice stay :3 {Settings.DiscordLink}" : string.Empty;
                 case "tutorial":
+                case "help":
                     return $"{Settings.TutorialText} {Settings.TutorialLink}";
                 case "vrl":
                     return TwitchCommandsHelper<T>.GetRaidList();
