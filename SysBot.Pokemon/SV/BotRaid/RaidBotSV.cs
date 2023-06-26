@@ -715,7 +715,11 @@ namespace SysBot.Pokemon
             if (lobbyTrainers.Count == 0)
             {
                 EmptyRaid++;
-                Log($"Nobody joined the raid, recovering...\nEmpty Raid Count #{EmptyRaid}");                
+                Log($"Nobody joined the raid, recovering...\nEmpty Raid Count #{EmptyRaid}");
+
+                if (Hub.Config.Stream.CreateAssets)
+                    Hub.Config.Stream.EndRaid();
+
                 return (false, lobbyTrainers);
             }
 
@@ -853,7 +857,7 @@ namespace SysBot.Pokemon
             }.WithFooter(new EmbedFooterBuilder()
             {
                 Text = $"Host: {HostSAV.OT} | Uptime: {StartTime - DateTime.Now:d\\.hh\\:mm\\:ss}\n" +
-                       $"Raids: {WinCount + LossCount} | Wins: {WinCount} | Losses: {LossCount}"
+                       $"Raids: {RaidCount} | Wins: {WinCount} | Losses: {LossCount}"
             });
 
             if (!disband && names is null && !upnext)

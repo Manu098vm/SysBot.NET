@@ -833,6 +833,9 @@ namespace SysBot.Pokemon
                 if (Settings.LobbyOptions.LobbyMethodOptions == LobbyMethodOptions.SkipRaid)
                     Log($"Lost/Empty Lobbies: {LostRaid}/{Settings.LobbyOptions.SkipRaidLimit}");
 
+                if (Hub.Config.Stream.CreateAssets)
+                    Hub.Config.Stream.EndRaid();
+
                 return (false, lobbyTrainers);
             }
 
@@ -982,7 +985,7 @@ namespace SysBot.Pokemon
             }.WithFooter(new EmbedFooterBuilder()
             {
                 Text = $"Host: {HostSAV.OT} | Uptime: {StartTime - DateTime.Now:d\\.hh\\:mm\\:ss}\n" +
-                       $"Raids: {WinCount + LossCount} | Wins: {WinCount} | Losses: {LossCount}\n" + disclaimer,
+                       $"Raids: {RaidCount} | Wins: {WinCount} | Losses: {LossCount}\n" + disclaimer,
             });
 
             if (!disband && names is null && !upnext)
