@@ -11,8 +11,6 @@ using static SysBot.Base.SwitchButton;
 using static SysBot.Pokemon.PokeDataOffsetsSV;
 using PKHeX.Core.AutoMod;
 using System.IO;
-using System.Security.Cryptography;
-using MathNet.Numerics.LinearAlgebra.Factorization;
 
 namespace SysBot.Pokemon
 {
