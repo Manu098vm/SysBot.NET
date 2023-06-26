@@ -821,7 +821,6 @@ namespace SysBot.Pokemon
 
             await Task.Delay(5_000, token).ConfigureAwait(false);
 
-            RaidCount++;
             if (lobbyTrainers.Count == 0)
             {
                 EmptyRaid++;
@@ -836,6 +835,8 @@ namespace SysBot.Pokemon
 
                 return (false, lobbyTrainers);
             }
+
+            RaidCount++;
             Log($"Raid #{RaidCount} is starting!");
             if (EmptyRaid != 0)
                 EmptyRaid = 0;
@@ -981,7 +982,7 @@ namespace SysBot.Pokemon
             }.WithFooter(new EmbedFooterBuilder()
             {
                 Text = $"Host: {HostSAV.OT} | Uptime: {StartTime - DateTime.Now:d\\.hh\\:mm\\:ss}\n" +
-                       $"Raids: {RaidCount} | Wins: {WinCount} | Losses: {LossCount}\n" + disclaimer,
+                       $"Raids: {WinCount + LossCount} | Wins: {WinCount} | Losses: {LossCount}\n" + disclaimer,
             });
 
             if (!disband && names is null && !upnext)
