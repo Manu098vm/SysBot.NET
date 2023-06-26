@@ -88,7 +88,13 @@ namespace SysBot.Pokemon.Discord
         private static void AddEchoChannel(ISocketMessageChannel c, ulong cid)
         {
             void Echo(string msg) => c.SendMessageAsync(msg);            
-            async Task RaidEmbedAsync(byte[] bytes, string fileName, EmbedBuilder embed) => await c.SendFileAsync(new MemoryStream(bytes), fileName, "", false, embed: embed.Build()).ConfigureAwait(false);
+            async Task RaidEmbedAsync(byte[] bytes, string fileName, EmbedBuilder embed)
+            {
+                if (bytes is not null && bytes.Length > 0)
+                    await c.SendFileAsync(new MemoryStream(bytes), fileName, "", false, embed: embed.Build()).ConfigureAwait(false);
+                else
+                    await c.SendMessageAsync("", false, embed.Build()).ConfigureAwait(false);
+            }
             Action<byte[], string, EmbedBuilder> rb = async (bytes, fileName, embed) => await RaidEmbedAsync(bytes, fileName, embed).ConfigureAwait(false);
             Action<string> l = Echo;
             EchoUtil.Forwarders.Add(l);
