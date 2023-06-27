@@ -1,4 +1,5 @@
-﻿using PKHeX.Core;
+﻿using NLog;
+using PKHeX.Core;
 using SysBot.Base;
 using System;
 using System.Collections.Generic;
@@ -146,6 +147,7 @@ namespace SysBot.Pokemon.Twitch
         {
             LogUtil.LogText($"[{client.TwitchUsername}] - Disconnected.");
             await Task.Delay(5_000, System.Threading.CancellationToken.None).ConfigureAwait(false);
+            var logged = false;
             while (!client.IsConnected)
             {
                 try
@@ -154,7 +156,11 @@ namespace SysBot.Pokemon.Twitch
                 }
                 catch (Exception ex)
                 {
-                    LogUtil.LogError($"Error reconnecting: {ex.Message}", "TwitchBot");
+                    if (!logged)
+                    {
+                        LogUtil.LogError($"Error reconnecting: {ex.Message}", "TwitchBot");
+                        logged = true;
+                    }
                 }
             }
             await Task.Delay(5_000, System.Threading.CancellationToken.None).ConfigureAwait(false);
