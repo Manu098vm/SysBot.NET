@@ -310,13 +310,6 @@ namespace SysBot.Pokemon
                 return result;
             }
 
-            if (poke.Type == PokeTradeType.EtumrepDump)
-            {
-                var result = await ProcessEtumrepTradeAsync(poke, token).ConfigureAwait(false);
-                await ExitTrade(false, token).ConfigureAwait(false);
-                return result;
-            }
-
             // Watch their status to indicate they have offered a Pokémon as well.
             var offering = await ReadUntilChanged(TradePartnerOfferedOffset, new byte[] { 0x3 }, 25_000, 1_000, true, true, token).ConfigureAwait(false);
             if (!offering)
@@ -734,98 +727,6 @@ namespace SysBot.Pokemon
                 Hub.BotSync.Barrier.RemoveParticipant();
                 Log($"Left the Barrier. Count: {Hub.BotSync.Barrier.ParticipantCount}");
             }
-        }        
-
-        private async Task<PokeTradeResult> ProcessEtumrepTradeAsync(PokeTradeDetail<PA8> detail, CancellationToken token)
-        {
-            int ctr = 0;
-            var time = TimeSpan.FromSeconds(Hub.Config.EtumrepDump.MaxWaitTime);
-            var start = DateTime.Now;
-
-            var dumps = new List<PA8>();
-            var hashes = new List<string>();
-            var pkprev = new PA8();
-            var bctr = 0;
-
-            while (ctr < 4 && DateTime.Now - start < time)
-            {
-                if (await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
-                    break;
-                if (bctr++ % 3 == 0)
-                    await Click(B, 0_100, token).ConfigureAwait(false);
-
-                // Wait for user input... Needs to be different from the previously offered Pokémon.
-                var pk = await ReadUntilPresentPointer(Offsets.LinkTradePartnerPokemonPointer, 3_000, 0_050, BoxFormatSlotSize, token).ConfigureAwait(false);
-                if (pk == null || pk.Species < 1 || !pk.ChecksumValid)
-                    continue;
-
-                var hash = SearchUtil.HashByDetails(pk);
-                if (hash == SearchUtil.HashByDetails(pkprev) || hashes.Contains(hash))
-                    continue;
-
-                // Save the new Pokémon and hash for comparison next round.
-                pkprev = pk;
-                hashes.Add(hash);
-
-                // Send results from separate thread; the bot doesn't need to wait for things to be calculated.
-                if (DumpSetting.Dump)
-                {
-                    var subfolder = detail.Type.ToString().ToLower();
-                    DumpPokemon(DumpSetting.DumpFolder, subfolder, pk); // received
-                }
-
-                ctr++;
-                var hint = ctr == 1 ? " Please dump at least one (1) more Pokémon." : string.Empty;
-                var msg = $"File {ctr}: {SpeciesName.GetSpeciesNameGeneration(pk.Species, 2, 8)} dumped successfully.{hint}";
-                dumps.Add(pk);
-                detail.SendNotification(this, msg);
-            }
-
-            TradeExtensions<PA8>.LATrade = pkprev;
-            Log($"Ended Etumrep Dump loop after processing {ctr} Pokémon.");
-            if (ctr < 2)
-            {
-                var msg = "Not enough Pokémon were shown to run EtumrepMMO.";
-                detail.Notifier.SendIncompleteEtumrepEmbed(this, detail, msg, dumps);
-                return PokeTradeResult.TrainerTooSlow;
-            }
-
-            ushort[] multiExceptions = new ushort[]
-            {
-                (ushort)Species.Bidoof, (ushort)Species.Eevee,
-                (ushort)Species.Combee,
-                (ushort)Species.Qwilfish,
-                (ushort)Species.Abra, (ushort)Species.Kadabra,
-                (ushort)Species.Basculin,
-                (ushort)Species.Magikarp, (ushort)Species.Gyarados,
-                (ushort)Species.Shellos, (ushort)Species.Gastrodon,
-                (ushort)Species.Ralts, (ushort)Species.Budew, (ushort)Species.Roselia,
-                (ushort)Species.Hippopotas, (ushort)Species.Hippowdon,
-                (ushort)Species.Aipom,
-                (ushort)Species.Pikachu, (ushort)Species.Pichu, (ushort)Species.Kricketot,
-                (ushort)Species.Psyduck, (ushort)Species.Buneary,
-                (ushort)Species.Petilil, (ushort)Species.Gastly, (ushort)Species.Haunter,
-                (ushort)Species.Glameow, (ushort)Species.Purugly,
-                (ushort)Species.Teddiursa, (ushort)Species.Ursaring,
-                (ushort)Species.Beautifly, (ushort)Species.Dustox, (ushort)Species.Mothim,
-                (ushort)Species.Murkrow,
-                (ushort)Species.Swinub, (ushort)Species.Piloswine,
-                (ushort)Species.Paras, (ushort)Species.Parasect, (ushort)Species.Zubat, (ushort)Species.Golbat,
-                (ushort)Species.Rufflet,
-            };
-
-            bool isMulti = multiExceptions.Intersect(dumps.Select(x => x.Species)).ToArray().Length >= 1 && dumps.All(x => multiExceptions.Contains(x.Species));
-            bool different = TradeExtensions<PA8>.DifferentFamily(dumps) && !isMulti;
-            if (different)
-            {
-                var msg = "Shown Pokémon are not of the same family and do not belong in currently supported multi spawners. Please show Pokémon that were caught in an MO, MMO, or multi spawner.";
-                detail.Notifier.SendIncompleteEtumrepEmbed(this, detail, msg, dumps);
-                return PokeTradeResult.TrainerTooSlow;
-            }
-
-            TradeSettings.AddCompletedEtumrepDumps();
-            detail.Notifier.SendEtumrepEmbed(this, detail, dumps);
-            return PokeTradeResult.Success;
         }
 
         private async Task<(PA8 toSend, PokeTradeResult check)> HandleFixOT(SAV8LA sav, PokeTradeDetail<PA8> poke, PA8 offered, PartnerDataHolder partner, CancellationToken token)

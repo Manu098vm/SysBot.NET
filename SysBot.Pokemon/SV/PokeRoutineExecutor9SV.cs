@@ -133,6 +133,14 @@ namespace SysBot.Pokemon
             return info;
         }
 
+        public async Task<TradeMyStatus> GetTradePartnerMyStatus(ulong offset, CancellationToken token)
+        {
+            var info = new TradeMyStatus();
+            var read = await SwitchConnection.ReadBytesAbsoluteAsync(offset, info.Data.Length, token).ConfigureAwait(false);
+            read.CopyTo(info.Data, 0);
+            return info;
+        }
+
         public async Task InitializeHardware(IBotStateSettings settings, CancellationToken token)
         {
             Log("Detaching on startup.");
@@ -617,8 +625,7 @@ namespace SysBot.Pokemon
             if (pk.IV_HP == 31 && pk.IV_ATK == 31 && pk.IV_DEF == 31 && pk.IV_SPA == 31 && pk.IV_SPD == 31 && pk.IV_SPE == 31)
                 MaxIV = "6IV";
 
-            StopConditionSettings.HasMark((IRibbonIndex)pk, out RibbonIndex mark);
-            if (mark == RibbonIndex.MarkMightiest)
+            if (((IRibbonIndex)pk).GetRibbon((int)RibbonIndex.MarkMightiest))
                 markEntryText = "the Unrivaled";
             if (pk is PK9 pkl)
             {

@@ -11,11 +11,9 @@ namespace SysBot.Pokemon
                 or PokeRoutineType.LinkTrade
                 or PokeRoutineType.Clone
                 or PokeRoutineType.Dump
-                or PokeRoutineType.EtumrepDump
                 or PokeRoutineType.FixOT
                 => new PokeTradeBotLA(Hub, cfg),
 
-            PokeRoutineType.ArceusBot => new ArceusBot(cfg, Hub),
             PokeRoutineType.RemoteControl => new RemoteControlBotLA(cfg),
 
             _ => throw new ArgumentException(nameof(cfg.NextRoutineType)),
@@ -27,13 +25,10 @@ namespace SysBot.Pokemon
                 or PokeRoutineType.LinkTrade
                 or PokeRoutineType.Clone
                 or PokeRoutineType.Dump
-                or PokeRoutineType.EtumrepDump
                 or PokeRoutineType.FixOT
                 => true,
 
-            PokeRoutineType.ArceusBot => true,
             PokeRoutineType.RemoteControl => true,
-
             _ => false,
         };
     }

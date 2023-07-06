@@ -173,11 +173,6 @@ namespace SysBot.Pokemon.Discord
             // Subscribe a handler to see if a message invokes a command.
             _client.Ready += LoadLoggingAndEcho;
             _client.MessageReceived += HandleMessageAsync;
-            _client.ReactionAdded += ExtraCommandUtil<T>.HandleReactionAsync;
-            _client.UserBanned += ExtraCommandUtil<T>.TCUserBanned;
-            _client.ButtonExecuted += ExtraCommandUtil<T>.ButtonExecuted;
-            _client.SelectMenuExecuted += ExtraCommandUtil<T>.SelectMenuExecuted;
-            _client.ModalSubmitted += ExtraCommandUtil<T>.ModalSubmitted;
         }
 
         private async Task HandleMessageAsync(SocketMessage arg)

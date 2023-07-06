@@ -50,15 +50,5 @@ namespace SysBot.Pokemon
         }
 
         public Action<PokeRoutineExecutor<T>>? OnFinish { get; set; }
-
-        public void SendEtumrepEmbed(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, IReadOnlyList<PA8> pkms)
-        {
-            LogUtil.LogInfo($"Sending {info.Trainer.TrainerName} the EtumrepMMO embed.", routine.Connection.Label);
-        }
-
-        public void SendIncompleteEtumrepEmbed(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, string msg, IReadOnlyList<PA8> pkms)
-        {
-            LogUtil.LogInfo($"Sending invalid request response to {info.Trainer.TrainerName}: {msg}", routine.Connection.Label);
-        }
     }
 }
