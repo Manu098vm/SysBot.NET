@@ -81,5 +81,8 @@ namespace SysBot.Pokemon
 
         [Category(Misc), Description("Zero out HOME trackers for cloned and user-requested PKM files. It is recommended to leave this disabled to avoid creating invalid HOME data.")]
         public bool ResetHOMETracker { get; set; } = false;
+
+        [Category(Misc), Description("Override Pokémon OT info with trade partner OT for non-Native Pokemon. UseTradePartnerDetails (Trade Settings) must also be set to True.")]
+        public bool ForceTradePartnerInfo { get; set; } = false;
     }
 }

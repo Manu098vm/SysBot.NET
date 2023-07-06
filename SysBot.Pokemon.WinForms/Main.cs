@@ -152,8 +152,6 @@ namespace SysBot.Pokemon.WinForms
             var cfg = GetCurrentConfiguration();
             var lines = JsonSerializer.Serialize(cfg, ProgramConfigContext.Default.ProgramConfig);
             File.WriteAllText(Program.ConfigPath, lines);
-            if (TradeCordHelper<PK8>.TCInitialized)
-                TradeCordHelper<PK8>.CleanDB();
         }
 
         [JsonSerializable(typeof(ProgramConfig))]
@@ -360,11 +358,6 @@ namespace SysBot.Pokemon.WinForms
                     continue;
                 x.Acknowledge();
                 ResultsUtil.Log("Acknowledged. Tossing now!", "");
-            }
-            if (Config.Hub.ArceusLA.OutbreakConditions.Permute)
-            {
-                RTB_Results.Clear();
-                ResultsUtil.Log("Clearing Results log for permutations!\n", "");
             }
         }
     }

@@ -60,9 +60,6 @@ namespace SysBot.Pokemon
         [Category(UserBias), Description("Biases the FixOT Queue's weight based on how many users are in the queue.")]
         public int YieldMultCountFixOT { get; set; } = 100;
 
-        [Category(UserBias), Description("Biases the TradeCord Queue's weight based on how many users are in the queue.")]
-        public int YieldMultCountTradeCord { get; set; } = 100;
-
         // Flex Time
 
         [Category(TimeBias), Description("Determines whether the weight should be added or multiplied to the total weight.")]
@@ -95,7 +92,6 @@ namespace SysBot.Pokemon
             PokeTradeType.Clone => YieldMultCountClone,
             PokeTradeType.Dump => YieldMultCountDump,
             PokeTradeType.FixOT => YieldMultCountFixOT,
-            PokeTradeType.TradeCord => YieldMultCountTradeCord,
             _ => YieldMultCountTrade,
         };
 
@@ -105,7 +101,6 @@ namespace SysBot.Pokemon
             PokeTradeType.Clone => YieldMultWaitClone,
             PokeTradeType.Dump => YieldMultWaitDump,
             PokeTradeType.FixOT => YieldMultWaitFixOT,
-            PokeTradeType.TradeCord => YieldMultWaitTradeCord,
             _ => YieldMultWaitTrade,
         };
 

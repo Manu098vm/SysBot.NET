@@ -178,11 +178,8 @@ namespace SysBot.Pokemon
             // More often than needed the console gets disconnected while waiting in the Poképortal
             while (!await IsConnectedOnline(ConnectedOffset, token).ConfigureAwait(false))
             {
-                while (!await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
-                {
-                    await RecoverToOverworld(token).ConfigureAwait(false);
-                    await ConnectAndEnterPortal(token).ConfigureAwait(false);
-                }
+                await RecoverToOverworld(token).ConfigureAwait(false);
+                await ConnectAndEnterPortal(token).ConfigureAwait(false);
             }
 
             await Task.Delay(1_000, token).ConfigureAwait(false);
@@ -268,7 +265,7 @@ namespace SysBot.Pokemon
                 return PokeTradeResult.RecoverStart;
             }
 
-            //If we reach there, we chould be correctly connected. Bot will crash if not. Extra connection online check just to be sure.
+            //If we reach there, we should be correctly connected. Bot will crash if not. Extra connection online check just to be sure.
             if (!await IsConnectedOnline(ConnectedOffset, token).ConfigureAwait(false))
             {
                 Log("Disconnection detected. Trying to reinitialize...");
@@ -384,13 +381,6 @@ namespace SysBot.Pokemon
                 return result;
             }
 
-            if (poke.Type == PokeTradeType.Display)
-            {
-                var result = await ProcessDisplayTradeAsync(poke, token).ConfigureAwait(false);
-                await ExitTradeToPortal(false, token).ConfigureAwait(false);
-                return result;
-            }
-
             // Wait for user input...
             var offered = await ReadUntilPresent(TradePartnerOfferedOffset, 25_000, 1_000, BoxFormatSlotSize, token).ConfigureAwait(false);
             var oldEC = await SwitchConnection.ReadBytesAbsoluteAsync(TradePartnerOfferedOffset, 8, token).ConfigureAwait(false);
@@ -466,7 +456,7 @@ namespace SysBot.Pokemon
             }
 
             //Current handler cannot be past gen OT
-            if (!pk.IsNative)
+            if (!pk.IsNative && !Hub.Config.Legality.ForceTradePartnerInfo)
             {
                 Log("Can not apply Partner details: Current handler cannot be past gen OT.");
                 return false;
@@ -487,24 +477,7 @@ namespace SysBot.Pokemon
             res.Version = partner.Info.Game;
 
             if (pk.IsShiny)
-            {
-                //if from Tera Raid, recalculate PID
-                if (pk.Met_Location == 30024)
-                {
-                    var seed = Tera9RNG.GetOriginalSeed(res);
-                    var xoro = new Xoroshiro128Plus(seed);
-                    _ = xoro.NextInt(); //personalRand
-                    _ = xoro.NextInt(); //fakeTrainer
-                    var rareRnd = (uint)xoro.NextInt();
-
-                    if (!((ushort)(res.SID16 ^ res.TID16 ^ (rareRnd >> 16) ^ rareRnd) < 16))
-                        rareRnd = (((uint)res.TID16 ^ (uint)res.SID16 ^ (rareRnd & 0xFFFF) ^ 1) << 16) | (rareRnd & 0xFFFF);
-
-                    res.PID = rareRnd;
-                }
-                else
-                    res.SetShiny();
-            }
+                res.PID = (uint)((res.TID16 ^ res.SID16 ^ (res.PID & 0xFFFF) ^ pk.ShinyXor) << 16) | (res.PID & 0xFFFF);
 
             if (!pk.ChecksumValid)
                 res.RefreshChecksum();
@@ -514,11 +487,24 @@ namespace SysBot.Pokemon
             {
                 Log("Can not apply Partner details:");
                 Log(la.Report());
-                return false;
+
+                if (!Hub.Config.Legality.ForceTradePartnerInfo)
+                    return false;
+
+                Log("Trying to force Trade Partner Info discarding the game version...");
+                res.Version = pk.Version;
+                la = new LegalityAnalysis(res);
+
+                if (!la.Valid)
+                {
+                    Log("Can not apply Partner details:");
+                    Log(la.Report());
+                    return false;
+                }
             }
 
             Log($"Applying trade partner details: {partner.TrainerName} ({(partner.Info.Gender == 0 ? "M" : "F")}), " +
-                $"TID: {partner.TID7}, SID: {partner.SID7}, {(LanguageID)partner.Info.Language} ({(GameVersion)partner.Info.Game})");
+                $"TID: {partner.TID7:000000}, SID: {partner.SID7:0000}, {(LanguageID)partner.Info.Language} ({(GameVersion)res.Version})");
 
             return true;
         }
@@ -1011,7 +997,7 @@ namespace SysBot.Pokemon
                 string TIDFormatted = pk.Generation >= 7 ? $"{pk.TrainerTID7:000000}" : $"{pk.TID16:00000}";
                 detail.SendNotification(this, $"Displaying: {(pk.ShinyXor == 0 ? "■ - " : pk.ShinyXor <= 16 ? "★ - " : "")}{SpeciesName.GetSpeciesNameGeneration(pk.Species, 2, 8) + TradeExtensions<PK9>.FormOutput(pk.Species, pk.Form, out _)}{gender}\n{pk.IV_HP}/{pk.IV_ATK}/{pk.IV_DEF}/{pk.IV_SPA}/{pk.IV_SPD}/{pk.IV_SPE}\n" +
                     $"Ability: {(Ability)pk.Ability} | {(Nature)pk.Nature} Nature | Ball: {(Ball)pk.Ball}\nTrainer Info: {pk.OT_Name}/{TIDFormatted}\n" +
-                    $"{(StopConditionSettings.HasMark(pk, out RibbonIndex mark) ? $"**Pokémon Mark: {mark.ToString().Replace("Mark", "")}{Environment.NewLine}**" : "")}Scale: {size}\n{msg}");
+                    $"{(HasMark(pk, out RibbonIndex mark) ? $"**Pokémon Mark: {mark.ToString().Replace("Mark", "")}{Environment.NewLine}**" : "")}Scale: {size}\n{msg}");
                 Log($"Displaying {SpeciesName.GetSpeciesNameGeneration(pk.Species, 2, 8) + TradeExtensions<PK9>.FormOutput(pk.Species, pk.Form, out _)}{gender}\n{pk.IV_HP}/{pk.IV_ATK}/{pk.IV_DEF}/{pk.IV_SPA}/{pk.IV_SPD}/{pk.IV_SPE}\n{(Nature)pk.Nature} - {(Ball)pk.Ball} - {pk.OT_Name}/{TIDFormatted}");
                 ctr++;
 
@@ -1026,10 +1012,23 @@ namespace SysBot.Pokemon
             if (ctr == 0)
                 return PokeTradeResult.TrainerTooSlow;
 
-            TradeSettings.AddCompletedDisplays();
             detail.Notifier.SendNotification(this, detail, $"Displayed {ctr} Pokémon.");
             detail.Notifier.TradeFinished(this, detail, detail.TradeData); // blank PK9
             return PokeTradeResult.Success;
+        }
+
+        public static bool HasMark(IRibbonIndex pk, out RibbonIndex result)
+        {
+            result = default;
+            for (var mark = RibbonIndex.MarkLunchtime; mark <= RibbonIndex.MarkSlump; mark++)
+            {
+                if (pk.GetRibbon((int)mark))
+                {
+                    result = mark;
+                    return true;
+                }
+            }
+            return false;
         }
 
         private async Task<TradePartnerSV> GetTradePartnerInfo(CancellationToken token)

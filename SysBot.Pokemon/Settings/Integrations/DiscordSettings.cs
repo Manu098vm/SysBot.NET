@@ -60,17 +60,11 @@ namespace SysBot.Pokemon
         [Category(Roles), Description("Users with this role are allowed to bypass command restrictions.")]
         public RemoteControlAccessList RoleSudo { get; set; } = new() { AllowIfEmpty = false };
 
-        [Category(Roles), Description("Users with this role are allowed to enter the Etumrep Dump queue.")]
-        public RemoteControlAccessList RoleCanEtumrepDump { get; set; } = new() { AllowIfEmpty = false };
-
         [Category(Roles), Description("Users with this role are allowed to enter the FixOT queue.")]
         public RemoteControlAccessList RoleCanFixOT { get; set; } = new() { AllowIfEmpty = false };
 
         [Category(Roles), Description("Users with this role are allowed to use SupportTrade.")]
         public RemoteControlAccessList RoleCanSupportTrade { get; set; } = new() { AllowIfEmpty = false };
-
-        [Category(Roles), Description("Users with this role are allowed to use TradeCord.")]
-        public RemoteControlAccessList RoleCanTradeCord { get; set; } = new() { AllowIfEmpty = false };
 
         [Category(Roles), Description("Users with this role are allowed to use Giveaway.")]
         public RemoteControlAccessList RoleCanGiveaway { get; set; } = new() { AllowIfEmpty = false };
@@ -103,9 +97,6 @@ namespace SysBot.Pokemon
 
         [Category(Channels), Description("Echo channels that will log special encounter messages.")]
         public RemoteControlAccessList EncounterEchoChannels { get; set; } = new();
-
-        [Category(Channels), Description("Channel IDs where TradeCord commands are allowed.")]
-        public RemoteControlAccessList TradeCordChannels { get; set; } = new();
 
         [Category(Operation), Description("Returns PKMs of Pokémon shown in the trade to the user.")]
         public bool ReturnPKMs { get; set; } = true;

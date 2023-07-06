@@ -33,10 +33,6 @@ namespace SysBot.Pokemon
 
         [Category(BotTrade)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
-        public TradeCordSettings TradeCord { get; set; } = new();
-
-        [Category(BotTrade)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
         public SeedCheckSettings SeedCheckSWSH { get; set; } = new();
 
         [Category(BotTrade)]
@@ -45,18 +41,6 @@ namespace SysBot.Pokemon
 
         // Encounter Bots - For finding or hosting Pokémon in-game.
 
-        [Category(BotEncounter), Description("Stop conditions for EggBot, FossilBot, and EncounterBot.")]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public StopConditionSettings StopConditions { get; set; } = new();
-
-        [Category(BotEncounter)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public OverworldSettingsSV OverworldSV { get; set; } = new();
-
-        [Category(BotEncounter)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public EggSettingsSV EggSV { get; set; } = new();
-
         [Category(BotEncounter)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public RaidSettingsSV RaidSV { get; set; } = new();
@@ -64,46 +48,6 @@ namespace SysBot.Pokemon
         [Category(BotEncounter)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public RotatingRaidSettingsSV RotatingRaidSV { get; set; } = new();
-
-        [Category(BotEncounter)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public ArceusBotSettings ArceusLA { get; set; } = new();
-
-        [Category(BotEncounter)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public OverworldSettings OverworldSWSH { get; set; } = new();
-
-        [Category(BotEncounter)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public EncounterSettings EncounterSWSH { get; set; } = new();
-
-        [Category(BotEncounter)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public RaidSettings RaidSWSH { get; set; } = new();
-
-        [Category(BotEncounter)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public LairBotSettings LairSWSH { get; set; } = new();
-
-        [Category(BotEncounter)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public DenSettings DenSWSH { get; set; } = new();
-
-        [Category(BotEncounter)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public BoolSettings BoolSWSH { get; set; } = new();
-
-        [Category(BotEncounter)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public CurryBotSettings CurrySWSH { get; set; } = new();
-
-        [Category(BotEncounter)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public RollingRaidSettings RollingRaidSWSH { get; set; } = new();
-
-        [Category(BotTrade)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public EtumrepDumpSettings EtumrepDump { get; set; } = new();
 
         // Integration
 

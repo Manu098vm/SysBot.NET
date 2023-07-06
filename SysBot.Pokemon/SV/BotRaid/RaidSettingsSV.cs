@@ -20,9 +20,6 @@ namespace SysBot.Pokemon
         [Category(Hosting), Description("Amount of raids before updating the ban list. If you want the global ban list off, set this to -1.")]
         public int RaidsBetweenUpdate { get; set; } = 3;
 
-        [Category(Hosting), Description("If true, the bot will notify you if you are not on the latest azure-build of NotForkBot.")]
-        public bool CheckForUpdatedBuild { get; set; } = true;
-
         [Category(Hosting), Description("If true, the bot will attempt to auto-generate Raid Parameters from the \"raidsv.txt\" file on botstart.")]
         public bool GenerateParametersFromFile { get; set; } = true;
 
@@ -107,6 +104,7 @@ namespace SysBot.Pokemon
             public bool IsSet { get; set; } = false;
             public bool IsShiny { get; set; } = true;
             public string[] PartyPK { get; set; } = Array.Empty<string>();
+            public bool UsePartyPK { get; set; } = false;
             public Species Species { get; set; } = Species.None;
             public int SpeciesForm { get; set; } = 0;
             public string Seed { get; set; } = "0";

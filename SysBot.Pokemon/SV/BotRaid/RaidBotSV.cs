@@ -55,18 +55,6 @@ namespace SysBot.Pokemon
 
         public override async Task MainLoop(CancellationToken token)
         {
-            if (Settings.CheckForUpdatedBuild)
-            {
-                var update = await CheckAzureLabel();
-                if (update)
-                {
-                    Log("A new azure-build is available for download @ https://dev.azure.com/zyrocodez/zyro670/_build?definitionId=2&_a=summary");
-                    return;
-                }
-                else
-                    Log("You are on the latest build of NotForkBot.");
-            }
-
             if (Settings.GenerateParametersFromFile)
             {
                 GenerateSeedsFromFile();
@@ -118,6 +106,9 @@ namespace SysBot.Pokemon
         {
             if (Hub.Config.Stream.CreateAssets)
                 Hub.Config.Stream.EndRaid();
+
+            if (Hub.Config.Stream.CreateAssets)
+                Hub.Config.Stream.LogStreamProgress("Restarting the game!");
 
             await ReOpenGame(Hub.Config, t).ConfigureAwait(false);
             await HardStop().ConfigureAwait(false);
@@ -258,6 +249,9 @@ namespace SysBot.Pokemon
                     continue;
                 }
 
+                if (Hub.Config.Stream.CreateAssets)
+                    Hub.Config.Stream.LogStreamProgress("Initializing...");
+
                 // Get initial raid counts for comparison later.
                 await CountRaids(null, false, token).ConfigureAwait(false);
 
@@ -273,12 +267,18 @@ namespace SysBot.Pokemon
                     if (Hub.Config.Stream.CreateAssets)
                         Hub.Config.Stream.EndRaid();
 
+                    if (Hub.Config.Stream.CreateAssets)
+                        Hub.Config.Stream.LogStreamProgress("Restarting the game!");
+
                     Log("Failed to prepare the raid, rebooting the game.");
                     await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
                     continue;
                 }
 
                 // Wait until we're in lobby.
+                if (Hub.Config.Stream.CreateAssets)
+                    Hub.Config.Stream.LogStreamProgress("Initializing Raid lobby...");
+
                 if (!await GetLobbyReady(token).ConfigureAwait(false))
                     continue;
 
@@ -291,6 +291,12 @@ namespace SysBot.Pokemon
 
                     if (!await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
                     {
+                        if (Hub.Config.Stream.CreateAssets)
+                            Hub.Config.Stream.EndRaid();
+
+                        if (Hub.Config.Stream.CreateAssets)
+                            Hub.Config.Stream.LogStreamProgress("Restarting the game!");
+
                         Log("Something went wrong, attempting to recover.");
                         await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
                         continue;
@@ -321,7 +327,11 @@ namespace SysBot.Pokemon
             if (await IsConnectedToLobby(token).ConfigureAwait(false))
             {
                 int b = 0;
-                Log("Preparing for battle!");
+
+                Log("Prepare for battle!");
+                if (Hub.Config.Stream.CreateAssets)
+                    Hub.Config.Stream.LogStreamProgress("Prepare for battle!");
+
                 while (!await IsInRaid(token).ConfigureAwait(false))
                     await Click(A, 1_000, token).ConfigureAwait(false);
 
@@ -342,9 +352,14 @@ namespace SysBot.Pokemon
                         if (nid == 0)
                             continue;
 
-                        List<long> ptr = new(Offsets.Trader2MyStatusPointer);
-                        ptr[2] += i * 0x30;
-                        var trainer = await GetTradePartnerMyStatus(ptr, token).ConfigureAwait(false);
+                        var ptr = new long[] { Offsets.Trader2MyStatusPointer[0], Offsets.Trader2MyStatusPointer[1],
+                            Offsets.Trader2MyStatusPointer[2] + (i * 0x30), Offsets.Trader2MyStatusPointer[3] };
+
+                        (var success, var address) = await ValidatePointerAll(ptr, token).ConfigureAwait(false);
+                        if (!success || address == 0)
+                            continue;
+
+                        var trainer = await GetTradePartnerMyStatus(address, token).ConfigureAwait(false);
 
                         if (string.IsNullOrWhiteSpace(trainer.OT))
                             continue;
@@ -361,6 +376,9 @@ namespace SysBot.Pokemon
                     {
                         if (Hub.Config.Stream.CreateAssets)
                             Hub.Config.Stream.EndRaid();
+
+                        if (Hub.Config.Stream.CreateAssets)
+                            Hub.Config.Stream.LogStreamProgress("Restarting the game!");
 
                         // We read bad data, reset game to end early and recover.
                         var msg = "Oops! Something went wrong, resetting to recover.";
@@ -392,10 +410,19 @@ namespace SysBot.Pokemon
             await Click(DDOWN, 0_500, token).ConfigureAwait(false);
 
             Log("Returning to overworld...");
+            if (Hub.Config.Stream.CreateAssets)
+                Hub.Config.Stream.LogStreamProgress("Returning to overworld...");
+
             while (!await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
                 await Click(A, 1_000, token).ConfigureAwait(false);
 
             bool ready = await CountRaids(lobbyTrainersFinal, true, token).ConfigureAwait(false);
+
+            if (Hub.Config.Stream.CreateAssets)
+                Hub.Config.Stream.EndRaid();
+
+            if (Hub.Config.Stream.CreateAssets)
+                Hub.Config.Stream.LogStreamProgress("Restarting the game!");
 
             await CloseGame(Hub.Config, token).ConfigureAwait(false);
             await StartGame(Hub.Config, token).ConfigureAwait(false);
@@ -488,7 +515,7 @@ namespace SysBot.Pokemon
             var len = string.Empty;
             foreach (var l in Settings.RaidEmbedFilters.PartyPK)
                 len += l;
-            if (len.Length > 1 && EmptyRaid == 0)
+            if (Settings.RaidEmbedFilters.UsePartyPK && len.Length > 1 && EmptyRaid == 0)
             {
                 Log("Preparing PartyPK to inject..");
                 await SetCurrentBox(0, token).ConfigureAwait(false);
@@ -518,11 +545,17 @@ namespace SysBot.Pokemon
             // Make sure we're connected.
             while (!await IsConnectedOnline(ConnectedOffset, token).ConfigureAwait(false))
             {
+                if (Hub.Config.Stream.CreateAssets)
+                    Hub.Config.Stream.LogStreamProgress("Connecting online...");
+
                 Log("Connecting...");
                 await RecoverToOverworld(token).ConfigureAwait(false);
                 if (!await ConnectToOnline(Hub.Config, token).ConfigureAwait(false))
                     return false;
             }
+
+            if (Hub.Config.Stream.CreateAssets)
+                Hub.Config.Stream.LogStreamProgress("Opening Raid lobby!");
 
             for (int i = 0; i < 6; i++)
                 await Click(B, 0_500, token).ConfigureAwait(false);
@@ -559,6 +592,9 @@ namespace SysBot.Pokemon
                 {
                     if (Hub.Config.Stream.CreateAssets)
                         Hub.Config.Stream.EndRaid();
+
+                    if (Hub.Config.Stream.CreateAssets)
+                        Hub.Config.Stream.LogStreamProgress("Restarting the game!");
 
                     Log("Failed to connect to lobby, restarting game incase we were in battle/bad connection.");
                     await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
@@ -669,7 +705,12 @@ namespace SysBot.Pokemon
                 for (int i = 0; i < 3; i++)
                 {
                     var player = i + 2;
-                    Log($"Waiting for Player {player} to load...");
+
+                    var ms = $"Waiting for Player {player}...";
+                    Log(ms);
+
+                    if (Hub.Config.Stream.CreateAssets)
+                        Hub.Config.Stream.LogStreamProgress(ms);
 
                     var nidOfs = TeraNIDOffsets[i];
                     var data = await SwitchConnection.ReadBytesAbsoluteAsync(nidOfs, 8, token).ConfigureAwait(false);
@@ -681,28 +722,39 @@ namespace SysBot.Pokemon
                         nid = BitConverter.ToUInt64(data, 0);
                     }
 
-                    List<long> ptr = new(Offsets.Trader2MyStatusPointer);
-                    ptr[2] += i * 0x30;
-                    var trainer = await GetTradePartnerMyStatus(ptr, token).ConfigureAwait(false);
+                    var success = false;
+                    var address = (ulong)0;
 
-                    while (trainer.OT.Length == 0 && (DateTime.Now < endTime))
+                    while (!success && (DateTime.Now < endTime))
                     {
-                        await Task.Delay(0_500, token).ConfigureAwait(false);
-                        trainer = await GetTradePartnerMyStatus(ptr, token).ConfigureAwait(false);
+                        var pointer = new long[] { Offsets.Trader2MyStatusPointer[0], Offsets.Trader2MyStatusPointer[1],
+                            Offsets.Trader2MyStatusPointer[2] + (i * 0x30), Offsets.Trader2MyStatusPointer[3] };
+                        (success, address) = await ValidatePointerAll(pointer, token).ConfigureAwait(false);
                     }
 
-                    if (nid != 0 && !string.IsNullOrWhiteSpace(trainer.OT))
+                    if (success)
                     {
-                        if (await CheckIfTrainerBanned(trainer, nid, player, updateBanList, token).ConfigureAwait(false))
-                            return (false, lobbyTrainers);
+                        var trainer = await GetTradePartnerMyStatus(address, token).ConfigureAwait(false);
 
-                        updateBanList = false;
+                        while (trainer.OT.Length == 0 && (DateTime.Now < endTime))
+                        {
+                            await Task.Delay(0_500, token).ConfigureAwait(false);
+                            trainer = await GetTradePartnerMyStatus(address, token).ConfigureAwait(false);
+                        }
+
+                        if (nid != 0 && !string.IsNullOrWhiteSpace(trainer.OT))
+                        {
+                            if (await CheckIfTrainerBanned(trainer, nid, player, updateBanList, token).ConfigureAwait(false))
+                                return (false, lobbyTrainers);
+
+                            updateBanList = false;
+                        }
+
+                        if (lobbyTrainers.FirstOrDefault(x => x.Item1 == nid) != default && trainer.OT.Length > 0)
+                            lobbyTrainers[i] = (nid, trainer);
+                        else if (nid > 0 && trainer.OT.Length > 0)
+                            lobbyTrainers.Add((nid, trainer));
                     }
-
-                    if (lobbyTrainers.FirstOrDefault(x => x.Item1 == nid) != default && trainer.OT.Length > 0)
-                        lobbyTrainers[i] = (nid, trainer);
-                    else if (nid > 0 && trainer.OT.Length > 0)
-                        lobbyTrainers.Add((nid, trainer));
 
                     full = lobbyTrainers.Count == 3;
                     if (full || (DateTime.Now >= endTime))
@@ -720,11 +772,20 @@ namespace SysBot.Pokemon
                 if (Hub.Config.Stream.CreateAssets)
                     Hub.Config.Stream.EndRaid();
 
+                if (Hub.Config.Stream.CreateAssets)
+                    Hub.Config.Stream.LogStreamProgress("Restarting the game!");
+
                 return (false, lobbyTrainers);
             }
 
             RaidCount++;
-            Log($"Raid #{RaidCount} is starting!");
+
+            var msg = $"Raid #{RaidCount} is starting!";
+            Log(msg);
+
+            if (Hub.Config.Stream.CreateAssets)
+                Hub.Config.Stream.LogStreamProgress(msg);
+
             if (EmptyRaid != 0)
                 EmptyRaid = 0;
 
@@ -976,6 +1037,9 @@ namespace SysBot.Pokemon
                 if (Hub.Config.Stream.CreateAssets)
                     Hub.Config.Stream.EndRaid();
 
+                if (Hub.Config.Stream.CreateAssets)
+                    Hub.Config.Stream.LogStreamProgress("Restarting the game!");
+
                 Log("Failed to recover to overworld, rebooting the game.");
                 await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
             }
@@ -990,19 +1054,6 @@ namespace SysBot.Pokemon
                 pkmform = $"-{pkm.Form}";
 
             return _ = $"https://raw.githubusercontent.com/zyro670/PokeTextures/main/Placeholder_Sprites/scaled_up_sprites/Shiny/AlternateArt/" + $"{pkm.Species}{pkmform}" + ".png";
-        }
-
-        private static async Task<bool> CheckAzureLabel()
-        {
-            int azurematch;
-            string latestazure = "https://dev.azure.com/zyrocodez/zyro670/_apis/build/builds?definitions=2&$top=1&api-version=5.0-preview.5";
-            HttpClient client = new();
-            var content = await client.GetStringAsync(latestazure);
-            int buildId = int.Parse(content.Substring(135, 3));
-            azurematch = AzureBuildID.CompareTo(buildId);
-            if (azurematch < 0)
-                return true;
-            return false;
         }
 
         private async Task GetRaidSprite(CancellationToken token)
@@ -1095,7 +1146,7 @@ namespace SysBot.Pokemon
                     Settings.RaidEmbedFilters.SpeciesForm = pk.Form;
                     var catchlimit = Settings.CatchLimit;
                     string cl = catchlimit is 0 ? "\n**No catch limit!**" : $"\n**Catch Limit: {catchlimit}**";
-                    var pkinfo = Hub.Config.StopConditions.GetRaidPrintName(pk);
+                    var pkinfo = GetRaidPrintName(pk);
                     pkinfo += $"\nTera Type: {(MoveType)raids[i].TeraType}";
                     var strings = GameInfo.GetStrings(1);
                     var moves = new ushort[4] { encounters[i].Move1, encounters[i].Move2, encounters[i].Move3, encounters[i].Move4 };
@@ -1166,7 +1217,28 @@ namespace SysBot.Pokemon
                     done = true;
                 }
             }
-        }        
+        }
+
+        public static string GetRaidPrintName(PKM pk)
+        {
+            string markEntryText = "";
+            if (((IRibbonIndex)pk).GetRibbon((int)RibbonIndex.MarkMightiest))
+                markEntryText = "the Unrivaled";
+            string gender = pk.Gender == 0 ? " - ♂" : pk.Gender == 1 ? " - ♀ " : " - ⚥";
+            if (pk is PK9 pkl)
+            {
+                if (pkl.Scale == 0)
+                    markEntryText = " the Teeny";
+                if (pkl.Scale == 255)
+                    markEntryText = " the Great";
+            }
+            var set = $"{(pk.ShinyXor == 0 ? "■ - " : pk.ShinyXor <= 16 ? "★ - " : "")}{SpeciesName.GetSpeciesNameGeneration(pk.Species, 2, 9)}{TradeExtensions<PK9>.FormOutput(pk.Species, pk.Form, out _)}{markEntryText}{gender}\nIVs: {pk.IV_HP}/{pk.IV_ATK}/{pk.IV_DEF}/{pk.IV_SPA}/{pk.IV_SPD}/{pk.IV_SPE}\nNature: {(Nature)pk.Nature} | Ability: {(Ability)pk.Ability}";
+            if (pk is PK9 pk9)
+            {
+                set += $"\nScale: {PokeSizeDetailedUtil.GetSizeRating(pk9.Scale)} ({pk9.Scale})";
+            }
+            return set;
+        }
         #endregion
     }
 }
