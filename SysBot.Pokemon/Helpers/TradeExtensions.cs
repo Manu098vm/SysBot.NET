@@ -429,15 +429,15 @@ namespace SysBot.Pokemon
 
             if (Enum.IsDefined(typeof(GenderDependent), pkm.Species) && !canGmax && pkm.Form is 0)
             {
-                if (pkm.Gender == 0 && pkm.Species != (int)Species.Torchic)
+                if (pkm.Gender == 0 && pkm.Species != (ushort)Species.Torchic)
                     md = true;
                 else fd = true;
             }
 
-            int form = pkm.Species switch
+            byte form = pkm.Species switch
             {
-                (int)Species.Sinistea or (int)Species.Polteageist or (int)Species.Rockruff or (int)Species.Mothim => 0,
-                (int)Species.Alcremie when pkm.IsShiny || canGmax => 0,
+                (ushort)Species.Sinistea or (ushort)Species.Polteageist or (ushort)Species.Rockruff or (ushort)Species.Mothim => 0,
+                (ushort)Species.Alcremie when pkm.IsShiny || canGmax => 0,
                 _ => pkm.Form,
 
             };
@@ -468,7 +468,7 @@ namespace SysBot.Pokemon
             baseLink[3] = pkm.Form < 10 ? $"00{form}" : $"0{form}";
             baseLink[4] = pkm.PersonalInfo.OnlyFemale ? "fo" : pkm.PersonalInfo.OnlyMale ? "mo" : pkm.PersonalInfo.Genderless ? "uk" : fd ? "fd" : md ? "md" : "mf";
             baseLink[5] = canGmax ? "g" : "n";
-            baseLink[6] = "0000000" + (pkm.Species == (int)Species.Alcremie && !canGmax ? pkm.Data[0xE4] : 0);
+            baseLink[6] = "0000000" + (pkm.Species == (ushort)Species.Alcremie && !canGmax ? pkm.Data[0xE4] : 0);
             baseLink[8] = pkm.IsShiny ? "r.png" : "n.png";
             return string.Join("_", baseLink);
         }
