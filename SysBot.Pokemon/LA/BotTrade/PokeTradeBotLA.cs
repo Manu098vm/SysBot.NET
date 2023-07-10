@@ -598,8 +598,6 @@ namespace SysBot.Pokemon
 
             // Inject the shown Pokémon.
             var clone = offered.Clone();
-            if (Hub.Config.Legality.ResetHOMETracker)
-                clone.Tracker = 0;
 
             TradeExtensions<PA8>.LATrade = clone;
 
@@ -739,10 +737,7 @@ namespace SysBot.Pokemon
                 return (offered, PokeTradeResult.TrainerRequestBad);
             }
 
-            var clone = (PA8)offered.Clone();
-            if (Hub.Config.Legality.ResetHOMETracker)
-                clone.Tracker = 0;
-
+            var clone = offered.Clone();
             string shiny = string.Empty;
             if (!TradeExtensions<PA8>.ShinyLockCheck(offered.Species, TradeExtensions<PA8>.FormOutput(offered.Species, offered.Form, out _), $"{(Ball)offered.Ball}"))
                 shiny = $"\nShiny: {(offered.ShinyXor == 0 ? "Square" : offered.IsShiny ? "Star" : "No")}";

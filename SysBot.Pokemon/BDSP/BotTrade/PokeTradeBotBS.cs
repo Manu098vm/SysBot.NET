@@ -791,10 +791,7 @@ namespace SysBot.Pokemon
                 return (offered, PokeTradeResult.TrainerRequestBad);
             }
 
-            var clone = (PB8)offered.Clone();
-            if (Hub.Config.Legality.ResetHOMETracker)
-                clone.Tracker = 0;
-
+            var clone = offered.Clone();
             string shiny = string.Empty;
             if (!TradeExtensions<PB8>.ShinyLockCheck(offered.Species, TradeExtensions<PB8>.FormOutput(offered.Species, offered.Form, out _), $"{(Ball)offered.Ball}"))
                 shiny = $"\nShiny: {(offered.ShinyXor == 0 ? "Square" : offered.IsShiny ? "Star" : "No")}";
