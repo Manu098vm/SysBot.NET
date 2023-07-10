@@ -1,4 +1,5 @@
 ﻿using PKHeX.Core;
+using PKHeX.Core.AutoMod;
 using PKHeX.Core.Searching;
 using SysBot.Base;
 using System;
@@ -295,11 +296,17 @@ namespace SysBot.Pokemon
             var tradePartner = await GetTradePartnerInfo(token).ConfigureAwait(false);
             var trainerNID = GetFakeNID(tradePartner.TrainerName, tradePartner.TrainerID);
             RecordUtil<PokeTradeBotBS>.Record($"Initiating\t{trainerNID:X16}\t{tradePartner.TrainerName}\t{poke.Trainer.TrainerName}\t{poke.Trainer.ID}\t{poke.ID}\t{toSend.EncryptionConstant:X8}");
-            Log($"Found Link Trade partner: {tradePartner.TrainerName}-{tradePartner.TID7}");
+            Log($"Found Link Trade partner: {tradePartner.TrainerName}-{tradePartner.TID7:000000}");
 
             var partnerCheck = await CheckPartnerReputation(this, poke, trainerNID, tradePartner.TrainerName, AbuseSettings, PreviousUsers, PreviousUsersDistribution, EncounteredUsers, token);
             if (partnerCheck != PokeTradeResult.Success)
                 return PokeTradeResult.SuspiciousActivity;
+
+            if (Hub.Config.Trade.UseTradePartnerDetails && CanUsePartnerDetails(toSend, sav, tradePartner, poke, out var toSendEdited))
+            {
+                toSend = toSendEdited;
+                await SetBoxPokemonAbsolute(BoxStartOffset, toSend, token, sav).ConfigureAwait(false);
+            }
 
             await Task.Delay(2_000, token).ConfigureAwait(false);
 
@@ -330,7 +337,7 @@ namespace SysBot.Pokemon
             lastOffered = await SwitchConnection.ReadBytesAbsoluteAsync(LinkTradePokemonOffset, 8, token).ConfigureAwait(false);
 
             PokeTradeResult update;
-            var trainer = new PartnerDataHolder(0, tradePartner.TrainerName, tradePartner.TID7);
+            var trainer = new PartnerDataHolder(0, tradePartner.TrainerName, $"{tradePartner.TID7:000000}");
             (toSend, update) = await GetEntityToSend(sav, poke, offered, toSend, trainer, token).ConfigureAwait(false);
             if (update != PokeTradeResult.Success)
                 return update;
@@ -377,6 +384,119 @@ namespace SysBot.Pokemon
         {
             var nameHash = trainerName.GetHashCode();
             return (ulong)(trainerID << 32) + (uint)nameHash;
+        }
+
+        private bool CanUsePartnerDetails(PB8 pk, SAV8BS sav, TradePartnerBS partner, PokeTradeDetail<PB8> trade, out PB8 res)
+        {
+            res = pk.Clone();
+
+            if (trade.Type is not PokeTradeType.Specific)
+            {
+                Log("Can not apply Partner details: Not a specific trade request.");
+                return false;
+            }
+
+            //Current handler cannot be past gen OT
+            if (!pk.IsNative && !Hub.Config.Legality.ForceTradePartnerInfo)
+            {
+                Log("Can not apply Partner details: Current handler cannot be different gen OT.");
+                return false;
+            }
+
+            //Only override trainer details if user didn't specify OT details in the Showdown/PK9 request
+            if (HasSetDetails(pk, fallback: sav))
+            {
+                Log("Can not apply Partner details: Requested Pokémon already has set Trainer details.");
+                return false;
+            }
+
+            res.OT_Name = partner.TrainerName;
+            //res.OT_Gender = partner.Gender; TODO
+            res.TrainerTID7 = partner.TID7;
+            res.TrainerSID7 = partner.SID7;
+            res.Language = partner.Language;
+            res.Version = partner.Game;
+
+            if (pk.IsShiny)
+                res.PID = (uint)(((res.TID16 ^ res.SID16 ^ (res.PID & 0xFFFF) ^ pk.ShinyXor) << 16) | (res.PID & 0xFFFF));
+
+            if (!pk.ChecksumValid)
+                res.RefreshChecksum();
+
+            var la = new LegalityAnalysis(res);
+            if (!la.Valid)
+            {
+                Log("Can not apply Partner details:");
+                Log(la.Report());
+
+                if (!Hub.Config.Legality.ForceTradePartnerInfo)
+                    return false;
+
+                Log("Trying to force Trade Partner Info discarding the game version...");
+                res.Version = pk.Version;
+                la = new LegalityAnalysis(res);
+
+                if (!la.Valid)
+                {
+                    Log("Can not apply Partner details:");
+                    Log(la.Report());
+                    return false;
+                }
+            }
+
+            Log($"Applying trade partner details: {partner.TrainerName}, " +
+                $"TID: {partner.TID7:000000}, SID: {partner.SID7:0000}, {(LanguageID)partner.Language} ({(GameVersion)res.Version})");
+
+            return true;
+        }
+
+        private bool HasSetDetails(PKM set, ITrainerInfo fallback)
+        {
+            var set_trainer = new SimpleTrainerInfo((GameVersion)set.Version)
+            {
+                OT = set.OT_Name,
+                TID16 = set.TID16,
+                SID16 = set.SID16,
+                Gender = set.OT_Gender,
+                Language = set.Language,
+            };
+
+            var def_trainer = new SimpleTrainerInfo((GameVersion)fallback.Game)
+            {
+                OT = Hub.Config.Legality.GenerateOT,
+                TID16 = Hub.Config.Legality.GenerateTID16,
+                SID16 = Hub.Config.Legality.GenerateSID16,
+                Gender = Hub.Config.Legality.GenerateGenderOT,
+                Language = (int)Hub.Config.Legality.GenerateLanguage,
+            };
+
+            var alm_trainer = Hub.Config.Legality.GeneratePathTrainerInfo != string.Empty ?
+                TrainerSettings.GetSavedTrainerData(fallback.Generation, (GameVersion)fallback.Game, fallback, (LanguageID)fallback.Language) : null;
+
+            return !IsEqualTInfo(set_trainer, def_trainer) && !IsEqualTInfo(set_trainer, alm_trainer);
+        }
+
+        private static bool IsEqualTInfo(ITrainerInfo trainerInfo, ITrainerInfo? compareInfo)
+        {
+            if (compareInfo is null)
+                return false;
+
+            if (!trainerInfo.OT.Equals(compareInfo.OT))
+                return false;
+
+            if (trainerInfo.Gender != compareInfo.Gender)
+                return false;
+
+            if (trainerInfo.Language != compareInfo.Language)
+                return false;
+
+            if (trainerInfo.TID16 != compareInfo.TID16)
+                return false;
+
+            if (trainerInfo.SID16 != compareInfo.SID16)
+                return false;
+
+            return true;
         }
 
         private void UpdateCountsAndExport(PokeTradeDetail<PB8> poke, PB8 received, PB8 toSend)
@@ -682,7 +802,8 @@ namespace SysBot.Pokemon
         {
             var id = await SwitchConnection.PointerPeek(4, Offsets.LinkTradePartnerIDPointer, token).ConfigureAwait(false);
             var name = await SwitchConnection.PointerPeek(TradePartnerBS.MaxByteLengthStringObject, Offsets.LinkTradePartnerNamePointer, token).ConfigureAwait(false);
-            return new TradePartnerBS(id, name);
+            var info = await SwitchConnection.PointerPeek(5, Offsets.LinkTradePartnerInfoPointer, token).ConfigureAwait(false);
+            return new TradePartnerBS(id, name, info);
         }
 
         protected virtual async Task<(PB8 toSend, PokeTradeResult check)> GetEntityToSend(SAV8BS sav, PokeTradeDetail<PB8> poke, PB8 offered, PB8 toSend, PartnerDataHolder partnerID, CancellationToken token)

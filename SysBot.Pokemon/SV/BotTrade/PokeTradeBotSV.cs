@@ -455,7 +455,7 @@ namespace SysBot.Pokemon
             //Current handler cannot be past gen OT
             if (!pk.IsNative && !Hub.Config.Legality.ForceTradePartnerInfo)
             {
-                Log("Can not apply Partner details: Current handler cannot be past gen OT.");
+                Log("Can not apply Partner details: Current handler cannot be different gen OT.");
                 return false;
             }
 
