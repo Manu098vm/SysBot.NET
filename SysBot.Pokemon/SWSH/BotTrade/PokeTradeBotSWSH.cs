@@ -512,9 +512,6 @@ namespace SysBot.Pokemon
             }
 
             var clone = offered.Clone();
-            if (Hub.Config.Legality.ResetHOMETracker)
-                clone.Tracker = 0;
-
             TradeExtensions<PK8>.SWSHTrade = clone;
 
             poke.SendNotification(this, $"**Cloned your {GameInfo.GetStrings(1).Species[clone.Species]}!**\nNow press B to cancel your offer and trade me a Pokémon you don't want.");
@@ -1009,9 +1006,6 @@ namespace SysBot.Pokemon
             }
 
             var clone = offered.Clone();
-            if (Hub.Config.Legality.ResetHOMETracker)
-                clone.Tracker = 0;
-
             string shiny = string.Empty;
             if (!TradeExtensions<PK8>.ShinyLockCheck(offered.Species, TradeExtensions<PK8>.FormOutput(offered.Species, offered.Form, out _), $"{(Ball)offered.Ball}"))
                 shiny = $"\nShiny: {(offered.ShinyXor == 0 ? "Square" : offered.IsShiny ? "Star" : "No")}";

@@ -458,7 +458,7 @@ namespace SysBot.Pokemon
             //Current handler cannot be past gen OT
             if (!pk.IsNative && !Hub.Config.Legality.ForceTradePartnerInfo)
             {
-                Log("Can not apply Partner details: Current handler cannot be past gen OT.");
+                Log("Can not apply Partner details: Current handler cannot be different gen OT.");
                 return false;
             }
 
@@ -1072,8 +1072,6 @@ namespace SysBot.Pokemon
             }
 
             var clone = offered.Clone();
-            if (Hub.Config.Legality.ResetHOMETracker)
-                clone.Tracker = 0;
 
             // Line for Trade Display Notifier
             TradeExtensions<PK9>.SVTrade = clone;
@@ -1116,10 +1114,7 @@ namespace SysBot.Pokemon
                 return (offered, PokeTradeResult.TrainerRequestBad);
             }
 
-            var clone = (PK9)offered.Clone();
-            if (Hub.Config.Legality.ResetHOMETracker)
-                clone.Tracker = 0;
-
+            var clone = offered.Clone();
             string shiny = string.Empty;
             if (!TradeExtensions<PK9>.ShinyLockCheck(offered.Species, TradeExtensions<PK9>.FormOutput(offered.Species, offered.Form, out _), $"{(Ball)offered.Ball}"))
                 shiny = $"\nShiny: {(offered.ShinyXor == 0 ? "Square" : offered.IsShiny ? "Star" : "No")}";
