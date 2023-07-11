@@ -1,7 +1,10 @@
-﻿using PKHeX.Core;
+﻿using Newtonsoft.Json.Linq;
+using PKHeX.Core;
+using PKHeX.Core.AutoMod;
 using PKHeX.Core.Searching;
 using SysBot.Base;
 using System;
+using System.Buffers.Binary;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
@@ -320,10 +323,10 @@ namespace SysBot.Pokemon
             await Task.Delay(5_500 + Hub.Config.Timings.ExtraTimeOpenBox, token).ConfigureAwait(false); // necessary delay to get to the box properly
 
             var trainerName = await GetTradePartnerName(TradeMethod.LinkTrade, token).ConfigureAwait(false);
-            var trainerTID = await GetTradePartnerTID7(TradeMethod.LinkTrade, token).ConfigureAwait(false);
+            var trainerID = await GetTradePartnerID7(TradeMethod.LinkTrade, token).ConfigureAwait(false);
             var trainerNID = await GetTradePartnerNID(token).ConfigureAwait(false);
             RecordUtil<PokeTradeBotSWSH>.Record($"Initiating\t{trainerNID:X16}\t{trainerName}\t{poke.Trainer.TrainerName}\t{poke.Trainer.ID}\t{poke.ID}\t{toSend.EncryptionConstant:X8}");
-            Log($"Found Link Trade partner: {trainerName}-{trainerTID} (ID: {trainerNID})");
+            Log($"Found Link Trade partner: {trainerName}-{trainerID.TID7:000000} (ID: {trainerNID})");
 
             var partnerCheck = await CheckPartnerReputation(this, poke, trainerNID, trainerName, AbuseSettings, token);
             if (partnerCheck != PokeTradeResult.Success)
@@ -336,6 +339,15 @@ namespace SysBot.Pokemon
             {
                 await ExitTrade(true, token).ConfigureAwait(false);
                 return PokeTradeResult.RecoverOpenBox;
+            }
+
+            var info = await GetGameInfo(token).ConfigureAwait(false);
+            var tradePartner = new TradePartnerSWSH(trainerID, trainerName, info.version, info.language, info.gender);
+
+            if (Hub.Config.Trade.UseTradePartnerDetails && CanUsePartnerDetails(toSend, sav, tradePartner, poke, out var toSendEdited))
+            {
+                toSend = toSendEdited;
+                await SetBoxPokemon(toSend, 0, 0, token, sav).ConfigureAwait(false);
             }
 
             // Confirm Box 1 Slot 1
@@ -366,7 +378,7 @@ namespace SysBot.Pokemon
             }
 
             PokeTradeResult update;
-            var trainer = new PartnerDataHolder(trainerNID, trainerName, trainerTID);
+            var trainer = new PartnerDataHolder(trainerNID, trainerName, $"{trainerID.TID7:000000}");
             (toSend, update) = await GetEntityToSend(sav, poke, offered, oldEC, toSend, trainer, token).ConfigureAwait(false);
             if (update != PokeTradeResult.Success)
             {
@@ -412,7 +424,13 @@ namespace SysBot.Pokemon
 
             await ExitTrade(false, token).ConfigureAwait(false);
             return PokeTradeResult.Success;
-        }        
+        } 
+        
+        private async Task<(GameVersion version, LanguageID language, Gender gender)> GetGameInfo(CancellationToken token)
+        {
+            var info = await SwitchConnection.ReadBytesAsync(LinkTradePartnerInfoOffset, 0x4, token).ConfigureAwait(false);
+            return ((GameVersion)info[0], (LanguageID)info[1], (Gender)info[2]);
+        }
 
         private static RemoteControlAccess GetReference(string name, ulong id, string comment) => new()
         {
@@ -478,6 +496,119 @@ namespace SysBot.Pokemon
                 return PokeTradeResult.TrainerLeft;
 
             return PokeTradeResult.Success;
+        }
+
+        private bool CanUsePartnerDetails(PK8 pk, SAV8SWSH sav, TradePartnerSWSH partner, PokeTradeDetail<PK8> trade, out PK8 res)
+        {
+            res = pk.Clone();
+
+            if ((Species)pk.Species is Species.None or Species.Ditto || trade.Type is not PokeTradeType.Specific)
+            {
+                Log("Can not apply Partner details: Not a specific trade request.");
+                return false;
+            }
+
+            //Current handler cannot be past gen OT
+            if (!pk.IsNative && !Hub.Config.Legality.ForceTradePartnerInfo)
+            {
+                Log("Can not apply Partner details: Current handler cannot be different gen OT.");
+                return false;
+            }
+
+            //Only override trainer details if user didn't specify OT details in the Showdown/PK9 request
+            if (HasSetDetails(pk, fallback: sav))
+            {
+                Log("Can not apply Partner details: Requested Pokémon already has set Trainer details.");
+                return false;
+            }
+
+            res.OT_Name = partner.TrainerName;
+            res.OT_Gender = partner.Gender;
+            res.TrainerTID7 = partner.TID7;
+            res.TrainerSID7 = partner.SID7;
+            res.Language = partner.Language;
+            res.Version = partner.Game;
+
+            if (pk.IsShiny)
+                res.PID = (uint)(((res.TID16 ^ res.SID16 ^ (res.PID & 0xFFFF) ^ pk.ShinyXor) << 16) | (res.PID & 0xFFFF));
+
+            if (!pk.ChecksumValid)
+                res.RefreshChecksum();
+
+            var la = new LegalityAnalysis(res);
+            if (!la.Valid)
+            {
+                Log("Can not apply Partner details:");
+                Log(la.Report());
+
+                if (!Hub.Config.Legality.ForceTradePartnerInfo)
+                    return false;
+
+                Log("Trying to force Trade Partner Info discarding the game version...");
+                res.Version = pk.Version;
+                la = new LegalityAnalysis(res);
+
+                if (!la.Valid)
+                {
+                    Log("Can not apply Partner details:");
+                    Log(la.Report());
+                    return false;
+                }
+            }
+
+            Log($"Applying trade partner details: {partner.TrainerName} ({(partner.Gender == 0 ? "M" : "F")}), " +
+                $"TID: {partner.TID7:000000}, SID: {partner.SID7:0000}, {(LanguageID)partner.Language} ({(GameVersion)res.Version})");
+
+            return true;
+        }
+
+        private bool HasSetDetails(PKM set, ITrainerInfo fallback)
+        {
+            var set_trainer = new SimpleTrainerInfo((GameVersion)set.Version)
+            {
+                OT = set.OT_Name,
+                TID16 = set.TID16,
+                SID16 = set.SID16,
+                Gender = set.OT_Gender,
+                Language = set.Language,
+            };
+
+            var def_trainer = new SimpleTrainerInfo((GameVersion)fallback.Game)
+            {
+                OT = Hub.Config.Legality.GenerateOT,
+                TID16 = Hub.Config.Legality.GenerateTID16,
+                SID16 = Hub.Config.Legality.GenerateSID16,
+                Gender = Hub.Config.Legality.GenerateGenderOT,
+                Language = (int)Hub.Config.Legality.GenerateLanguage,
+            };
+
+            var alm_trainer = Hub.Config.Legality.GeneratePathTrainerInfo != string.Empty ?
+                TrainerSettings.GetSavedTrainerData(fallback.Generation, (GameVersion)fallback.Game, fallback, (LanguageID)fallback.Language) : null;
+
+            return !IsEqualTInfo(set_trainer, def_trainer) && !IsEqualTInfo(set_trainer, alm_trainer);
+        }
+
+        private static bool IsEqualTInfo(ITrainerInfo trainerInfo, ITrainerInfo? compareInfo)
+        {
+            if (compareInfo is null)
+                return false;
+
+            if (!trainerInfo.OT.Equals(compareInfo.OT))
+                return false;
+
+            if (trainerInfo.Gender != compareInfo.Gender)
+                return false;
+
+            if (trainerInfo.Language != compareInfo.Language)
+                return false;
+
+            if (trainerInfo.TID16 != compareInfo.TID16)
+                return false;
+
+            if (trainerInfo.SID16 != compareInfo.SID16)
+                return false;
+
+            return true;
         }
 
         protected virtual async Task<(PK8 toSend, PokeTradeResult check)> GetEntityToSend(SAV8SWSH sav, PokeTradeDetail<PK8> poke, PK8 offered, byte[] oldEC, PK8 toSend, PartnerDataHolder partnerID, CancellationToken token)
@@ -754,10 +885,10 @@ namespace SysBot.Pokemon
             await Task.Delay(7_000, token).ConfigureAwait(false);
 
             var TrainerName = await GetTradePartnerName(TradeMethod.SurpriseTrade, token).ConfigureAwait(false);
-            var TrainerTID = await GetTradePartnerTID7(TradeMethod.SurpriseTrade, token).ConfigureAwait(false);
+            var TrainerID = await GetTradePartnerID7(TradeMethod.SurpriseTrade, token).ConfigureAwait(false);
             var SurprisePoke = await ReadSurpriseTradePokemon(token).ConfigureAwait(false);
 
-            Log($"Found Surprise Trade partner: {TrainerName}-{TrainerTID}, Pokémon: {(Species)SurprisePoke.Species}");
+            Log($"Found Surprise Trade partner: {TrainerName}-{TrainerID.TID7:000000}, Pokémon: {(Species)SurprisePoke.Species}");
 
             // Clear out the received trade data; we want to skip the trade animation.
             // The box slot locks have been removed prior to searching.
@@ -976,14 +1107,13 @@ namespace SysBot.Pokemon
             return StringConverter8.GetString(data);
         }
 
-        private async Task<string> GetTradePartnerTID7(TradeMethod tradeMethod, CancellationToken token)
+        private async Task<(uint TID7, uint SID7)> GetTradePartnerID7(TradeMethod tradeMethod, CancellationToken token)
         {
             var ofs = GetTrainerTIDSIDOffset(tradeMethod);
             var data = await Connection.ReadBytesAsync(ofs, 8, token).ConfigureAwait(false);
-
-            var tidsid = BitConverter.ToUInt32(data, 0);
-            var tid7 = $"{tidsid % 1_000_000:000000}";
-            return tid7;
+            var sid = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan()) / 1_000_000;
+            var tid = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan()) % 1_000_000;
+            return (tid, sid);
         }
 
         public async Task<ulong> GetTradePartnerNID(CancellationToken token)
