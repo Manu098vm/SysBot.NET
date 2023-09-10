@@ -1,9 +1,12 @@
 # SysBot.NET
 ![License](https://img.shields.io/badge/License-AGPLv3-blue.svg)
 
+## Disclaimer
+This fork is intended for my personal use. You're free to use this fork, but please be aware I'm not willing to add specific features that don't fit my needs.
+
 ## Support Discords:
 
-For specific support for this fork of [Zyro](https://github.com/zyro670)'s [NotForkBot.NET](https://github.com/zyro670/NotForkBot.NET) fork of [Koi](https://github.com/Koi-3088)'s [ForkBot.NET](https://github.com/Koi-3088/ForkBot.NET) of [kwsch](https://github.com/kwsch)'s [SysBot.NET](https://github.com/kwsch/SysBot.NET) repo feel free to join! (No support will be provided in the official PKHeX or PA Discord, please don't bother the devs)
+For specific support for this fork of [Zyro](https://github.com/zyro670)'s [NotForkBot.NET](https://github.com/zyro670/NotForkBot.NET) fork of [Koi](https://github.com/Koi-3088)'s [ForkBot.NET](https://github.com/Koi-3088/ForkBot.NET) fork of [kwsch](https://github.com/kwsch)'s [SysBot.NET](https://github.com/kwsch/SysBot.NET) repo feel free to join! (No support will be provided in the official PKHeX or PA Discord, please don't bother the devs)
 
 [Support Server: Manu's Server](https://discord.com/invite/yWveAjKbKt)
 
@@ -49,11 +52,9 @@ Uses [Discord.Net](https://github.com/discord-net/Discord.Net) , [TwitchLib](htt
 ## Other Dependencies
 Pokémon API logic is provided by [PKHeX](https://github.com/kwsch/PKHeX/), and template generation is provided by [AutoMod](https://github.com/architdate/PKHeX-Plugins/).
 
-Permutation generation provided by [PermuteMMO](https://github.com/kwsch/PermuteMMO).
-
 ## Special Credits:
 This SysBot fork is an agglomeration of different forks and other PKHeX/SysBot based programs.
-Thanks to [Zyro](https://github.com/zyro670), [Koi](https://github.com/Koi-3088), [Berichan](https://github.com/berichan), [Anubis](https://github.com/Lusamine), [Archit](https://github.com/architdate), [Kurt](https://github.com/kwsch) and all the developers that contributed and will contribute to their repositories!
+Thanks to [Santacrab](https://github.com/santacrab2), [Zyro](https://github.com/zyro670), [Koi](https://github.com/Koi-3088), [Berichan](https://github.com/berichan), [Anubis](https://github.com/Lusamine), [Archit](https://github.com/architdate), [Kurt](https://github.com/kwsch) and all the developers that contributed and will contribute to their repositories!
 
 # License
 Refer to the `License.md` for details regarding licensing.
