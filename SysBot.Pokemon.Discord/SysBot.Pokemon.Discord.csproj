@@ -11,9 +11,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Reference Include="PermuteMMO.Lib">
-			<HintPath>deps\PermuteMMO.Lib.dll</HintPath>
-		</Reference>
 		<Reference Include="PKHeX.Core">
 			<HintPath>..\SysBot.Pokemon\deps\PKHeX.Core.dll</HintPath>
 		</Reference>

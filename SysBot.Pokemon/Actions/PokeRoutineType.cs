@@ -22,17 +22,12 @@
         /// <summary> Exports files for all data shown to the bot. </summary>
         Dump = 6,
 
-        /// <summary> Performs group battles as a host. </summary>
-        RaidBot = 9,
 
         /// <summary> Similar to idle, but identifies the bot as available for Remote input (Twitch Plays, etc). </summary>
         RemoteControl = 6_000,
 
         /// <summary> Attempts to fix advert names and minor legality issues of what a trade partner shows. </summary>
         FixOT = 6002,
-
-        /// <summary> Performs and rotates group battles as a host. </summary>
-        RotatingRaidBot = 6009,
     }
 
     public static class PokeRoutineTypeExtensions
