@@ -199,13 +199,5 @@ namespace SysBot.Pokemon
             lock (_sync)
                 return UsersInQueue.Count(func);
         }
-
-        public IEnumerable<string> GetRaidList(string fmt)
-        {
-            lock (_sync)
-            {
-                return Hub.Config.RotatingRaidSV.RaidEmbedParameters.Select(z => string.Format(fmt, z.Title, z.Species));
-            }
-        }
     }
 }

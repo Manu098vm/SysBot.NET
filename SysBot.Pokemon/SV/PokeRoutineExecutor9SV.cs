@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using RaidCrawler.Core.Structures;
 using static SysBot.Pokemon.PokeDataOffsetsSV;
 using static SysBot.Base.SwitchButton;
 using static System.Buffers.Binary.BinaryPrimitives;
@@ -332,7 +331,7 @@ namespace SysBot.Pokemon
             return address;
         }
 
-        public async Task SetBoxPokemonEgg(PK9 pkm, int box, int slot, CancellationToken token)
+        public async Task SetBoxPokemonEgg(PK9 pkm, CancellationToken token)
         {
             var ofs = await GetPointerAddress("[[[main+44BFBA8]+130]+9B0]", token).ConfigureAwait(false);
             pkm.ResetPartyStats();
@@ -497,53 +496,6 @@ namespace SysBot.Pokemon
                     return i + 1;
             }
             return 0;
-        }
-
-        public async Task ReadEventRaids(ulong BaseBlockKeyPointer, RaidContainer container, CancellationToken token, bool force = false)
-        {
-            var prio_file = Path.Combine(Directory.GetCurrentDirectory(), "cache", "raid_priority_array");
-            if (!force && File.Exists(prio_file))
-            {
-                (_, var version) = FlatbufferDumper.DumpDeliveryPriorities(File.ReadAllBytes(prio_file));
-                var blk = await ReadBlockDefault(BaseBlockKeyPointer, RaidCrawler.Core.Structures.Offsets.BCATRaidPriorityLocation, "raid_priority_array.tmp", true, token).ConfigureAwait(false);
-                (_, var v2) = FlatbufferDumper.DumpDeliveryPriorities(blk);
-                if (version != v2)
-                    force = true;
-
-                var tmp_file = Path.Combine(Directory.GetCurrentDirectory(), "cache", "raid_priority_array.tmp");
-                if (File.Exists(tmp_file))
-                    File.Delete(tmp_file);
-
-                if (v2 == 0) // raid reset
-                    return;
-            }
-
-            var delivery_raid_prio = await ReadBlockDefault(BaseBlockKeyPointer, RaidCrawler.Core.Structures.Offsets.BCATRaidPriorityLocation, "raid_priority_array", force, token).ConfigureAwait(false);
-            (var group_id, var priority) = FlatbufferDumper.DumpDeliveryPriorities(delivery_raid_prio);
-            if (priority == 0)
-                return;
-
-            var delivery_raid_fbs = await ReadBlockDefault(BaseBlockKeyPointer, RaidCrawler.Core.Structures.Offsets.BCATRaidBinaryLocation, "raid_enemy_array", force, token).ConfigureAwait(false);
-            var delivery_fixed_rewards = await ReadBlockDefault(BaseBlockKeyPointer, RaidCrawler.Core.Structures.Offsets.BCATRaidFixedRewardLocation, "fixed_reward_item_array", force, token).ConfigureAwait(false);
-            var delivery_lottery_rewards = await ReadBlockDefault(BaseBlockKeyPointer, RaidCrawler.Core.Structures.Offsets.BCATRaidLotteryRewardLocation, "lottery_reward_item_array", force, token).ConfigureAwait(false);
-
-            container.DistTeraRaids = TeraDistribution.GetAllEncounters(delivery_raid_fbs);
-            container.DeliveryRaidPriority = group_id;
-            container.DeliveryRaidFixedRewards = FlatbufferDumper.DumpFixedRewards(delivery_fixed_rewards);
-            container.DeliveryRaidLotteryRewards = FlatbufferDumper.DumpLotteryRewards(delivery_lottery_rewards);
-        }
-
-        public static (PK9, uint) IsSeedReturned(ITeraRaid enc, Raid raid)
-        {
-            var param = enc.GetParam();
-            var blank = new PK9
-            {
-                Species = enc.Species,
-                Form = enc.Form
-            };
-            Encounter9RNG.GenerateData(blank, param, EncounterCriteria.Unrestricted, raid.Seed);
-
-            return (blank, raid.Seed);
         }
 
         public static string GetSpecialRewards(IReadOnlyList<(int, int, int)> rewards)

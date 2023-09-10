@@ -142,7 +142,8 @@ namespace SysBot.Pokemon
                 PK9 => 30023,
                 _ => 60002, //PK8
             };
-            pk.MetDate = DateOnly.FromDateTime(DateTime.Now);
+
+            pk.MetDate = DateOnly.FromDateTime(DateTime.Today);
             pk.EggMetDate = pk.MetDate;
             pk.HeldItem = 0;
             pk.CurrentLevel = 1;
@@ -154,6 +155,7 @@ namespace SysBot.Pokemon
                 PK9 => 0,
                 _ => 30002, //PK8
             };
+
             pk.CurrentHandler = 0;
             pk.OT_Friendship = 1;
             pk.HT_Name = "";
@@ -178,6 +180,7 @@ namespace SysBot.Pokemon
                 pk8.HT_Memory = 0;
                 pk8.HT_Feeling = 0;
                 pk8.HT_Intensity = 0;
+                pk8.DynamaxLevel = pk8.GetSuggestedDynamaxLevel(pk8, 0);
             }
             else if (pk is PB8 pb8)
             {
@@ -186,6 +189,7 @@ namespace SysBot.Pokemon
                 pb8.HT_Memory = 0;
                 pb8.HT_Feeling = 0;
                 pb8.HT_Intensity = 0;
+                pb8.DynamaxLevel = pb8.GetSuggestedDynamaxLevel(pb8, 0);
             }
             else if (pk is PK9 pk9)
             {
@@ -201,16 +205,16 @@ namespace SysBot.Pokemon
             }
 
             pk = TrashBytes(pk);
-
             var la = new LegalityAnalysis(pk);
             var enc = la.EncounterMatch;
-            pk.CurrentFriendship = enc is EncounterStatic s ? s.EggCycles : pk.PersonalInfo.HatchCycles;
+            pk.CurrentFriendship = pk.PersonalInfo.BaseFriendship;
 
             Span<ushort> relearn = stackalloc ushort[4];
             la.GetSuggestedRelearnMoves(relearn, enc);
             pk.SetRelearnMoves(relearn);
 
             pk.SetSuggestedMoves();
+
             pk.Move1_PPUps = pk.Move2_PPUps = pk.Move3_PPUps = pk.Move4_PPUps = 0;
             pk.SetMaximumPPCurrent(pk.Moves);
             pk.SetSuggestedHyperTrainingData();

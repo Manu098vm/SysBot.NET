@@ -39,16 +39,6 @@ namespace SysBot.Pokemon
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public TradeAbuseSettings TradeAbuse { get; set; } = new();
 
-        // Encounter Bots - For finding or hosting Pokémon in-game.
-
-        [Category(BotEncounter)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public RaidSettingsSV RaidSV { get; set; } = new();
-
-        [Category(BotEncounter)]
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public RotatingRaidSettingsSV RotatingRaidSV { get; set; } = new();
-
         // Integration
 
         [Category(Integration)]

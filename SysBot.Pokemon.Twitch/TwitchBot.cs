@@ -218,8 +218,6 @@ namespace SysBot.Pokemon.Twitch
                 case "tutorial":
                 case "help":
                     return $"{Settings.TutorialText} {Settings.TutorialLink}";
-                case "vrl":
-                    return TwitchCommandsHelper<T>.GetRaidList();
                 case "trade":
                 case "t":
                     var _ = TwitchCommandsHelper<T>.AddToWaitingList(args, m.DisplayName, m.Username, ulong.Parse(m.UserId), subscriber(), out string msg);
