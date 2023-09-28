@@ -21,6 +21,7 @@ namespace SysBot.Pokemon
         public IReadOnlyList<long> PortalBoxStatusPointer         { get; } = new long[] { 0x463AB60, 0x188, 0x350, 0xF0, 0x140, 0x78 };
         public IReadOnlyList<long> IsConnectedPointer             { get; } = new long[] { 0x461A3D8, 0x30 };
         public IReadOnlyList<long> OverworldPointer               { get; } = new long[] { 0x461BB18, 0x160, 0xE8, 0x28 };
+        public static IReadOnlyList<long> KeyboardBufferPointer   { get; } = new long[] { 0x461C0A8, 0x30, 0x00 };
 
         public const int BoxFormatSlotSize = 0x158;
         public const ulong LibAppletWeID = 0x010000000000100a; // One of the process IDs for the news.
