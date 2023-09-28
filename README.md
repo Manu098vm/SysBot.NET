@@ -6,11 +6,18 @@ This fork is intended for my personal use. You're free to use this fork, but ple
 
 ## Support Discords:
 
-For specific support for this fork of [Zyro](https://github.com/zyro670)'s [NotForkBot.NET](https://github.com/zyro670/NotForkBot.NET) fork of [Koi](https://github.com/Koi-3088)'s [ForkBot.NET](https://github.com/Koi-3088/ForkBot.NET) fork of [kwsch](https://github.com/kwsch)'s [SysBot.NET](https://github.com/kwsch/SysBot.NET) repo feel free to join! (No support will be provided in the official PKHeX or PA Discord, please don't bother the devs)
+For specific support for this fork of [kwsch](https://github.com/kwsch)'s [SysBot.NET](https://github.com/kwsch/SysBot.NET) repo feel free to join! (No support will be provided in the official PKHeX or PA Discord, please don't bother the devs)
 
 [Support Server: Manu's Server](https://discord.com/invite/yWveAjKbKt)
 
 [<img src="https://canary.discordapp.com/api/guilds/693083823197519873/widget.png?style=banner2">](https://discord.gg/yWveAjKbKt)
+
+This fork uses code from:
+* [Berichan](https://github.com/berichan)'s [SysBot.PokemonScarletViolet](https://github.com/berichan/SysBot.PokemonScarletViolet)
+* [Koi](https://github.com/Koi-3088)'s [ForkBot.NET](https://github.com/Koi-3088/ForkBot.NET)
+* [Zyro](https://github.com/zyro670)'s [NotForkBot.NET](https://github.com/zyro670/NotForkBot.NET)
+
+Thanks to all the devs and contributors of the mentioned forks!
 
 [usb-Botbase](https://github.com/Koi-3088/USB-Botbase) client for remote USB control for this fork.
 
