@@ -32,6 +32,7 @@ namespace SysBot.Pokemon
 
         private static void InitializeSettings(LegalitySettings cfg)
         {
+            APILegality.EnableDevMode = true;
             APILegality.SetAllLegalRibbons = cfg.SetAllLegalRibbons;
             APILegality.SetMatchingBalls = cfg.SetMatchingBalls;
             APILegality.ForceSpecifiedBall = cfg.ForceSpecifiedBall;
