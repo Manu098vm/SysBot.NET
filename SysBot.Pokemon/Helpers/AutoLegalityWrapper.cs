@@ -143,7 +143,6 @@ namespace SysBot.Pokemon
 
         public static PKM GetLegal(this ITrainerInfo sav, IBattleTemplate set, out string res)
         {
-            APILegality.EnableDevMode = true;
             var result = sav.GetLegalFromSet(set);
             res = result.Status switch
             {
