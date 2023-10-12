@@ -199,15 +199,6 @@ namespace SysBot.Pokemon
             await Click(PLUS, 1_000, token).ConfigureAwait(false);*/
         }
 
-        private async Task ClearKeyboardBuffer(CancellationToken token)
-        {
-            (var valid, var offs) = await ValidatePointerAll(KeyboardBufferPointer, token).ConfigureAwait(false);
-            if (!valid)
-                return;
-
-            await SwitchConnection.WriteBytesAbsoluteAsync(new byte[0x10], offs, token).ConfigureAwait(false);
-        }
-
         public async Task ReOpenGame(PokeTradeHubConfig config, CancellationToken token)
         {
             await CloseGame(config, token).ConfigureAwait(false);
