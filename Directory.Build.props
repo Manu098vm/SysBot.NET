@@ -19,4 +19,4 @@
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <DebugType>portable</DebugType>
   </PropertyGroup>
-</Project>
+</Project> 
