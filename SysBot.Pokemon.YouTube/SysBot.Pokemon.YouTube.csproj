@@ -1,7 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+	<PropertyGroup>
+	  <TargetFramework>net8.0</TargetFramework>
+	</PropertyGroup>
+
 	<ItemGroup>
-		<PackageReference Include="Discord.Net" Version="3.9.0" />
+		<PackageReference Include="Discord.Net" Version="3.13.0" />
 		<PackageReference Include="Google.Apis" Version="1.60.0" />
 		<PackageReference Include="Google.Apis.Auth" Version="1.60.0" />
 		<PackageReference Include="Google.Apis.Core" Version="1.60.0" />

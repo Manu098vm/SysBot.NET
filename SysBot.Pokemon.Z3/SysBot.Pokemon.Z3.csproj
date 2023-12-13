@@ -2,10 +2,11 @@
 
 	<PropertyGroup>
 		<Platforms>x64</Platforms>
+		<TargetFramework>net8.0</TargetFramework>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Discord.Net" Version="3.9.0" />
+		<PackageReference Include="Discord.Net" Version="3.13.0" />
 	</ItemGroup>
 
 	<ItemGroup>
