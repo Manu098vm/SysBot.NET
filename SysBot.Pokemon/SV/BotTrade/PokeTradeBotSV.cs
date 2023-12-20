@@ -11,7 +11,6 @@ using static SysBot.Base.SwitchButton;
 using static SysBot.Pokemon.PokeDataOffsetsSV;
 using PKHeX.Core.AutoMod;
 using System.IO;
-using System.Text;
 
 namespace SysBot.Pokemon
 {
@@ -487,21 +486,31 @@ namespace SysBot.Pokemon
             var la = new LegalityAnalysis(res);
             if (!la.Valid)
             {
-                Log("Can not apply Partner details:");
-                Log(la.Report());
-
-                if (!Hub.Config.Legality.ForceTradePartnerInfo)
-                    return false;
-
-                Log("Trying to force Trade Partner Info discarding the game version...");
                 res.Version = pk.Version;
+
+                if (!pk.ChecksumValid)
+                    res.RefreshChecksum();
+
                 la = new LegalityAnalysis(res);
 
                 if (!la.Valid)
                 {
                     Log("Can not apply Partner details:");
                     Log(la.Report());
-                    return false;
+
+                    if (!Hub.Config.Legality.ForceTradePartnerInfo)
+                        return false;
+
+                    Log("Trying to force Trade Partner Info discarding the game version...");
+                    res.Version = pk.Version;
+                    la = new LegalityAnalysis(res);
+
+                    if (!la.Valid)
+                    {
+                        Log("Can not apply Partner details:");
+                        Log(la.Report());
+                        return false;
+                    }
                 }
             }
 
