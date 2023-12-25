@@ -208,7 +208,7 @@ namespace SysBot.Pokemon
             pk = TrashBytes(pk);
             var la = new LegalityAnalysis(pk);
             var enc = la.EncounterMatch;
-            pk.SetSuggestedRibbons(template, enc, true, HandlerType.Verbose.GetTracebackHandler());
+            pk.SetSuggestedRibbons(template, enc, true);
             pk.SetSuggestedMoves();
             la = new LegalityAnalysis(pk);
             enc = la.EncounterMatch;
@@ -392,7 +392,7 @@ namespace SysBot.Pokemon
             if (mgPkm is not null && result is EntityConverterResult.Success)
             {
                 var enc = new LegalityAnalysis(mgPkm).EncounterMatch;
-                mgPkm.SetHandlerandMemory(info, enc, HandlerType.Verbose.GetTracebackHandler());
+                mgPkm.SetHandlerandMemory(info, enc);
 
                 if (mgPkm.TID16 is 0 && mgPkm.SID16 is 0)
                 {
