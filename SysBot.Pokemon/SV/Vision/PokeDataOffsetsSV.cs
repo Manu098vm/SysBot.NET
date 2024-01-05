@@ -19,7 +19,7 @@ namespace SysBot.Pokemon
         public IReadOnlyList<long> Trader1MyStatusPointer           { get; } = new long[] { 0x473A110, 0x48, 0xB0, 0x0 };
         public IReadOnlyList<long> Trader2MyStatusPointer           { get; } = new long[] { 0x473A110, 0x48, 0xE0, 0x0 };
         public IReadOnlyList<long> PortalBoxStatusPointer           { get; } = new long[] { 0x475A0D0, 0x188, 0x350, 0xF0, 0x140, 0x78 };
-        public IReadOnlyList<long> IsConnectedPointer               { get; } = new long[] { 0x4763E08, 0x10 };
+        public IReadOnlyList<long> IsConnectedPointer               { get; } = new long[] { 0x4739648, 0x30 };
         public IReadOnlyList<long> OverworldPointer                 { get; } = new long[] { 0x473ADE0, 0x160, 0xE8, 0x28 };
 
         public const int BoxFormatSlotSize = 0x158;
