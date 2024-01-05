@@ -438,6 +438,9 @@ public class PokeTradeBotBS : PokeRoutineExecutor8BS, ICountBot
         res.Language = partner.Language;
         res.Version = partner.Game;
 
+        if (!pk.IsNicknamed)
+            res.ClearNickname();
+
         if (pk.IsShiny)
             res.PID = (uint)(((res.TID16 ^ res.SID16 ^ (res.PID & 0xFFFF) ^ pk.ShinyXor) << 16) | (res.PID & 0xFFFF));
 

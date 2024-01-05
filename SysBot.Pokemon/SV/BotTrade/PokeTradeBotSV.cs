@@ -477,6 +477,9 @@ namespace SysBot.Pokemon
             res.Language = partner.Info.Language;
             res.Version = partner.Info.Game;
 
+            if (!pk.IsNicknamed)
+                res.ClearNickname();
+
             if (pk.IsShiny)
                 res.PID = (uint)((res.TID16 ^ res.SID16 ^ (res.PID & 0xFFFF) ^ pk.ShinyXor) << 16) | (res.PID & 0xFFFF);
 
