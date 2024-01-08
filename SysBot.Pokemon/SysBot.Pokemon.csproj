@@ -1,29 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-	<PropertyGroup>
-	  <TargetFramework>net8.0</TargetFramework>
-	</PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="PKHeX.Core" Version="23.12.22" />
+    <ProjectReference Include="..\SysBot.Base\SysBot.Base.csproj" />
+  </ItemGroup>
 
-	<ItemGroup>
-		<PackageReference Include="Discord.Net" Version="3.13.0" />
-		<PackageReference Include="FlatSharp.Compiler" Version="7.1.0">
-		  <PrivateAssets>all</PrivateAssets>
-		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-		</PackageReference>
-		<PackageReference Include="FlatSharp.Runtime" Version="7.1.0" />
-		<PackageReference Include="MathNet.Numerics" Version="5.0.0" />
-		<PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
-		<PackageReference Include="KdSoft.FlatBuffers" Version="1.12.0" />
-		<PackageReference Include="System.Data.SQLite" Version="1.0.117" />
-		<ProjectReference Include="..\SysBot.Base\SysBot.Base.csproj" />
-	</ItemGroup>
-	<ItemGroup>
-		<Reference Include="PKHeX.Core.AutoMod">
-			<HintPath>deps\PKHeX.Core.AutoMod.dll</HintPath>
-		</Reference>
-		<Reference Include="PKHeX.Core">
-			<HintPath>deps\PKHeX.Core.dll</HintPath>
-		</Reference>
-	</ItemGroup>
+  <ItemGroup>
+    <Folder Include="deps\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="PKHeX.Core.AutoMod">
+      <HintPath>deps\PKHeX.Core.AutoMod.dll</HintPath>
+    </Reference>
+  </ItemGroup>
 
 </Project>

@@ -1,38 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-	<PropertyGroup>
-		<Platforms>x64</Platforms>
-		<TargetFramework>net8.0</TargetFramework>
-	</PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="PKHeX.Core" Version="23.12.22" />
+  </ItemGroup>
 
-	<ItemGroup>
-		<PackageReference Include="Discord.Net" Version="3.13.0" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<ProjectReference Include="..\SysBot.Pokemon\SysBot.Pokemon.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<Reference Include="PKHeX.Core">
-			<HintPath>..\SysBot.Pokemon\deps\PKHeX.Core.dll</HintPath>
-		</Reference>
-	</ItemGroup>
-
-	<Choose>
-		<When Condition=" '$(Platform)' == 'x64' OR $(RuntimeIdentifier.EndsWith('x64')) ">
-			<!-- x64 specific references -->
-			<ItemGroup>
-				<PackageReference Include="Microsoft.Z3" Version="4.12.0" />
-			</ItemGroup>
-		</When>
-
-		<When Condition=" '$(Platform)' == 'x86' OR $(RuntimeIdentifier.EndsWith('x86')) ">
-			<!-- x86 specific references -->
-			<ItemGroup>
-				<PackageReference Include="Microsoft.Z3.x86" Version="4.12.0" />
-			</ItemGroup>
-		</When>
-	</Choose>
+  <ItemGroup>
+    <ProjectReference Include="..\SysBot.Pokemon\SysBot.Pokemon.csproj" />
+  </ItemGroup>
 
 </Project>

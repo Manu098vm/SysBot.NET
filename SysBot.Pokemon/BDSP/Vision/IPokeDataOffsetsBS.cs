@@ -7,7 +7,6 @@ public interface IPokeDataOffsetsBS
     public IReadOnlyList<long> BoxStartPokemonPointer { get; }
     public IReadOnlyList<long> LinkTradePartnerPokemonPointer { get; }
     public IReadOnlyList<long> LinkTradePartnerNamePointer { get; }
-    public IReadOnlyList<long> LinkTradePartnerInfoPointer { get; }
     public IReadOnlyList<long> LinkTradePartnerIDPointer { get; }
     public IReadOnlyList<long> LinkTradePartnerParamPointer { get; }
     public IReadOnlyList<long> LinkTradePartnerNIDPointer { get; }

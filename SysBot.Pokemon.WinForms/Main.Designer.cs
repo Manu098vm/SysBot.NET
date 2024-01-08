@@ -1,4 +1,4 @@
-﻿using SysBot.Pokemon.WinForms.Properties;
+using SysBot.Pokemon.WinForms.Properties;
 
 namespace SysBot.Pokemon.WinForms
 {
@@ -218,7 +218,6 @@ namespace SysBot.Pokemon.WinForms
             TossButton.TabIndex = 4;
             TossButton.Text = "Toss";
             TossButton.UseVisualStyleBackColor = true;
-            TossButton.Click += TossButton_Click;
             // 
             // ContinueButton
             // 
@@ -229,7 +228,6 @@ namespace SysBot.Pokemon.WinForms
             ContinueButton.TabIndex = 3;
             ContinueButton.Text = "Continue";
             ContinueButton.UseVisualStyleBackColor = true;
-            ContinueButton.Click += ContinueButton_Click;
             // 
             // RTB_Results
             // 
