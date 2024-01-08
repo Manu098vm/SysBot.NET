@@ -1,4 +1,5 @@
 using Discord;
+using Discord.Commands;
 using Discord.WebSocket;
 using PKHeX.Core;
 using System;
@@ -6,7 +7,7 @@ using System.Linq;
 
 namespace SysBot.Pokemon.Discord;
 
-public class DiscordTradeNotifier<T>(T Data, PokeTradeTrainerInfo Info, int Code, SocketUser Trader)
+public class DiscordTradeNotifier<T>(T Data, PokeTradeTrainerInfo Info, int Code, SocketUser Trader, SocketCommandContext Context)
     : IPokeTradeNotifier<T>
     where T : PKM, new()
 {
@@ -14,6 +15,7 @@ public class DiscordTradeNotifier<T>(T Data, PokeTradeTrainerInfo Info, int Code
     private PokeTradeTrainerInfo Info { get; } = Info;
     private int Code { get; } = Code;
     private SocketUser Trader { get; } = Trader;
+    private SocketCommandContext Context { get; } = Context;
     public Action<PokeRoutineExecutor<T>>? OnFinish { private get; set; }
     public readonly PokeTradeHub<T> Hub = SysCord<T>.Runner.Hub;
 
@@ -45,7 +47,66 @@ public class DiscordTradeNotifier<T>(T Data, PokeTradeTrainerInfo Info, int Code
         if (result.Species != 0 && Hub.Config.Discord.ReturnPKMs)
             Trader.SendPKMAsync(result, "Here's what you traded me!").ConfigureAwait(false);
 
+        if (Hub.Config.Trade.TradeDisplay && info.Type is not PokeTradeType.Dump)
+        {
+            PKM emb = info.TradeData;
+            if (emb.Species == 0 || info.Type is PokeTradeType.Clone)
+                emb = result;
 
+            if (emb.Species != 0)
+            {
+                var shiny = emb.ShinyXor == 0 ? "■" : emb.ShinyXor <= 16 ? "★" : "";
+                var set = new ShowdownSet($"{emb.Species}");
+                var ballImg = $"https://raw.githubusercontent.com/BakaKaito/HomeImages/main/Ballimg/50x50/" + $"{(Ball)emb.Ball}ball".ToLower() + ".png";
+                var gender = emb.Gender == 0 ? " - (M)" : emb.Gender == 1 ? " - (F)" : "";
+                var pokeImg = TradeExtensions<T>.PokeImg(emb, false, false);
+                string scale = "";
+
+                if (emb is PK9 fin9)
+                    scale = $"Scale: {PokeSizeDetailedUtil.GetSizeRating(fin9.Scale)} ({fin9.Scale})";
+                if (emb is PA8 fin8a)
+                    scale = $"Scale: {PokeSizeDetailedUtil.GetSizeRating(fin8a.Scale)} ({fin8a.Scale})";
+                if (emb is PB8 fin8b)
+                    scale = $"Scale: {PokeSizeDetailedUtil.GetSizeRating(fin8b.HeightScalar)} ({fin8b.HeightScalar})";
+                if (emb is PK8 fin8)
+                    scale = $"Scale: {PokeSizeDetailedUtil.GetSizeRating(fin8.HeightScalar)} ({fin8.HeightScalar})";
+
+                var trademessage = $"Pokémon IVs: {emb.IV_HP}/{emb.IV_ATK}/{emb.IV_DEF}/{emb.IV_SPA}/{emb.IV_SPD}/{emb.IV_SPE}\n" +
+                    $"Ability: {GameInfo.GetStrings(1).Ability[emb.Ability]}\n" +
+                    $"{(Nature)emb.Nature} Nature\n{scale}" +
+                    (TradeExtensions<T>.HasMark((IRibbonIndex)emb, out RibbonIndex mark) ? $"\nPokémon Mark: {mark.ToString().Replace("Mark", "")}{Environment.NewLine}" : "");
+
+                string markEntryText = "";
+                var index = (int)mark - (int)RibbonIndex.MarkLunchtime;
+                if (index > 0)
+                    markEntryText = TradeExtensions<T>.MarkTitle[index];
+
+                var specitem = emb.HeldItem != 0 ? $"{SpeciesName.GetSpeciesNameGeneration(emb.Species, 2, emb.Generation <= 8 ? 8 : 9)}{TradeExtensions<T>.FormOutput(emb.Species, emb.Form, out _) + " (" + ShowdownParsing.GetShowdownText(emb).Split('@', '\n')[1].Trim() + ")"}" : $"{SpeciesName.GetSpeciesNameGeneration(emb.Species, 2, emb.Generation <= 8 ? 8 : 9) + TradeExtensions<T>.FormOutput(emb.Species, emb.Form, out _)}{markEntryText}";
+
+                var msg = "Displaying your ";
+                var mode = info.Type;
+                switch (mode)
+                {
+                    case PokeTradeType.Specific: msg += "request!"; break;
+                    case PokeTradeType.Clone: msg += "clone!"; break;
+                }
+                string TIDFormatted = emb.Generation >= 7 ? $"{emb.TrainerTID7:000000}" : $"{emb.TID16:00000}";
+                var footer = new EmbedFooterBuilder { Text = $"Trainer Info: {emb.OT_Name}/{TIDFormatted}" };
+                var author = new EmbedAuthorBuilder
+                {
+                    Name = $"{Context.User.Username}'s Pokémon",
+                    IconUrl = ballImg
+                };
+                var embed = new EmbedBuilder { Color = emb.IsShiny && emb.ShinyXor == 0 ? Color.Gold : emb.IsShiny ? Color.LighterGrey : Color.Teal, Author = author, Footer = footer, ThumbnailUrl = pokeImg };
+                embed.AddField(x =>
+                {
+                    x.Name = $"{shiny} {specitem}{gender}";
+                    x.Value = trademessage;
+                    x.IsInline = false;
+                });
+                Context.Channel.SendMessageAsync(Trader.Username + " - " + msg, embed: embed.Build()).ConfigureAwait(false);
+            }
+        }
     }
 
     public void SendNotification(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, string message)

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using PKHeX.Core;
 using System.ComponentModel;
 using System.Threading;
@@ -40,6 +40,9 @@ public class TradeSettings : IBotStateSettings, ICountSettings
 
     [Category(TradeConfig), Description("Use Trade Partner details (OT, TID, SID, Gender), when legally possible.")]
     public bool UseTradePartnerDetails { get; set; } = false;
+
+    [Category(TradeConfig), Description("Display Discord embeds for all trades.")]
+    public bool TradeDisplay { get; set; } = true;
 
     /// <summary>
     /// Gets a random trade code based on the range settings.

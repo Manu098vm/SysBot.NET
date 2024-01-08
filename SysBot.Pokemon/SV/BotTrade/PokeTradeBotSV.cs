@@ -6,10 +6,8 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Pokemon.PokeDataOffsetsSV;
-using PKHeX.Core.AutoMod;
 using System.IO;
 
 namespace SysBot.Pokemon;
