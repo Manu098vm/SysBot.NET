@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <IsPackable>false</IsPackable>
@@ -17,6 +17,12 @@
   <ItemGroup>
     <ProjectReference Include="..\SysBot.Base\SysBot.Base.csproj" />
     <ProjectReference Include="..\SysBot.Pokemon\SysBot.Pokemon.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="PKHeX.Core">
+      <HintPath>..\SysBot.Pokemon\deps\PKHeX.Core.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>
