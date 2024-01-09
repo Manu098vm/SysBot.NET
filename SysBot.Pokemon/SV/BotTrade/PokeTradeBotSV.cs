@@ -362,6 +362,12 @@ public class PokeTradeBotSV(PokeTradeHub<PK9> Hub, PokeBotState Config) : PokeRo
             return partnerCheck;
         }
 
+        if (Hub.Config.Trade.UseTradePartnerDetails && TradeExtensions<PK9>.CanUsePartnerDetails(this, toSend, sav, tradePartner.MyInfo, poke, Hub.Config, out var toSendEdited))
+        {
+            toSend = toSendEdited;
+            await SetBoxPokemonAbsolute(BoxStartOffset, toSend, token, sav).ConfigureAwait(false);
+        }
+
         // Hard check to verify that the offset changed from the last thing offered from the previous trade.
         // This is because box opening times can vary per person, the offset persists between trades, and can also change offset between trades.
         var tradeOffered = await ReadUntilChanged(TradePartnerOfferedOffset, lastOffered, 10_000, 0_500, false, true, token).ConfigureAwait(false);
@@ -826,7 +832,7 @@ public class PokeTradeBotSV(PokeTradeHub<PK9> Hub, PokeBotState Config) : PokeRo
     {
         // We're able to see both users' MyStatus, but one of them will be ourselves.
         var trader_info = await GetTradePartnerMyStatus(Offsets.Trader1MyStatusPointer, token).ConfigureAwait(false);
-        if (trader_info.OT == OT && trader_info.DisplaySID == DisplaySID && trader_info.DisplayTID == DisplayTID) // This one matches ourselves.
+        if (trader_info.OT == OT && trader_info.SID7 == DisplaySID && trader_info.TID7 == DisplayTID) // This one matches ourselves.
             trader_info = await GetTradePartnerMyStatus(Offsets.Trader2MyStatusPointer, token).ConfigureAwait(false);
         return new TradePartnerSV(trader_info);
     }

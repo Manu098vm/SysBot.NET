@@ -2,6 +2,7 @@ using PKHeX.Core;
 using PKHeX.Core.Searching;
 using SysBot.Base;
 using System;
+using System.Buffers.Binary;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
@@ -309,10 +310,10 @@ public class PokeTradeBotSWSH(PokeTradeHub<PK8> hub, PokeBotState Config) : Poke
         await Task.Delay(5_500 + hub.Config.Timings.ExtraTimeOpenBox, token).ConfigureAwait(false); // necessary delay to get to the box properly
 
         var trainerName = await GetTradePartnerName(TradeMethod.LinkTrade, token).ConfigureAwait(false);
-        var trainerTID = await GetTradePartnerTID7(TradeMethod.LinkTrade, token).ConfigureAwait(false);
+        var trainerID = await GetTradePartnerID7(TradeMethod.LinkTrade, token).ConfigureAwait(false);
         var trainerNID = await GetTradePartnerNID(token).ConfigureAwait(false);
         RecordUtil<PokeTradeBotSWSH>.Record($"Initiating\t{trainerNID:X16}\t{trainerName}\t{poke.Trainer.TrainerName}\t{poke.Trainer.ID}\t{poke.ID}\t{toSend.EncryptionConstant:X8}");
-        Log($"Found Link Trade partner: {trainerName}-{trainerTID} (ID: {trainerNID})");
+        Log($"Found Link Trade partner: {trainerName}-{trainerID.TID7:000000} (ID: {trainerNID})");
 
         var partnerCheck = await CheckPartnerReputation(this, poke, trainerNID, trainerName, AbuseSettings, token);
         if (partnerCheck != PokeTradeResult.Success)
@@ -325,6 +326,15 @@ public class PokeTradeBotSWSH(PokeTradeHub<PK8> hub, PokeBotState Config) : Poke
         {
             await ExitTrade(true, token).ConfigureAwait(false);
             return PokeTradeResult.RecoverOpenBox;
+        }
+
+        var info = await GetGameInfo(token).ConfigureAwait(false);
+        var tradePartner = new TradePartnerSWSH(trainerID, trainerName, info.version, info.language, info.gender);
+
+        if (hub.Config.Trade.UseTradePartnerDetails && TradeExtensions<PK8>.CanUsePartnerDetails(this, toSend, sav, tradePartner, poke, hub.Config, out var toSendEdited))
+        {
+            toSend = toSendEdited;
+            await SetBoxPokemon(toSend, 0, 0, token, sav).ConfigureAwait(false);
         }
 
         // Confirm Box 1 Slot 1
@@ -354,7 +364,7 @@ public class PokeTradeBotSWSH(PokeTradeHub<PK8> hub, PokeBotState Config) : Poke
             return await EndSeedCheckTradeAsync(poke, offered, token).ConfigureAwait(false);
         }
 
-        var trainer = new PartnerDataHolder(trainerNID, trainerName, trainerTID);
+        var trainer = new PartnerDataHolder(trainerNID, trainerName, $"{trainerID.TID7:000000}");
         (toSend, PokeTradeResult update) = await GetEntityToSend(sav, poke, offered, oldEC, toSend, trainer, token).ConfigureAwait(false);
         if (update != PokeTradeResult.Success)
         {
@@ -400,6 +410,12 @@ public class PokeTradeBotSWSH(PokeTradeHub<PK8> hub, PokeBotState Config) : Poke
 
         await ExitTrade(false, token).ConfigureAwait(false);
         return PokeTradeResult.Success;
+    }
+
+    private async Task<(GameVersion version, LanguageID language, Gender gender)> GetGameInfo(CancellationToken token)
+    {
+        var info = await SwitchConnection.ReadBytesAsync(LinkTradePartnerInfoOffset, 0x4, token).ConfigureAwait(false);
+        return ((GameVersion)info[0], (LanguageID)info[1], (Gender)info[2]);
     }
 
     protected virtual Task<bool> WaitForTradePartnerOffer(CancellationToken token)
@@ -729,7 +745,7 @@ public class PokeTradeBotSWSH(PokeTradeHub<PK8> hub, PokeBotState Config) : Poke
         await Task.Delay(7_000, token).ConfigureAwait(false);
 
         var TrainerName = await GetTradePartnerName(TradeMethod.SurpriseTrade, token).ConfigureAwait(false);
-        var TrainerTID = await GetTradePartnerTID7(TradeMethod.SurpriseTrade, token).ConfigureAwait(false);
+        var TrainerTID = $"{(await GetTradePartnerID7(TradeMethod.SurpriseTrade, token).ConfigureAwait(false)).TID7}:000000";
         var SurprisePoke = await ReadSurpriseTradePokemon(token).ConfigureAwait(false);
 
         Log($"Found Surprise Trade partner: {TrainerName}-{TrainerTID}, Pokémon: {(Species)SurprisePoke.Species}");
@@ -951,14 +967,13 @@ public class PokeTradeBotSWSH(PokeTradeHub<PK8> hub, PokeBotState Config) : Poke
         return StringConverter8.GetString(data);
     }
 
-    private async Task<string> GetTradePartnerTID7(TradeMethod tradeMethod, CancellationToken token)
+    private async Task<(uint TID7, uint SID7)> GetTradePartnerID7(TradeMethod tradeMethod, CancellationToken token)
     {
         var ofs = GetTrainerTIDSIDOffset(tradeMethod);
         var data = await Connection.ReadBytesAsync(ofs, 8, token).ConfigureAwait(false);
-
-        var tidsid = BitConverter.ToUInt32(data, 0);
-        var tid7 = $"{tidsid % 1_000_000:000000}";
-        return tid7;
+        var sid = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan()) / 1_000_000;
+        var tid = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan()) % 1_000_000;
+        return (tid, sid);
     }
 
     public async Task<ulong> GetTradePartnerNID(CancellationToken token)

@@ -1,25 +1,32 @@
-﻿using PKHeX.Core;
+using PKHeX.Core;
 using System;
+using System.Buffers.Binary;
 using System.Diagnostics;
 
 namespace SysBot.Pokemon;
 
-public sealed class TradePartnerBS
+public sealed class TradePartnerBS : ITradePartner
 {
-    public string TID7 { get; }
-    public string SID7 { get; }
+    public uint TID7 { get; }
+    public uint SID7 { get; }
     public uint TrainerID { get; }
-    public string TrainerName { get; }
+    public string OT { get; }
+    public int Game { get; }
+    public int Gender { get; }
+    public int Language { get; }
 
-    public TradePartnerBS(byte[] TIDSID, byte[] trainerNameObject)
+    public TradePartnerBS(byte[] TIDSID, byte[] trainerNameObject, byte[] info)
     {
         Debug.Assert(TIDSID.Length == 4);
         var tidsid = BitConverter.ToUInt32(TIDSID, 0);
-        TID7 = $"{tidsid % 1_000_000:000000}";
-        SID7 = $"{tidsid / 1_000_000:0000}";
+        TID7 = BinaryPrimitives.ReadUInt32LittleEndian(TIDSID.AsSpan()) % 1_000_000;
+        SID7 = BinaryPrimitives.ReadUInt32LittleEndian(TIDSID.AsSpan()) / 1_000_000;
+        Game = info[0];
+        Gender = 0; //TODO
+        Language = info[4];
         TrainerID = tidsid;
 
-        TrainerName = ReadStringFromRAMObject(trainerNameObject);
+        OT = ReadStringFromRAMObject(trainerNameObject);
     }
 
     public const int MaxByteLengthStringObject = 0x14 + 0x1A;

@@ -4,14 +4,160 @@ using System.Diagnostics.Metrics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 using PKHeX.Core;
 using PKHeX.Core.AutoMod;
+using SysBot.Base;
 
 namespace SysBot.Pokemon;
 
+public interface ITradePartner
+{
+    public uint TID7 { get; }
+    public uint SID7 { get; }
+    public string OT { get; }
+    public int Game { get; }
+    public int Gender { get; }
+    public int Language { get; }
+}
+
 public class TradeExtensions<T> where T : PKM, new()
 {
+    public static bool CanUsePartnerDetails(RoutineExecutor<PokeBotState> executor, T pk, SaveFile sav, ITradePartner partner, PokeTradeDetail<T> trade, PokeTradeHubConfig config, out T res)
+    {
+        void Log(string msg) => executor.Log(msg);
+
+        res = (T)pk.Clone();
+
+        //Invalid trade request. Ditto is often requested for Masuda method, better to not apply partner details.
+        if ((Species)pk.Species is Species.None or Species.Ditto || trade.Type is not PokeTradeType.Specific)
+        {
+            Log("Can not apply Partner details: Not a specific trade request.");
+            return false;
+        }
+
+        //Current handler cannot be past gen OT
+        if (!pk.IsNative && !config.Legality.ForceTradePartnerInfo)
+        {
+            Log("Can not apply Partner details: Current handler cannot be different gen OT.");
+            return false;
+        }
+
+        //Only override trainer details if user didn't specify OT details in the Showdown/PK9 request
+        if (HasSetDetails(config, pk, sav))
+        {
+            Log("Can not apply Partner details: Requested Pokémon already has set Trainer details.");
+            return false;
+        }
+
+        res.OT_Name = partner.OT;
+        res.OT_Gender = partner.Gender;
+        res.TrainerTID7 = partner.TID7;
+        res.TrainerSID7 = partner.SID7;
+        res.Language = partner.Language;
+        res.Version = partner.Game;
+
+        if (!pk.IsNicknamed)
+            res.ClearNickname();
+
+        if (pk.IsShiny)
+            res.PID = (uint)((res.TID16 ^ res.SID16 ^ (res.PID & 0xFFFF) ^ pk.ShinyXor) << 16) | (res.PID & 0xFFFF);
+
+        if (!pk.ChecksumValid)
+            res.RefreshChecksum();
+
+        var la = new LegalityAnalysis(res);
+        if (!la.Valid)
+        {
+            res.Version = pk.Version;
+
+            if (!pk.ChecksumValid)
+                res.RefreshChecksum();
+
+            la = new LegalityAnalysis(res);
+
+            if (!la.Valid)
+            {
+                if (!config.Legality.ForceTradePartnerInfo)
+                {
+                    Log("Can not apply Partner details:");
+                    Log(la.Report());
+                    return false;
+                }
+
+                Log("Trying to force Trade Partner Info discarding the game version...");
+                res.Version = pk.Version;
+
+                if (!pk.ChecksumValid)
+                    res.RefreshChecksum();
+
+                la = new LegalityAnalysis(res);
+                if (!la.Valid)
+                {
+                    Log("Can not apply Partner details:");
+                    Log(la.Report());
+                    return false;
+                }
+            }
+        }
+
+        Log($"Applying trade partner details: {partner.OT} ({(partner.Gender == 0 ? "M" : "F")}), " +
+                $"TID: {partner.TID7:000000}, SID: {partner.SID7:0000}, {(LanguageID)partner.Language} ({(GameVersion)res.Version})");
+
+        return true;
+    }
+
+    private static bool HasSetDetails(PokeTradeHubConfig config, PKM set, ITrainerInfo fallback)
+    {
+        var set_trainer = new SimpleTrainerInfo((GameVersion)set.Version)
+        {
+            OT = set.OT_Name,
+            TID16 = set.TID16,
+            SID16 = set.SID16,
+            Gender = set.OT_Gender,
+            Language = set.Language,
+        };
+
+        var def_trainer = new SimpleTrainerInfo((GameVersion)fallback.Game)
+        {
+            OT = config.Legality.GenerateOT,
+            TID16 = config.Legality.GenerateTID16,
+            SID16 = config.Legality.GenerateSID16,
+            Gender = config.Legality.GenerateGenderOT,
+            Language = (int)config.Legality.GenerateLanguage,
+        };
+
+        var alm_trainer = config.Legality.GeneratePathTrainerInfo != string.Empty ?
+            TrainerSettings.GetSavedTrainerData(fallback.Generation, (GameVersion)fallback.Game, fallback, (LanguageID)fallback.Language) : null;
+
+        return !IsEqualTInfo(set_trainer, def_trainer) && !IsEqualTInfo(set_trainer, alm_trainer);
+    }
+
+    private static bool IsEqualTInfo(ITrainerInfo trainerInfo, ITrainerInfo? compareInfo)
+    {
+        if (compareInfo is null)
+            return false;
+
+        if (!trainerInfo.OT.Equals(compareInfo.OT))
+            return false;
+
+        if (trainerInfo.Gender != compareInfo.Gender)
+            return false;
+
+        if (trainerInfo.Language != compareInfo.Language)
+            return false;
+
+        if (trainerInfo.TID16 != compareInfo.TID16)
+            return false;
+
+        if (trainerInfo.SID16 != compareInfo.SID16)
+            return false;
+
+        return true;
+    }
+
     public static void EggTrade(PKM pk, IBattleTemplate template)
     {
         pk.IsNicknamed = true;

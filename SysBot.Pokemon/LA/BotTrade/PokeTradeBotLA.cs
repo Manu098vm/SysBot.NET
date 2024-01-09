@@ -278,17 +278,23 @@ public class PokeTradeBotLA(PokeTradeHub<PA8> Hub, PokeBotState Config) : PokeRo
 
         var tradePartner = await GetTradePartnerInfo(token).ConfigureAwait(false);
         var trainerNID = await GetTradePartnerNID(TradePartnerNIDOffset, token).ConfigureAwait(false);
-        RecordUtil<PokeTradeBotSWSH>.Record($"Initiating\t{trainerNID:X16}\t{tradePartner.TrainerName}\t{poke.Trainer.TrainerName}\t{poke.Trainer.ID}\t{poke.ID}\t{toSend.EncryptionConstant:X8}");
-        Log($"Found Link Trade partner: {tradePartner.TrainerName}-{tradePartner.TID7} (ID: {trainerNID})");
+        RecordUtil<PokeTradeBotSWSH>.Record($"Initiating\t{trainerNID:X16}\t{tradePartner.OT}\t{poke.Trainer.TrainerName}\t{poke.Trainer.ID}\t{poke.ID}\t{toSend.EncryptionConstant:X8}");
+        Log($"Found Link Trade partner: {tradePartner.OT}-{tradePartner.TID7:000000} (ID: {trainerNID})");
 
-        var partnerCheck = await CheckPartnerReputation(this, poke, trainerNID, tradePartner.TrainerName, AbuseSettings, token);
+        var partnerCheck = await CheckPartnerReputation(this, poke, trainerNID, tradePartner.OT, AbuseSettings, token);
         if (partnerCheck != PokeTradeResult.Success)
         {
             await ExitTrade(false, token).ConfigureAwait(false);
             return partnerCheck;
         }
 
-        poke.SendNotification(this, $"Found Link Trade partner: {tradePartner.TrainerName}. Waiting for a Pokémon...");
+        if (Hub.Config.Trade.UseTradePartnerDetails && TradeExtensions<PA8>.CanUsePartnerDetails(this, toSend, sav, tradePartner, poke, Hub.Config, out var toSendEdited))
+        {
+            toSend = toSendEdited;
+            await SetBoxPokemonAbsolute(BoxStartOffset, toSend, token, sav).ConfigureAwait(false);
+        }
+
+        poke.SendNotification(this, $"Found Link Trade partner: {tradePartner.OT}. Waiting for a Pokémon...");
 
         if (poke.Type == PokeTradeType.Dump)
         {
@@ -317,7 +323,7 @@ public class PokeTradeBotLA(PokeTradeHub<PA8> Hub, PokeBotState Config) : PokeRo
             return PokeTradeResult.TrainerOfferCanceledQuick;
         }
 
-        var trainer = new PartnerDataHolder(0, tradePartner.TrainerName, tradePartner.TID7);
+        var trainer = new PartnerDataHolder(0, tradePartner.OT, $"{tradePartner.TID7:000000}");
         (toSend, PokeTradeResult update) = await GetEntityToSend(sav, poke, offered, toSend, trainer, token).ConfigureAwait(false);
         if (update != PokeTradeResult.Success)
         {
@@ -359,7 +365,7 @@ public class PokeTradeBotLA(PokeTradeHub<PA8> Hub, PokeBotState Config) : PokeRo
         UpdateCountsAndExport(poke, received, toSend);
 
         // Log for Trade Abuse tracking.
-        LogSuccessfulTrades(poke, trainerNID, tradePartner.TrainerName);
+        LogSuccessfulTrades(poke, trainerNID, tradePartner.OT);
 
         await ExitTrade(false, token).ConfigureAwait(false);
         return PokeTradeResult.Success;
@@ -550,7 +556,8 @@ public class PokeTradeBotLA(PokeTradeHub<PA8> Hub, PokeBotState Config) : PokeRo
     {
         var id = await SwitchConnection.PointerPeek(4, Offsets.LinkTradePartnerTIDPointer, token).ConfigureAwait(false);
         var name = await SwitchConnection.PointerPeek(TradePartnerLA.MaxByteLengthStringObject, Offsets.LinkTradePartnerNamePointer, token).ConfigureAwait(false);
-        return new TradePartnerLA(id, name);
+        var info = await SwitchConnection.PointerPeek(4, Offsets.LinkTradePartnerInfoPointer, token).ConfigureAwait(false);
+        return new TradePartnerLA(id, name, info);
     }
 
     protected virtual async Task<(PA8 toSend, PokeTradeResult check)> GetEntityToSend(SAV8LA sav, PokeTradeDetail<PA8> poke, PA8 offered, PA8 toSend, PartnerDataHolder partnerID, CancellationToken token)
