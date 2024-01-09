@@ -1,18 +1,18 @@
-﻿using Discord;
+using Discord;
 using PKHeX.Core;
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-namespace SysBot.Pokemon.Discord
+namespace SysBot.Pokemon.Discord;
+
+public static class NetUtil
 {
-    public static class NetUtil
+    public static async Task<byte[]> DownloadFromUrlAsync(string url)
     {
-        public static async Task<byte[]> DownloadFromUrlAsync(string url)
-        {
-            using var client = new HttpClient();
-            return await client.GetByteArrayAsync(url).ConfigureAwait(false);
-        }
+        using var client = new HttpClient();
+        return await client.GetByteArrayAsync(url).ConfigureAwait(false);
+    }
 
         public static async Task<Download<PKM>> DownloadPKMAsync(IAttachment att, SimpleTrainerInfo? defTrainer = null)
         {
@@ -48,17 +48,16 @@ namespace SysBot.Pokemon.Discord
                 return result;
             }
 
-            result.Data = pkm;
-            result.Success = true;
-            return result;
-        }
+        result.Data = pkm;
+        result.Success = true;
+        return result;
     }
+}
 
-    public sealed class Download<T> where T : class
-    {
-        public bool Success;
-        public T? Data;
-        public string? SanitizedFileName;
-        public string? ErrorMessage;
-    }
+public sealed class Download<T> where T : class
+{
+    public bool Success;
+    public T? Data;
+    public string? SanitizedFileName;
+    public string? ErrorMessage;
 }

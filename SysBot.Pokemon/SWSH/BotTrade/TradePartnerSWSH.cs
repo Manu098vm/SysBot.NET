@@ -1,23 +1,13 @@
-﻿using PKHeX.Core;
+using PKHeX.Core;
 
 namespace SysBot.Pokemon;
 
-public sealed class TradePartnerSWSH
+public sealed class TradePartnerSWSH((uint TID7, uint SID7) ID, string ot, GameVersion version, LanguageID language, Gender gender) : ITradePartner
 {
-    public uint TID7 { get; }
-    public uint SID7 { get; }
-    public string TrainerName { get; }
-    public byte Game { get; }
-    public byte Language { get; }
-    public byte Gender { get; }
-
-    public TradePartnerSWSH((uint TID7, uint SID7) ID, string ot, GameVersion version, LanguageID language, Gender gender)
-    {
-        TID7 = ID.TID7;
-        SID7 = ID.SID7;
-        TrainerName = ot;
-        Game = (byte)version;
-        Language = (byte)language;
-        Gender = (byte)gender;
-    }
+    public uint TID7 { get; } = ID.TID7;
+    public uint SID7 { get; } = ID.SID7;
+    public string OT { get; } = ot;
+    public int Game { get; } = (byte)version;
+    public int Language { get; } = (byte)language;
+    public int Gender { get; } = (byte)gender;
 }
