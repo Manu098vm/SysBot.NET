@@ -1,12 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Diagnostics.Metrics;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Security.Cryptography.X509Certificates;
-using System.Text.RegularExpressions;
 using PKHeX.Core;
 using PKHeX.Core.AutoMod;
 using SysBot.Base;
@@ -202,13 +194,7 @@ public class TradeExtensions<T> where T : PKM, new()
         pk.StatNature = pk.Nature;
         pk.SetEVs(new int[] { 0, 0, 0, 0, 0, 0 });
 
-        pk.SetMarking(0, 0);
-        pk.SetMarking(1, 0);
-        pk.SetMarking(2, 0);
-        pk.SetMarking(3, 0);
-        pk.SetMarking(4, 0);
-        pk.SetMarking(5, 0);
-
+        MarkingApplicator.SetMarkings(pk);
         pk.ClearRelearnMoves();
 
         if (pk is PK8 pk8)
