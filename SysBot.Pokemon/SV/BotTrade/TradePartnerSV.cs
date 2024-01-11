@@ -16,8 +16,8 @@ public sealed class TradeMyStatus : ITradePartner
 {
     public readonly byte[] Data = new byte[0x30];
 
-    public uint TID7 => BinaryPrimitives.ReadUInt32LittleEndian(Data.AsSpan(0)) / 1_000_000;
-    public uint SID7 => BinaryPrimitives.ReadUInt32LittleEndian(Data.AsSpan(0)) % 1_000_000;
+    public uint SID7 => BinaryPrimitives.ReadUInt32LittleEndian(Data.AsSpan(0)) / 1_000_000;
+    public uint TID7 => BinaryPrimitives.ReadUInt32LittleEndian(Data.AsSpan(0)) % 1_000_000;
 
     public int Game => Data[4];
     public int Gender => Data[5];
