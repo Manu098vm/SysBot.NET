@@ -42,10 +42,6 @@ namespace SysBot.Pokemon.WinForms
             PG_Hub = new System.Windows.Forms.PropertyGrid();
             Tab_Logs = new System.Windows.Forms.TabPage();
             RTB_Logs = new System.Windows.Forms.RichTextBox();
-            Tab_Results = new System.Windows.Forms.TabPage();
-            TossButton = new System.Windows.Forms.Button();
-            ContinueButton = new System.Windows.Forms.Button();
-            RTB_Results = new System.Windows.Forms.RichTextBox();
             B_Stop = new System.Windows.Forms.Button();
             B_Start = new System.Windows.Forms.Button();
             B_RebootStop = new System.Windows.Forms.Button();
@@ -54,7 +50,6 @@ namespace SysBot.Pokemon.WinForms
             ((System.ComponentModel.ISupportInitialize)NUD_Port).BeginInit();
             Tab_Hub.SuspendLayout();
             Tab_Logs.SuspendLayout();
-            Tab_Results.SuspendLayout();
             SuspendLayout();
             // 
             // TC_Main
@@ -62,7 +57,6 @@ namespace SysBot.Pokemon.WinForms
             TC_Main.Controls.Add(Tab_Bots);
             TC_Main.Controls.Add(Tab_Hub);
             TC_Main.Controls.Add(Tab_Logs);
-            TC_Main.Controls.Add(Tab_Results);
             TC_Main.Dock = System.Windows.Forms.DockStyle.Fill;
             TC_Main.Location = new System.Drawing.Point(0, 0);
             TC_Main.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
@@ -195,51 +189,6 @@ namespace SysBot.Pokemon.WinForms
             RTB_Logs.TabIndex = 0;
             RTB_Logs.Text = "";
             // 
-            // Tab_Results
-            // 
-            Tab_Results.Controls.Add(TossButton);
-            Tab_Results.Controls.Add(ContinueButton);
-            Tab_Results.Controls.Add(RTB_Results);
-            Tab_Results.Location = new System.Drawing.Point(4, 29);
-            Tab_Results.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            Tab_Results.Name = "Tab_Results";
-            Tab_Results.Padding = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            Tab_Results.Size = new System.Drawing.Size(937, 519);
-            Tab_Results.TabIndex = 3;
-            Tab_Results.Text = "Results";
-            Tab_Results.UseVisualStyleBackColor = true;
-            // 
-            // TossButton
-            // 
-            TossButton.Location = new System.Drawing.Point(4, 11);
-            TossButton.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            TossButton.Name = "TossButton";
-            TossButton.Size = new System.Drawing.Size(100, 35);
-            TossButton.TabIndex = 4;
-            TossButton.Text = "Toss";
-            TossButton.UseVisualStyleBackColor = true;
-            // 
-            // ContinueButton
-            // 
-            ContinueButton.Location = new System.Drawing.Point(108, 11);
-            ContinueButton.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            ContinueButton.Name = "ContinueButton";
-            ContinueButton.Size = new System.Drawing.Size(100, 35);
-            ContinueButton.TabIndex = 3;
-            ContinueButton.Text = "Continue";
-            ContinueButton.UseVisualStyleBackColor = true;
-            // 
-            // RTB_Results
-            // 
-            RTB_Results.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            RTB_Results.Location = new System.Drawing.Point(4, 55);
-            RTB_Results.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            RTB_Results.Name = "RTB_Results";
-            RTB_Results.ReadOnly = true;
-            RTB_Results.Size = new System.Drawing.Size(589, 373);
-            RTB_Results.TabIndex = 0;
-            RTB_Results.Text = "";
-            // 
             // B_Stop
             // 
             B_Stop.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
@@ -298,7 +247,6 @@ namespace SysBot.Pokemon.WinForms
             ((System.ComponentModel.ISupportInitialize)NUD_Port).EndInit();
             Tab_Hub.ResumeLayout(false);
             Tab_Logs.ResumeLayout(false);
-            Tab_Results.ResumeLayout(false);
             ResumeLayout(false);
         }
 
@@ -317,12 +265,6 @@ namespace SysBot.Pokemon.WinForms
         private System.Windows.Forms.Button B_New;
         private System.Windows.Forms.FlowLayoutPanel FLP_Bots;
         private System.Windows.Forms.ComboBox CB_Protocol;
-
-        //Zyro additions
-        private System.Windows.Forms.TabPage Tab_Results;
-        private System.Windows.Forms.RichTextBox RTB_Results;
-        private System.Windows.Forms.Button ContinueButton;
-        private System.Windows.Forms.Button TossButton;
         private System.Windows.Forms.Button B_RebootStop;
     }
 }
