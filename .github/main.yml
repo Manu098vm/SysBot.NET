@@ -1,0 +1,60 @@
+name: Windows
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+
+    strategy:
+      matrix:
+        configuration: [Release]
+
+    runs-on: windows-latest
+
+    env:
+      Solution_Name: SysBot.NET.sln
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Install .NET Core
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Setup MSBuild.exe
+      uses: microsoft/setup-msbuild@v1.1
+
+    - name: Restore NuGet packages
+      run: dotnet restore
+
+    - name: Execute unit tests
+      run: dotnet test
+
+    - name: Restore the application
+      run: msbuild $env:Solution_Name /t:Restore /p:Configuration=$env:Configuration
+      env:
+        Configuration: ${{ matrix.configuration }}
+        
+    - name: Create the app package
+      run: msbuild $env:Solution_Name /property:Configuration=Release
+
+    - name: Upload WinForm artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: SysBot.Pokemon.WinForms
+        path: SysBot.Pokemon.WinForms\bin\Release\net8.0-windows
+
+    - name: Upload ConsoleApp artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: SysBot.Pokemon.ConsoleApp
+        path: SysBot.Pokemon.ConsoleApp\bin\Release\net8.0
