@@ -3,9 +3,12 @@ using Discord.Commands;
 using Discord.WebSocket;
 using PKHeX.Core;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace SysBot.Pokemon.Discord;
+
 
 public class DiscordTradeNotifier<T>(T Data, PokeTradeTrainerInfo Info, int Code, SocketUser Trader, SocketCommandContext Context)
     : IPokeTradeNotifier<T>
@@ -19,8 +22,38 @@ public class DiscordTradeNotifier<T>(T Data, PokeTradeTrainerInfo Info, int Code
     public Action<PokeRoutineExecutor<T>>? OnFinish { private get; set; }
     public readonly PokeTradeHub<T> Hub = SysCord<T>.Runner.Hub;
 
+    public string TradeDisplayingInfo(PokeTradeDetail<T> info)
+    {
+        string msg = "Displaying your ";
+        var mode = info.Type;
+        switch (mode)
+        {
+            case PokeTradeType.Specific: msg += "request!"; break;
+            case PokeTradeType.Clone: msg += "clone!"; break;
+        }
+        return msg;
+    }
+
+    public void TradeEmbed(PKM pkm, PokeTradeDetail<T> info)
+    {
+        var template = new TemplateTrade<T>(pkm, Context);
+        EmbedBuilder embed = template.Generate();
+        
+        // 获取displaying信息
+        string msg = TradeDisplayingInfo(info);
+        
+        Context.Channel.SendMessageAsync(Trader.Username + " - " + msg, embed: embed.Build()).ConfigureAwait(false);
+    }
+
     public void TradeInitialize(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info)
     {
+        // 获取PKM
+        PKM pkm = info.TradeData;
+        
+        // 发送Embed卡片
+        TradeEmbed(pkm, info);
+        
+        // 发送文字信息
         var receive = Data.Species == 0 ? string.Empty : $" ({Data.Nickname})";
         Trader.SendMessageAsync($"Initializing trade{receive}. Please be ready. Your code is **{Code:0000 0000}**.").ConfigureAwait(false);
     }
@@ -83,6 +116,23 @@ public class DiscordTradeNotifier<T>(T Data, PokeTradeTrainerInfo Info, int Code
 
                 var specitem = emb.HeldItem != 0 ? $"{SpeciesName.GetSpeciesNameGeneration(emb.Species, 2, emb.Generation <= 8 ? 8 : 9)}{TradeExtensions<T>.FormOutput(emb.Species, emb.Form, out _) + " (" + ShowdownParsing.GetShowdownText(emb).Split('@', '\n')[1].Trim() + ")"}" : $"{SpeciesName.GetSpeciesNameGeneration(emb.Species, 2, emb.Generation <= 8 ? 8 : 9) + TradeExtensions<T>.FormOutput(emb.Species, emb.Form, out _)}{markEntryText}";
 
+                string specieInfo = "";
+                string itemName = "";
+                if (emb.HeldItem != 0)
+                {
+                    string specieName = $"{SpeciesName.GetSpeciesNameGeneration(emb.Species, 2, emb.Generation <= 8 ? 8 : 9)}";
+                    string specieForm = TradeExtensions<T>.FormOutput(emb.Species, emb.Form, out _);
+                    itemName = ShowdownParsing.GetShowdownText(emb).Split('@', '\n')[1].Trim();
+                    specieInfo = $"{specieName}{specieForm}";
+                } 
+                else
+                {
+                    string specieName = $"{SpeciesName.GetSpeciesNameGeneration(emb.Species, 2, emb.Generation <= 8 ? 8 : 9)}";
+                    string specieForm = TradeExtensions<T>.FormOutput(emb.Species, emb.Form, out _);
+                    specieInfo = $"{specieName}{specieForm}{markEntryText}";
+                }
+                
+
                 var msg = "Displaying your ";
                 var mode = info.Type;
                 switch (mode)
@@ -100,8 +150,8 @@ public class DiscordTradeNotifier<T>(T Data, PokeTradeTrainerInfo Info, int Code
                 var embed = new EmbedBuilder { Color = emb.IsShiny && emb.ShinyXor == 0 ? Color.Gold : emb.IsShiny ? Color.LighterGrey : Color.Teal, Author = author, Footer = footer, ThumbnailUrl = pokeImg };
                 embed.AddField(x =>
                 {
-                    x.Name = $"{shiny} {specitem}{gender}";
-                    x.Value = trademessage;
+                    x.Name = $"{shiny} {specieInfo}{gender}";
+                    x.Value = itemName + trademessage;
                     x.IsInline = false;
                 });
                 Context.Channel.SendMessageAsync(Trader.Username + " - " + msg, embed: embed.Build()).ConfigureAwait(false);
