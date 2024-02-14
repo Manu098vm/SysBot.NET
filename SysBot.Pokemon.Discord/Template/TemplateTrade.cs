@@ -48,8 +48,6 @@ public class TemplateTrade<T> where T : PKM, new()
         return  new EmbedFooterBuilder { Text = $"Trainer Info: {pkm.OT_Name}/{TIDFormatted}" };
     }
 
-        
-
     private void SetFiled1(EmbedBuilder embed)
     {
         // 获取species信息
@@ -84,16 +82,14 @@ public class TemplateTrade<T> where T : PKM, new()
     }
     private void SetFiled3_1(EmbedBuilder embed)
     {
-        // 定义IVs信息    
-        string IVs = string.Join("/", this.pkmString.IVs);
+        // 获取teraType信息
+        string teraType = this.pkmString.TeraType;
+        // 定义Level信息
+        int Level = pkm.CurrentLevel;
         // 定义Ability信息
         string Ability = this.pkmString.Ability;
         // 获取Nature信息
         string Nature = this.pkmString.Nature;
-        // 获取species信息
-        string specieInfo = this.pkmString.Species;
-        // 获取teraType信息
-        string teraType = this.pkmString.TeraType;
         // 获取Scale信息
         string Scale = this.pkmString.Scale;
         // 获取Mark信息
@@ -103,7 +99,7 @@ public class TemplateTrade<T> where T : PKM, new()
         // 构建信息 
         var trademessage = "";
         trademessage += pkm.Generation == 9 ? $"**TeraType:** {teraType}\n" : "";
-        trademessage += $"**Level:** {pkm.CurrentLevel}\n";
+        trademessage += $"**Level:** {Level}\n";
         trademessage += $"**Ability:** {Ability}\n";
         trademessage += $"**Nature:**{Nature}\n";
         trademessage += $"**Scale:**{Scale}\n";
