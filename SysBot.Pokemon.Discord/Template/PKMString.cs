@@ -50,7 +50,7 @@ public class PKMString<T> where T : PKM, new()
     }
     private string GetNature(PKM pkm)
     {
-        return $"{ this.Strings.Natures[pkm.Nature] }";
+        return $"{ this.Strings.Natures[(int)pkm.Nature] }";
     }
     private string GetTeraType(PKM pkm)
     {
@@ -113,7 +113,7 @@ public class PKMString<T> where T : PKM, new()
 
     private string GetSpecies(PKM pkm)
     {
-        string specieName = $"{SpeciesName.GetSpeciesNameGeneration(pkm.Species, pkm.Language, pkm.Generation <= 8 ? 8 : 9)}";
+        string specieName = $"{SpeciesName.GetSpeciesNameGeneration(pkm.Species, pkm.Language, (byte)(pkm.Generation <= 8 ? 8 : 9))}";
         string specieForm = TradeExtensions<T>.FormOutput(pkm.Species, pkm.Form, out _);
         string specieInfo = $"{specieName}{specieForm}";
         return specieInfo;

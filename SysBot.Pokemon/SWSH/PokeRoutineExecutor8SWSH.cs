@@ -47,7 +47,7 @@ public abstract class PokeRoutineExecutor8SWSH(PokeBotState Config) : PokeRoutin
         {
             // Update PKM to the current save's handler data
             DateTime Date = DateTime.Now;
-            pkm.Trade(sav, Date.Day, Date.Month, Date.Year);
+            pkm.UpdateHandler(sav);
             pkm.RefreshChecksum();
         }
         var ofs = GetBoxSlotOffset(box, slot);

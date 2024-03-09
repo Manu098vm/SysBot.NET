@@ -133,7 +133,7 @@ public class PokemonPool<T>(BaseConfig Settings) : List<T>
         // Anti-spam
         if (pk.IsNicknamed && StringsUtil.IsSpammyString(pk.Nickname))
             return true;
-        if (StringsUtil.IsSpammyString(pk.OT_Name) && !AutoLegalityWrapper.IsFixedOT(enc, pk))
+        if (StringsUtil.IsSpammyString(pk.OriginalTrainerName) && !AutoLegalityWrapper.IsFixedOT(enc, pk))
             return true;
         return DisallowRandomRecipientTrade(pk);
     }

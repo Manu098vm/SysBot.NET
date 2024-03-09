@@ -44,12 +44,12 @@ public class TradeExtensions<T> where T : PKM, new()
             return false;
         }
 
-        res.OT_Name = partner.OT;
-        res.OT_Gender = partner.Gender;
+        res.OriginalTrainerName = partner.OT;
+        res.OriginalTrainerGender = (byte)partner.Gender;
         res.TrainerTID7 = partner.TID7;
         res.TrainerSID7 = partner.SID7;
         res.Language = partner.Language;
-        res.Version = partner.Game;
+        res.Version = (GameVersion)partner.Game;
 
         if (!pk.IsNicknamed)
             res.ClearNickname();
@@ -105,14 +105,14 @@ public class TradeExtensions<T> where T : PKM, new()
     {
         var set_trainer = new SimpleTrainerInfo((GameVersion)set.Version)
         {
-            OT = set.OT_Name,
+            OT = set.OriginalTrainerName,
             TID16 = set.TID16,
             SID16 = set.SID16,
-            Gender = set.OT_Gender,
+            Gender = set.OriginalTrainerGender,
             Language = set.Language,
         };
 
-        var def_trainer = new SimpleTrainerInfo((GameVersion)fallback.Game)
+        var def_trainer = new SimpleTrainerInfo((GameVersion)fallback.Version)
         {
             OT = config.Legality.GenerateOT,
             TID16 = config.Legality.GenerateTID16,
@@ -122,7 +122,7 @@ public class TradeExtensions<T> where T : PKM, new()
         };
 
         var alm_trainer = config.Legality.GeneratePathTrainerInfo != string.Empty ?
-            TrainerSettings.GetSavedTrainerData(fallback.Generation, (GameVersion)fallback.Game, fallback, (LanguageID)fallback.Language) : null;
+            TrainerSettings.GetSavedTrainerData(fallback.Generation, (GameVersion)fallback.Version, fallback, (LanguageID)fallback.Language) : null;
 
         return !IsEqualTInfo(set_trainer, def_trainer) && !IsEqualTInfo(set_trainer, alm_trainer);
     }
@@ -166,7 +166,7 @@ public class TradeExtensions<T> where T : PKM, new()
         };
 
         pk.IsEgg = true;
-        pk.Egg_Location = pk switch
+        pk.EggLocation = pk switch
         {
             PB8 => 60010,
             PK9 => 30023,
@@ -178,8 +178,8 @@ public class TradeExtensions<T> where T : PKM, new()
         pk.HeldItem = 0;
         pk.CurrentLevel = 1;
         pk.EXP = 0;
-        pk.Met_Level = 1;
-        pk.Met_Location = pk switch
+        pk.MetLevel = 1;
+        pk.MetLocation = pk switch
         {
             PB8 => 65535,
             PK9 => 0,
@@ -187,9 +187,9 @@ public class TradeExtensions<T> where T : PKM, new()
         };
 
         pk.CurrentHandler = 0;
-        pk.OT_Friendship = 1;
-        pk.HT_Name = "";
-        pk.HT_Friendship = 0;
+        pk.OriginalTrainerFriendship = 1;
+        pk.HandlingTrainerName = "";
+        pk.HandlingTrainerFriendship = 0;
         pk.ClearMemories();
         pk.StatNature = pk.Nature;
         pk.SetEVs(new int[] { 0, 0, 0, 0, 0, 0 });
@@ -199,29 +199,29 @@ public class TradeExtensions<T> where T : PKM, new()
 
         if (pk is PK8 pk8)
         {
-            pk8.HT_Language = 0;
-            pk8.HT_Gender = 0;
-            pk8.HT_Memory = 0;
-            pk8.HT_Feeling = 0;
-            pk8.HT_Intensity = 0;
+            pk8.HandlingTrainerLanguage = 0;
+            pk8.HandlingTrainerGender = 0;
+            pk8.HandlingTrainerMemory = 0;
+            pk8.HandlingTrainerLanguage = 0;
+            pk8.HandlingTrainerMemoryIntensity = 0;
             pk8.DynamaxLevel = pk8.GetSuggestedDynamaxLevel(pk8, 0);
         }
         else if (pk is PB8 pb8)
         {
-            pb8.HT_Language = 0;
-            pb8.HT_Gender = 0;
-            pb8.HT_Memory = 0;
-            pb8.HT_Feeling = 0;
-            pb8.HT_Intensity = 0;
+            pb8.HandlingTrainerLanguage = 0;
+            pb8.HandlingTrainerGender = 0;
+            pb8.HandlingTrainerMemory = 0;
+            pb8.HandlingTrainerLanguage = 0;
+            pb8.HandlingTrainerMemoryIntensity = 0;
             pb8.DynamaxLevel = pb8.GetSuggestedDynamaxLevel(pb8, 0);
         }
         else if (pk is PK9 pk9)
         {
-            pk9.HT_Language = 0;
-            pk9.HT_Gender = 0;
-            pk9.HT_Memory = 0;
-            pk9.HT_Feeling = 0;
-            pk9.HT_Intensity = 0;
+            pk9.HandlingTrainerLanguage = 0;
+            pk9.HandlingTrainerGender = 0;
+            pk9.HandlingTrainerMemory = 0;
+            pk9.HandlingTrainerLanguage = 0;
+            pk9.HandlingTrainerMemoryIntensity = 0;
             pk9.Obedience_Level = 1;
             pk9.Version = 0;
             pk9.BattleVersion = 0;
@@ -249,7 +249,7 @@ public class TradeExtensions<T> where T : PKM, new()
     public static PKM TrashBytes(PKM pkm, LegalityAnalysis? la = null)
     {
         var pkMet = (T)pkm.Clone();
-        if (pkMet.Version is not (int)GameVersion.GO)
+        if (pkMet.Version is not GameVersion.GO)
             pkMet.MetDate = DateOnly.FromDateTime(DateTime.Now);
 
         var analysis = new LegalityAnalysis(pkMet);

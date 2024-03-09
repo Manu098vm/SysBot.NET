@@ -1,4 +1,4 @@
-﻿using PKHeX.Core;
+using PKHeX.Core;
 using PKHeX.Core.AutoMod;
 using System;
 using System.IO;
@@ -45,7 +45,7 @@ public static class AutoLegalityWrapper
         APILegality.Timeout = cfg.Timeout;
 
         if (!(APILegality.AllowHOMETransferGeneration = !cfg.EnableHOMETrackerCheck))
-            typeof(ParseSettings).GetProperty(nameof(ParseSettings.Gen8TransferTrackerNotPresent))!.SetValue(null, Severity.Invalid);
+            typeof(ParseSettings).GetProperty(nameof(ParseSettings.HOMETransferTrackerNotPresent))!.SetValue(null, Severity.Invalid);
 
         // We need all the encounter types present, so add the missing ones at the end.
         var missing = EncounterPriority.Except(cfg.PrioritizeEncounters);
@@ -70,7 +70,7 @@ public static class AutoLegalityWrapper
 
         for (int i = 1; i < PKX.Generation + 1; i++)
         {
-            var versions = GameUtil.GetVersionsInGeneration(i, PKX.Generation);
+            var versions = GameUtil.GetVersionsInGeneration((byte)i, (GameVersion)PKX.Generation);
             foreach (var v in versions)
             {
                 var fallback = new SimpleTrainerInfo(v)
@@ -79,7 +79,7 @@ public static class AutoLegalityWrapper
                     TID16 = TID,
                     SID16 = SID,
                     OT = OT,
-                    Generation = i,
+                    Generation = (byte)i,
                 };
                 var exist = TrainerSettings.GetSavedTrainerData(v, i, fallback);
                 if (exist is SimpleTrainerInfo) // not anything from files; this assumes ALM returns SimpleTrainerInfo for non-user-provided fake templates.
@@ -101,7 +101,7 @@ public static class AutoLegalityWrapper
     {
         if (pkm.IsNicknamed && StringsUtil.IsSpammyString(pkm.Nickname))
             return false;
-        if (StringsUtil.IsSpammyString(pkm.OT_Name) && !IsFixedOT(new LegalityAnalysis(pkm).EncounterOriginal, pkm))
+        if (StringsUtil.IsSpammyString(pkm.OriginalTrainerName) && !IsFixedOT(new LegalityAnalysis(pkm).EncounterOriginal, pkm))
             return false;
         return !FormInfo.IsFusedForm(pkm.Species, pkm.Form, pkm.Format);
     }
@@ -116,7 +116,7 @@ public static class AutoLegalityWrapper
             WB8 wb8 => wb8.GetHasOT(pkm.Language),
             WC8 wc8 => wc8.GetHasOT(pkm.Language),
             WB7 wb7 => wb7.GetHasOT(pkm.Language),
-            { Generation: >= 5 } gift => gift.OT_Name.Length > 0,
+            { Generation: >= 5 } gift => gift.OriginalTrainerName.Length > 0,
             _ => true,
         },
         _ => false,

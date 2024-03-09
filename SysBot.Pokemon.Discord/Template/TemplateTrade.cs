@@ -45,7 +45,7 @@ public class TemplateTrade<T> where T : PKM, new()
     private EmbedFooterBuilder SetFooter()
     {
         string TIDFormatted = pkm.Generation >= 7 ? $"{pkm.TrainerTID7:000000}" : $"{pkm.TID16:00000}";
-        return  new EmbedFooterBuilder { Text = $"Trainer Info: {pkm.OT_Name}/{TIDFormatted}" };
+        return  new EmbedFooterBuilder { Text = $"Trainer Info: {pkm.OriginalTrainerName}/{TIDFormatted}" };
     }
 
     private void SetFiled1(EmbedBuilder embed)
