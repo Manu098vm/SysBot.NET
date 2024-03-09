@@ -135,7 +135,7 @@ public abstract class PokeRoutineExecutor8SWSH(PokeBotState Config) : PokeRoutin
         var sav = new SAV8SWSH();
         var info = sav.MyStatus;
         var read = await Connection.ReadBytesAsync(TrainerDataOffset, TrainerDataLength, token).ConfigureAwait(false);
-        read.CopyTo(info.Data, 0);
+        read.CopyTo(info.Data.ToArray(), 0);
         return sav;
     }
 
