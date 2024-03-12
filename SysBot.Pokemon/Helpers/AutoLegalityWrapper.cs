@@ -44,9 +44,16 @@ public static class AutoLegalityWrapper
         APILegality.SetBattleVersion = cfg.SetBattleVersion;
         APILegality.Timeout = cfg.Timeout;
 
-        if (!(APILegality.AllowHOMETransferGeneration = !cfg.EnableHOMETrackerCheck))
-            typeof(ParseSettings).GetProperty(nameof(ParseSettings.HOMETransferTrackerNotPresent))!.SetValue(null, Severity.Invalid);
-
+        // As of February 2024, the default setting in PKHeX is Invalid for missing HOME trackers.
+        // If the host wants to allow missing HOME trackers, we need to override the default setting.
+        bool allowMissingHOME = !cfg.EnableHOMETrackerCheck;
+        APILegality.AllowHOMETransferGeneration = allowMissingHOME;
+        if (allowMissingHOME)
+        {
+            // Property setter is private; need to use reflection to manually set the value.
+            var prop = typeof(ParseSettings).GetProperty(nameof(ParseSettings.HOMETransferTrackerNotPresent));
+            prop?.SetValue(null, Severity.Fishy);
+        }
         // We need all the encounter types present, so add the missing ones at the end.
         var missing = EncounterPriority.Except(cfg.PrioritizeEncounters);
         cfg.PrioritizeEncounters.AddRange(missing);
@@ -56,38 +63,51 @@ public static class AutoLegalityWrapper
 
     private static void InitializeTrainerDatabase(LegalitySettings cfg)
     {
-        // Seed the Trainer Database with enough fake save files so that we return a generation sensitive format when needed.
-        string OT = cfg.GenerateOT;
-        if (OT.Length == 0)
-            OT = "Blank"; // Will fail if actually left blank.
-        ushort TID = cfg.GenerateTID16;
-        ushort SID = cfg.GenerateSID16;
-        int lang = (int)cfg.GenerateLanguage;
-
         var externalSource = cfg.GeneratePathTrainerInfo;
-        if (!string.IsNullOrWhiteSpace(externalSource) && Directory.Exists(externalSource))
+        if (Directory.Exists(externalSource))
             TrainerSettings.LoadTrainerDatabaseFromPath(externalSource);
 
-        for (int i = 1; i < PKX.Generation + 1; i++)
+        // Seed the Trainer Database with enough fake save files so that we return a generation sensitive format when needed.
+        var fallback = GetDefaultTrainer(cfg);
+        for (byte generation = 1; generation <= PKX.Generation; generation++)
         {
-            var versions = GameUtil.GetVersionsInGeneration((byte)i, (GameVersion)PKX.Generation);
-            foreach (var v in versions)
-            {
-                var fallback = new SimpleTrainerInfo(v)
-                {
-                    Language = lang,
-                    TID16 = TID,
-                    SID16 = SID,
-                    OT = OT,
-                    Generation = (byte)i,
-                };
-                var exist = TrainerSettings.GetSavedTrainerData(v, i, fallback);
-                if (exist is SimpleTrainerInfo) // not anything from files; this assumes ALM returns SimpleTrainerInfo for non-user-provided fake templates.
-                    TrainerSettings.Register(fallback);
-            }
+            var versions = GameUtil.GetVersionsInGeneration(generation, PKX.Version);
+            foreach (var version in versions)
+                RegisterIfNoneExist(fallback, generation, version);
         }
+        // Manually register for LGP/E since Gen7 above will only register the 3DS versions.
+        RegisterIfNoneExist(fallback, 7, GameVersion.GP);
+        RegisterIfNoneExist(fallback, 7, GameVersion.GE);
     }
-
+    private static SimpleTrainerInfo GetDefaultTrainer(LegalitySettings cfg)
+    {
+        var OT = cfg.GenerateOT;
+        if (OT.Length == 0)
+            OT = "Blank"; // Will fail if actually left blank.
+        var fallback = new SimpleTrainerInfo(GameVersion.Any)
+        {
+            Language = (byte)cfg.GenerateLanguage,
+            TID16 = cfg.GenerateTID16,
+            SID16 = cfg.GenerateSID16,
+            OT = OT,
+            Generation = 0,
+        };
+        return fallback;
+    }
+    private static void RegisterIfNoneExist(SimpleTrainerInfo fallback, byte generation, GameVersion version)
+    {
+        fallback = new SimpleTrainerInfo(version)
+        {
+            Language = fallback.Language,
+            TID16 = fallback.TID16,
+            SID16 = fallback.SID16,
+            OT = fallback.OT,
+            Generation = generation,
+        };
+        var exist = TrainerSettings.GetSavedTrainerData(version, generation, fallback);
+        if (exist is SimpleTrainerInfo) // not anything from files; this assumes ALM returns SimpleTrainerInfo for non-user-provided fake templates.
+            TrainerSettings.Register(fallback);
+    }
     private static void InitializeCoreStrings()
     {
         var lang = Thread.CurrentThread.CurrentCulture.TwoLetterISOLanguageName[..2];
@@ -136,7 +156,7 @@ public static class AutoLegalityWrapper
         throw new ArgumentException("Type does not have a recognized trainer fetch.", typeof(T).Name);
     }
 
-    public static ITrainerInfo GetTrainerInfo(int gen) => TrainerSettings.GetSavedTrainerData(gen);
+    public static ITrainerInfo GetTrainerInfo(byte gen) => TrainerSettings.GetSavedTrainerData(gen);
 
     public static PKM GetLegal(this ITrainerInfo sav, IBattleTemplate set, out string res)
     {

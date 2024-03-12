@@ -46,7 +46,6 @@ public abstract class PokeRoutineExecutor8SWSH(PokeBotState Config) : PokeRoutin
         if (sav != null)
         {
             // Update PKM to the current save's handler data
-            DateTime Date = DateTime.Now;
             pkm.UpdateHandler(sav);
             pkm.RefreshChecksum();
         }
@@ -135,7 +134,7 @@ public abstract class PokeRoutineExecutor8SWSH(PokeBotState Config) : PokeRoutin
         var sav = new SAV8SWSH();
         var info = sav.MyStatus;
         var read = await Connection.ReadBytesAsync(TrainerDataOffset, TrainerDataLength, token).ConfigureAwait(false);
-        read.CopyTo(info.Data.ToArray(), 0);
+        read.CopyTo(info.Data);
         return sav;
     }
 
