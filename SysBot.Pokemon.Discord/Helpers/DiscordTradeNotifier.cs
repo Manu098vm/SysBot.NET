@@ -36,7 +36,7 @@ public class DiscordTradeNotifier<T>(T Data, PokeTradeTrainerInfo Info, int Code
 
     public void TradeEmbed(PKM pkm, PokeTradeDetail<T> info)
     {
-        var template = new TemplateTrade<T>(pkm, Context);
+        var template = new TemplateTrade<T>(pkm, Context, Hub);
         EmbedBuilder embed = template.Generate();
         
         // 获取displaying信息
