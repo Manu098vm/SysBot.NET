@@ -36,7 +36,7 @@ public class DiscordTradeNotifier<T>(T Data, PokeTradeTrainerInfo Info, int Code
 
     public void TradeEmbed(PKM pkm, PokeTradeDetail<T> info)
     {
-        var template = new TemplateTrade<T>(pkm, Context);
+        var template = new TemplateTrade<T>(pkm, Context, Hub);
         EmbedBuilder embed = template.Generate();
         
         // 获取displaying信息
@@ -141,7 +141,7 @@ public class DiscordTradeNotifier<T>(T Data, PokeTradeTrainerInfo Info, int Code
         //             case PokeTradeType.Clone: msg += "clone!"; break;
         //         }
         //         string TIDFormatted = emb.Generation >= 7 ? $"{emb.TrainerTID7:000000}" : $"{emb.TID16:00000}";
-        //         var footer = new EmbedFooterBuilder { Text = $"Trainer Info: {emb.OT_Name}/{TIDFormatted}" };
+        //         var footer = new EmbedFooterBuilder { Text = $"Trainer Info: {emb.OriginalTrainerName}/{TIDFormatted}" };
         //         var author = new EmbedAuthorBuilder
         //         {
         //             Name = $"{Context.User.Username}'s Pokémon",

@@ -2,6 +2,7 @@ using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using PKHeX.Core;
+using SysBot.Base;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,12 +16,14 @@ public class TemplateTrade<T> where T : PKM, new()
     private PKM pkm;
     private PKMString<T> pkmString;
     private SocketCommandContext Context;
+    private PokeTradeHub<T> Hub;
 
-    public TemplateTrade(PKM pkm, SocketCommandContext Context)
+    public TemplateTrade(PKM pkm, SocketCommandContext Context, PokeTradeHub<T> Hub)
     {
         this.pkm = pkm;
-        this.pkmString = new PKMString<T>(pkm);
+        this.pkmString = new PKMString<T>(pkm, Hub);
         this.Context = Context;
+        this.Hub = Hub;
     }
 
     private Color SetColor()
@@ -45,7 +48,7 @@ public class TemplateTrade<T> where T : PKM, new()
     private EmbedFooterBuilder SetFooter()
     {
         string TIDFormatted = pkm.Generation >= 7 ? $"{pkm.TrainerTID7:000000}" : $"{pkm.TID16:00000}";
-        return  new EmbedFooterBuilder { Text = $"Trainer Info: {pkm.OT_Name}/{TIDFormatted}" };
+        return  new EmbedFooterBuilder { Text = $"Trainer Info: {pkm.OriginalTrainerName}/{TIDFormatted}" };
     }
 
     private void SetFiled1(EmbedBuilder embed)
@@ -117,9 +120,14 @@ public class TemplateTrade<T> where T : PKM, new()
         string Moveset = "";
         for (int i = 0; i < this.pkmString.Moves.Count; i++)
         {
+            // 获取Move名称
             string moveString = this.pkmString.Moves[i];
+            // 获取MovePP
             int movePP = i == 0 ? pkm.Move1_PP : i == 1 ? pkm.Move2_PP : i == 2 ? pkm.Move3_PP : pkm.Move4_PP;
-            Moveset += $"- {moveString}({movePP}PP)\n";
+            // 设置moveEmoji
+            string moveEmoji = Hub.Config.Discord.EmbedSetting.UseMoveEmoji ? this.pkmString.MovesEmoji[i] : "";
+            // 生成Move信息
+            Moveset += $"- {moveEmoji}{moveString}({movePP}PP)\n";
         }
 
         string FiledName = $"Moveset";

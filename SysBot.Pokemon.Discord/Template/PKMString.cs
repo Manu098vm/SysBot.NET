@@ -18,13 +18,16 @@ public class PKMString<T> where T : PKM, new()
     private int GameLanguage => PKMLanguage < 6 ? PKMLanguage - 1 : PKMLanguage == 6 || PKMLanguage == 7 ? 0 : PKMLanguage > 7 ? PKMLanguage - 2 : 0;
     private GameStrings Strings => GameInfo.GetStrings(GameLanguage);
 
+    // 面板数据
+    private PokeTradeHub<T> Hub;
+
     // 定义信息的属性
     public ShowdownSet set => new ShowdownSet($"{pkm.Species}");
     public string Species => this.GetSpecies(pkm);
     public string Shiny => this.GetShiny(pkm);
     public string Gender => this.GetGender(pkm);
     public List<string> Moves => this.GetMoves(pkm);
-
+    public List<string> MovesEmoji => this.GetMovesEmoji(pkm);
     public string Scale => this.GetScale(pkm);
     public string Ability => this.GetAbility(pkm);
     public string Nature => this.GetNature(pkm);
@@ -50,7 +53,7 @@ public class PKMString<T> where T : PKM, new()
     }
     private string GetNature(PKM pkm)
     {
-        return $"{ this.Strings.Natures[pkm.Nature] }";
+        return $"{ this.Strings.Natures[(int)pkm.Nature] }";
     }
     private string GetTeraType(PKM pkm)
     {
@@ -71,7 +74,6 @@ public class PKMString<T> where T : PKM, new()
     {
         return new() {pkm.IV_HP, pkm.IV_ATK, pkm.IV_DEF, pkm.IV_SPA, pkm.IV_SPD, pkm.IV_SPE};
     }
-
     
     private List<string> GetMoves(PKM pkm)
     {
@@ -81,6 +83,22 @@ public class PKMString<T> where T : PKM, new()
             Moves.Add(Strings.Move[ pkm.Moves[moveIndex] ]);
         
         return Moves;
+    }
+
+    private List<string> GetMovesEmoji(PKM pkm)
+    {
+        List<string> MovesEmoji = new();
+        
+        for (int moveIndex = 0; moveIndex < pkm.Moves.Length; moveIndex++)
+        {
+            int moveTypeValue = MoveInfo.GetType(pkm.Moves[moveIndex], default);
+            var linq =  Hub.Config.Discord.EmbedSetting.MoveEmojiConfigs.Where( z => (z.MoveTypeValue == moveTypeValue) ).Select( z => z.EmojiCode );
+            string moveEmoji = linq.ToList()[0] != "" ? $"<:MoveEmoji:{linq.ToList()[0]}> " : "";
+            MovesEmoji.Add( moveEmoji );
+        }
+            
+        
+        return MovesEmoji;
     }
     
     private string GetScale(PKM pkm)
@@ -113,7 +131,7 @@ public class PKMString<T> where T : PKM, new()
 
     private string GetSpecies(PKM pkm)
     {
-        string specieName = $"{SpeciesName.GetSpeciesNameGeneration(pkm.Species, pkm.Language, pkm.Generation <= 8 ? 8 : 9)}";
+        string specieName = $"{SpeciesName.GetSpeciesNameGeneration(pkm.Species, pkm.Language, (byte)(pkm.Generation <= 8 ? 8 : 9))}";
         string specieForm = TradeExtensions<T>.FormOutput(pkm.Species, pkm.Form, out _);
         string specieInfo = $"{specieName}{specieForm}";
         return specieInfo;
@@ -128,9 +146,10 @@ public class PKMString<T> where T : PKM, new()
     
 
     // 构建函数
-    public PKMString(PKM pkm)
+    public PKMString(PKM pkm, PokeTradeHub<T> Hub)
     {
         this.pkm = pkm;
+        this.Hub = Hub;
     }
 
 }
