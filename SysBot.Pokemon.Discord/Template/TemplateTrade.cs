@@ -36,6 +36,7 @@ public class TemplateTrade<T> where T : PKM, new()
         EmbedAuthorBuilder author = new EmbedAuthorBuilder
         {
             Name = $"{Context.User.Username}'s Pokémon",
+            Url = "https://discord.gg/rBTgvnYTNT",
             IconUrl = pkmString.ballImg
         };
         return author;
@@ -58,7 +59,7 @@ public class TemplateTrade<T> where T : PKM, new()
         // 获取holditem信息
         string Shiny = this.pkmString.Shiny;
         // 获取Gender信息
-        string Gender = this.pkmString.Gender.Replace("(F)","♀").Replace("(M)","♂");
+        string Gender = this.pkmString.Gender.Replace("(F)", "♀️").Replace("(M)", "♂️");
         // 获取Mark信息
         string Mark, markEntryText;
         (Mark, markEntryText) = this.pkmString.Mark;
@@ -78,7 +79,7 @@ public class TemplateTrade<T> where T : PKM, new()
         if (heldItem == "")
             return ;
 
-        string FiledName = $"**Item Held**:{heldItem}";
+        string FiledName = $"**Item Held**: {heldItem}";
         string FiledValue = "** **";
 
         embed.AddField(FiledName, FiledValue, false);
@@ -104,12 +105,12 @@ public class TemplateTrade<T> where T : PKM, new()
         trademessage += pkm.Generation == 9 ? $"**TeraType:** {teraType}\n" : "";
         trademessage += $"**Level:** {Level}\n";
         trademessage += $"**Ability:** {Ability}\n";
-        trademessage += $"**Nature:**{Nature}\n";
-        trademessage += $"**Scale:**{Scale}\n";
-        trademessage += Mark!="" ? $"**Mark:**{Mark}\n" : "";
+        trademessage += $"**Nature:** {Nature}\n";
+        trademessage += $"**Scale:** {Scale}\n";
+        trademessage += Mark!="" ? $"**Mark:** {Mark}\n" : "";
                 
         // 构建信息
-        string FiledName = $"Pokémon Info";
+        string FiledName = $"Pokémon Stats:";
         string FiledValue = $"{trademessage}";
 
         embed.AddField(FiledName, FiledValue, true);
@@ -127,10 +128,10 @@ public class TemplateTrade<T> where T : PKM, new()
             // 设置moveEmoji
             string moveEmoji = Hub.Config.Discord.EmbedSetting.UseMoveEmoji ? this.pkmString.MovesEmoji[i] : "";
             // 生成Move信息
-            Moveset += $"- {moveEmoji}{moveString}({movePP}PP)\n";
+            Moveset += $"- {moveEmoji}{moveString} ({movePP}PP)\n";
         }
 
-        string FiledName = $"Moveset";
+        string FiledName = $"Moveset:";
         string FiledValue = Moveset;
 
         embed.AddField(FiledName, FiledValue, true);
