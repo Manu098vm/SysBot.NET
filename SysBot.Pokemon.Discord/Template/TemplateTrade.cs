@@ -54,17 +54,17 @@ public class TemplateTrade<T> where T : PKM, new()
 
     private void SetFiled1(EmbedBuilder embed)
     {
-        // 获取species信息
+        // Obtain species's info
         string specieInfo = this.pkmString.Species;
-        // 获取holditem信息
+        // Obtain holditem's info
         string Shiny = this.pkmString.Shiny;
-        // 获取Gender信息
+        // Obtain Gender's info
         string Gender = this.pkmString.Gender.Replace("(F)", "♀️").Replace("(M)", "♂️");
-        // 获取Mark信息
+        // Obtain Mark's info
         string Mark, markEntryText;
         (Mark, markEntryText) = this.pkmString.Mark;
 
-        // 构建信息
+        // Build info
         string FiledName = $"{Shiny}{specieInfo}{Gender}{markEntryText}";
         string FiledValue = $"** **";
 
@@ -74,7 +74,7 @@ public class TemplateTrade<T> where T : PKM, new()
     private void SetFiled2(EmbedBuilder embed)
     {
 
-        // 获取holditem信息
+        // Obtain holditem's info
         string heldItem = this.pkmString.holdItem;
         if (heldItem == "")
             return ;
@@ -86,21 +86,21 @@ public class TemplateTrade<T> where T : PKM, new()
     }
     private void SetFiled3_1(EmbedBuilder embed)
     {
-        // 获取teraType信息
+        // Obtain teraType's info
         string teraType = this.pkmString.TeraType;
-        // 定义Level信息
+        // Define Level's info
         int Level = pkm.CurrentLevel;
-        // 定义Ability信息
+        // Define Ability's info
         string Ability = this.pkmString.Ability;
-        // 获取Nature信息
+        // Obtain Nature's Nature
         string Nature = this.pkmString.Nature;
-        // 获取Scale信息
+        // Obtain Scale's info
         string Scale = this.pkmString.Scale;
-        // 获取Mark信息
+        // Obtain Mark's info
         string Mark, markEntryText;
         (Mark, markEntryText) = this.pkmString.Mark;
 
-        // 构建信息 
+        // Build info 
         var trademessage = "";
         trademessage += pkm.Generation == 9 ? $"**TeraType:** {teraType}\n" : "";
         trademessage += $"**Level:** {Level}\n";
@@ -109,7 +109,7 @@ public class TemplateTrade<T> where T : PKM, new()
         trademessage += $"**Scale:** {Scale}\n";
         trademessage += Mark!="" ? $"**Mark:** {Mark}\n" : "";
                 
-        // 构建信息
+        // Build info
         string FiledName = $"Pokémon Stats:";
         string FiledValue = $"{trademessage}";
 
@@ -121,13 +121,13 @@ public class TemplateTrade<T> where T : PKM, new()
         string Moveset = "";
         for (int i = 0; i < this.pkmString.Moves.Count; i++)
         {
-            // 获取Move名称
+            // Obtain Moveset
             string moveString = this.pkmString.Moves[i];
-            // 获取MovePP
+            // Obtain MovePP
             int movePP = i == 0 ? pkm.Move1_PP : i == 1 ? pkm.Move2_PP : i == 2 ? pkm.Move3_PP : pkm.Move4_PP;
-            // 设置moveEmoji
+            // Setup moveEmoji
             string moveEmoji = Hub.Config.Discord.EmbedSetting.UseMoveEmoji ? this.pkmString.MovesEmoji[i] : "";
-            // 生成Move信息
+            // Generate Moveset's info
             Moveset += $"- {moveEmoji}{moveString} ({movePP}PP)\n";
         }
 
@@ -175,7 +175,7 @@ public class TemplateTrade<T> where T : PKM, new()
    
     public EmbedBuilder Generate()
     {   
-        // 构建discord的Embed
+        // Build discord Embed
         var embed = new EmbedBuilder { 
             Color = this.SetColor(), 
             Author = this.SetAuthor(), 
@@ -183,7 +183,7 @@ public class TemplateTrade<T> where T : PKM, new()
             ThumbnailUrl = this.SetThumbnailUrl(),
             };
 
-        // 构建Embed中的Filed        
+        // Build Embed's Files        
         this.SetFiled1(embed);
         this.SetFiled2(embed);
         this.SetFiled3_1(embed);
