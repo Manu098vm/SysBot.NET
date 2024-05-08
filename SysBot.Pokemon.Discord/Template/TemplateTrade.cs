@@ -140,12 +140,12 @@ public class TemplateTrade<T> where T : PKM, new()
     private void SetFiled4_1(EmbedBuilder embed)
     {            
         string IVs = "";
-        IVs += $"- {this.pkmString.IVs[0]}HP\n";
-        IVs += $"- {this.pkmString.IVs[1]}ATK\n";
-        IVs += $"- {this.pkmString.IVs[2]}DEF\n";
-        IVs += $"- {this.pkmString.IVs[3]}SPA\n";
-        IVs += $"- {this.pkmString.IVs[4]}SPD\n";
-        IVs += $"- {this.pkmString.IVs[5]}SPE\n";
+        IVs += $"- {this.pkmString.IVs[0]} HP\n";
+        IVs += $"- {this.pkmString.IVs[1]} ATK\n";
+        IVs += $"- {this.pkmString.IVs[2]} DEF\n";
+        IVs += $"- {this.pkmString.IVs[3]} SPA\n";
+        IVs += $"- {this.pkmString.IVs[4]} SPD\n";
+        IVs += $"- {this.pkmString.IVs[5]} SPE\n";
 
         string FiledName = $"Pokémon IVs:";
         string FiledValue = IVs;
@@ -156,12 +156,12 @@ public class TemplateTrade<T> where T : PKM, new()
     private void SetFiled4_2(EmbedBuilder embed)
     {            
         string EVs = "";
-        EVs += $"- {pkm.EV_HP}HP\n";
-        EVs += $"- {pkm.EV_ATK}ATK\n";
-        EVs += $"- {pkm.EV_DEF}DEF\n";
-        EVs += $"- {pkm.EV_SPA}SPA\n";
-        EVs += $"- {pkm.EV_SPD}SPD\n";
-        EVs += $"- {pkm.EV_SPE}SPE\n";
+        EVs += $"- {pkm.EV_HP} HP\n";
+        EVs += $"- {pkm.EV_ATK} ATK\n";
+        EVs += $"- {pkm.EV_DEF} DEF\n";
+        EVs += $"- {pkm.EV_SPA} SPA\n";
+        EVs += $"- {pkm.EV_SPD} SPD\n";
+        EVs += $"- {pkm.EV_SPE} SPE\n";
 
         string FiledName = $"Pokémon EVs:";
         string FiledValue = EVs;
