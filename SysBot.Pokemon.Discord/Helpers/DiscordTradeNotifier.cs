@@ -20,8 +20,8 @@ public class DiscordTradeNotifier<T>(T Data, PokeTradeTrainerInfo Info, int Code
     private SocketUser Trader { get; } = Trader;
     private SocketCommandContext Context { get; } = Context;
     public Action<PokeRoutineExecutor<T>>? OnFinish { private get; set; }
-    public readonly PokeTradeHub<T> Hub = SysCord<T>.Runner.Hub;
-
+    public static readonly PokeTradeHub<T> Hub = SysCord<T>.Runner.Hub;
+    internal static TradeQueueInfo<T> QueueInfo => Hub.Queues.Info;
     public string TradeDisplayingInfo(PokeTradeDetail<T> info)
     {
         string msg = "Displaying your ";
@@ -36,24 +36,37 @@ public class DiscordTradeNotifier<T>(T Data, PokeTradeTrainerInfo Info, int Code
 
     public void TradeEmbed(PKM pkm, PokeTradeDetail<T> info)
     {
+        // Obtain current position
+        var position = QueueInfo.CheckPosition(Trader.Id, PokeRoutineType.LinkTrade);
+        int positionNum = position.Position;
+
+        // Obtain etaMessage
+        int batchTradeNumber = 1;
+        int totalBatchTrades = 1;
+        var botct = QueueInfo.Hub.Bots.Count;
+        var baseEta = position.Position > botct ? QueueInfo.Hub.Config.Queues.EstimateDelay(position.Position, botct) : 0;
+        var adjustedEta = baseEta + (batchTradeNumber - 1); // Increment ETA by 1 minute for each batch trade
+        var etaMessage = $"Estimated:{adjustedEta:F1} min(s) ";
+
+        // Build embed
         var template = new TemplateTrade<T>(pkm, Context, Hub);
-        EmbedBuilder embed = template.Generate();
-        
-        // 获取displaying信息
+        EmbedBuilder embed = template.Generate(positionNum, etaMessage);
+
+        // Obtain display info
         string msg = TradeDisplayingInfo(info);
-        
+
         Context.Channel.SendMessageAsync(Trader.Username + " - " + msg, embed: embed.Build()).ConfigureAwait(false);
     }
 
     public void TradeInitialize(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info)
     {
-        // 获取PKM
+        // Obtain PKM
         PKM pkm = info.TradeData;
         
-        // 发送Embed卡片
+        // Sent Embed card
         TradeEmbed(pkm, info);
         
-        // 发送文字信息
+        // Text message sent
         var receive = Data.Species == 0 ? string.Empty : $" ({Data.Nickname})";
         Trader.SendMessageAsync($"Initializing trade{receive}. Please be ready. Your code is **{Code:0000 0000}**.").ConfigureAwait(false);
     }
@@ -68,7 +81,7 @@ public class DiscordTradeNotifier<T>(T Data, PokeTradeTrainerInfo Info, int Code
     public void TradeCanceled(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, PokeTradeResult msg)
     {
         OnFinish?.Invoke(routine);
-        Trader.SendMessageAsync($"Trade canceled: {msg}").ConfigureAwait(false);
+        Trader.SendMessageAsync($"Trade cancelled: {msg}").ConfigureAwait(false);
     }
 
     public void TradeFinished(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, T result)

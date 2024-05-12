@@ -46,10 +46,21 @@ public class TemplateTrade<T> where T : PKM, new()
         return pkmString.pokeImg;
     }
 
-    private EmbedFooterBuilder SetFooter()
+    private EmbedFooterBuilder SetFooter(int positionNum = 1, string etaMessage = "")
     {
-        string TIDFormatted = pkm.Generation >= 7 ? $"{pkm.TrainerTID7:000000}" : $"{pkm.TID16:00000}";
-        return  new EmbedFooterBuilder { Text = $"Trainer Info: {pkm.OriginalTrainerName}/{TIDFormatted}" };
+        int tradesNum = 3;
+        // Current queue position
+        string Position = $"Current Position:{positionNum}";
+        // Trainer info
+        string Trainer = $"OT:{pkm.OriginalTrainerName} | TID:{pkm.DisplayTID} | SID:{pkm.DisplaySID}";
+
+        // display combined footer content
+        string FooterContent = "";
+        FooterContent += $"\n{Position}";
+        FooterContent += $"\n{Trainer}";
+        FooterContent += $"\n{etaMessage}";
+
+        return new EmbedFooterBuilder { Text = FooterContent };
     }
 
     private void SetFiled1(EmbedBuilder embed)
@@ -173,7 +184,7 @@ public class TemplateTrade<T> where T : PKM, new()
         embed.AddField($"** **", $"** **", true);
     }
    
-    public EmbedBuilder Generate()
+    public EmbedBuilder Generate(int positionNum = 1, string etaMessage = "")
     {   
         // Build discord Embed
         var embed = new EmbedBuilder { 
@@ -183,7 +194,7 @@ public class TemplateTrade<T> where T : PKM, new()
             ThumbnailUrl = this.SetThumbnailUrl(),
             };
 
-        // Build Embed's Files        
+        // Build embed files        
         this.SetFiled1(embed);
         this.SetFiled2(embed);
         this.SetFiled3_1(embed);
