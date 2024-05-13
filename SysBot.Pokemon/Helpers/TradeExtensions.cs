@@ -31,7 +31,7 @@ public class TradeExtensions<T> where T : PKM, new()
         }
 
         //Current handler cannot be past gen OT
-        if (!pk.IsNative && !config.Legality.ForceTradePartnerInfo)
+        if (pk is PK8 && !config.Legality.ForceTradePartnerInfo)
         {
             Log("Can not apply Partner details: Current handler cannot be different gen OT.");
             return false;
