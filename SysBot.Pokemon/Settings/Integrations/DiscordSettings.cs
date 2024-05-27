@@ -104,12 +104,12 @@ public class DiscordSettings
     public bool ConvertPKMReplyAnyChannel { get; set; }
 
 
-    [Category(Operation), Description("我在SysBot.Pokemon/Settings/Integrations/DiscordSettings.cs 101行")]
-    public EmbedSettingConfig EmbedSetting { get; set; } = new();// 不能以List为类型，只能以object为类型，object里面可以放List。像实现list效果，需要以object，attribute的形式实现
+    [Category(Operation), Description("SysBot.Pokemon/Settings/Integrations/DiscordSettings.cs")]
+    public EmbedSettingConfig EmbedSetting { get; set; } = new();// List cannot be used as the type, only object can be used. List can be placed inside an object. To achieve the list effect, it needs to be implemented in the form of object and attribute.
 
 
 
-    
+
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class MoveEmojiConfig
     {
@@ -134,7 +134,7 @@ public class DiscordSettings
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class EmbedSettingConfig
     {
-        // 设置MoveEmoji
+        // Build MoveEmoji
         public bool UseMoveEmoji { get; set; } = false;
         [Description("EmojiCode")]
         public List<MoveEmojiConfig> MoveEmojiConfigs { get; set; } = [

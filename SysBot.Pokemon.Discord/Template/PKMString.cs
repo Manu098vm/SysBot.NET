@@ -12,16 +12,16 @@ namespace SysBot.Pokemon.Discord;
 
 public class PKMString<T> where T : PKM, new()
 {
-    // 默认语言
+    // Default language
     private PKM pkm;
     private int PKMLanguage => pkm.Language;
     private int GameLanguage => PKMLanguage < 6 ? PKMLanguage - 1 : PKMLanguage == 6 || PKMLanguage == 7 ? 0 : PKMLanguage > 7 ? PKMLanguage - 2 : 0;
     private GameStrings Strings => GameInfo.GetStrings(GameLanguage);
 
-    // 面板数据
+    // Data panel
     private PokeTradeHub<T> Hub;
 
-    // 定义信息的属性
+    // Definition of the message's properties
     public ShowdownSet set => new ShowdownSet($"{pkm.Species}");
     public string Species => this.GetSpecies(pkm);
     public string Shiny => this.GetShiny(pkm);
@@ -38,7 +38,7 @@ public class PKMString<T> where T : PKM, new()
     public string ballImg => this.GetBallImg(pkm);
     public string pokeImg => this.GetPokeImg(pkm);
     
-    // 定义信息的方法
+    // Definition of message's info/method
     private string GetShiny(PKM pkm)
     {
         return pkm.ShinyXor == 0 ? "■" : pkm.ShinyXor <= 16 ? "★" : "";
@@ -145,7 +145,7 @@ public class PKMString<T> where T : PKM, new()
     }
     
 
-    // 构建函数
+    // Build function
     public PKMString(PKM pkm, PokeTradeHub<T> Hub)
     {
         this.pkm = pkm;

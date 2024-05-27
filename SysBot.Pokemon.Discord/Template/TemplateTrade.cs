@@ -36,7 +36,6 @@ public class TemplateTrade<T> where T : PKM, new()
         EmbedAuthorBuilder author = new EmbedAuthorBuilder
         {
             Name = $"{Context.User.Username}'s Pokémon",
-            Url = "https://discord.gg/rBTgvnYTNT",
             IconUrl = pkmString.ballImg
         };
         return author;
