@@ -21,17 +21,17 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
     - name: Install .NET Core
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
 
     - name: Setup MSBuild.exe
-      uses: microsoft/setup-msbuild@v1.1
+      uses: microsoft/setup-msbuild@v2
 
     - name: Restore NuGet packages
       run: dotnet restore
@@ -48,13 +48,13 @@ jobs:
       run: msbuild $env:Solution_Name /property:Configuration=Release
 
     - name: Upload WinForm artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: SysBot.Pokemon.WinForms
         path: SysBot.Pokemon.WinForms\bin\Release\net8.0-windows
 
     - name: Upload ConsoleApp artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: SysBot.Pokemon.ConsoleApp
         path: SysBot.Pokemon.ConsoleApp\bin\Release\net8.0
