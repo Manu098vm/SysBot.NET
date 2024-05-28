@@ -1,4 +1,4 @@
-﻿using Discord;
+using Discord;
 using Discord.Commands;
 using System;
 using System.Diagnostics;
@@ -16,7 +16,8 @@ namespace SysBot.Pokemon.Discord;
 public class InfoModule : ModuleBase<SocketCommandContext>
 {
     private const string detail = "I am an open-source Discord bot powered by PKHeX.Core and other open-source software.";
-    private const string repo = "https://github.com/kwsch/SysBot.NET";
+    private const string repo = "https://github.com/Manu098vm/SysBot.NET";
+    private const string upstream = "https://github.com/kwsch/SysBot.NET";
 
     [Command("info")]
     [Alias("about", "whoami", "owner")]
@@ -31,7 +32,10 @@ public class InfoModule : ModuleBase<SocketCommandContext>
         };
 
         builder.AddField("Info",
-            $"- [Source Code]({repo})\n" +
+            $"- [This fork Source Code]({repo}) by manu098vm\n" +
+            $"Thanks to notzyro, santacrab2, berichan and 9Bitdo for portions of code, help and updating.\n" +
+            $"- [Upstream Source Code]({upstream} by kwsch\n" +
+            $"Thanks to Kurt, Anubis and Architdate for writing the original SysBot code.\n" +
             $"- {Format.Bold("Owner")}: {app.Owner} ({app.Owner.Id})\n" +
             $"- {Format.Bold("Library")}: Discord.Net ({DiscordConfig.Version})\n" +
             $"- {Format.Bold("Uptime")}: {GetUptime()}\n" +
