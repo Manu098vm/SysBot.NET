@@ -1,4 +1,9 @@
-﻿using System.ComponentModel;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using PKHeX.Core;
+
 
 namespace SysBot.Pokemon;
 
@@ -97,4 +102,66 @@ public class DiscordSettings
 
     [Category(Operation), Description("Bot can reply with a ShowdownSet in Any channel the bot can see, instead of only channels the bot has been whitelisted to run in. Only make this true if you want the bot to serve more utility in non-bot channels.")]
     public bool ConvertPKMReplyAnyChannel { get; set; }
+
+
+    [Category(Operation), Description("SysBot.Pokemon/Settings/Integrations/DiscordSettings.cs")]
+    public EmbedSettingConfig EmbedSetting { get; set; } = new();// List cannot be used as the type, only object can be used. List can be placed inside an object. To achieve the list effect, it needs to be implemented in the form of object and attribute.
+
+
+
+
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class MoveEmojiConfig
+    {
+        [Browsable(false)]
+        public int MoveTypeValue { get; }
+      
+        [Browsable(false)]
+        public string MoveType { get; set; }
+        
+        [Description("EmojiCode")]
+        public string EmojiCode { get; set; } = string.Empty;
+        
+        public override string ToString() => MoveType;
+
+        public MoveEmojiConfig(string MoveType, int MoveTypeValue)
+        {
+            this.MoveType = MoveType;
+            this.MoveTypeValue = MoveTypeValue;
+        }
+    }
+    
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class EmbedSettingConfig
+    {
+        // Build MoveEmoji
+        public bool UseMoveEmoji { get; set; } = false;
+        [Description("EmojiCode")]
+        public List<MoveEmojiConfig> MoveEmojiConfigs { get; set; } = [
+                new MoveEmojiConfig("Normal",0),
+                new MoveEmojiConfig("Fighting",1),
+                new MoveEmojiConfig("Flying",2),
+                new MoveEmojiConfig("Poison",3),
+                new MoveEmojiConfig("Ground",4),
+                new MoveEmojiConfig("Rock",5),
+                new MoveEmojiConfig("Bug",6),
+                new MoveEmojiConfig("Ghost",7),
+                new MoveEmojiConfig("Steel",8),
+                new MoveEmojiConfig("Fire",9),
+                new MoveEmojiConfig("Water",10),
+                new MoveEmojiConfig("Grass",11),
+                new MoveEmojiConfig("Electric",12),
+                new MoveEmojiConfig("Psychic",13),
+                new MoveEmojiConfig("Ice",14),
+                new MoveEmojiConfig("Dragon",15),
+                new MoveEmojiConfig("Dark",16),
+                new MoveEmojiConfig("Fairy",17),
+            ];
+        // public IEnumerator<MoveEmojiConfig> GetEnumerator() => MoveEmojiConfigs.GetEnumerator();
+        // public IEnumerable<string> Summarize() => MoveEmojiConfigs.Select(z => z.ToString());
+        public override string ToString() => "Discord Embed Integration Settings";        
+    }
+  
+    
+
 }
