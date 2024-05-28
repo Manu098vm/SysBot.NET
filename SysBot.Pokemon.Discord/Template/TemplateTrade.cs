@@ -1,30 +1,15 @@
 using Discord;
 using Discord.Commands;
-using Discord.WebSocket;
 using PKHeX.Core;
-using SysBot.Base;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace SysBot.Pokemon.Discord;
 
-
-public class TemplateTrade<T> where T : PKM, new()
+public class TemplateTrade<T>(PKM pkm, SocketCommandContext Context, PokeTradeHub<T> Hub) where T : PKM, new()
 {
-    private PKM pkm;
-    private PKMString<T> pkmString;
-    private SocketCommandContext Context;
-    private PokeTradeHub<T> Hub;
-
-    public TemplateTrade(PKM pkm, SocketCommandContext Context, PokeTradeHub<T> Hub)
-    {
-        this.pkm = pkm;
-        this.pkmString = new PKMString<T>(pkm, Hub);
-        this.Context = Context;
-        this.Hub = Hub;
-    }
+    private readonly PKM pkm = pkm;
+    private readonly PKMString<T> pkmString = new(pkm, Hub);
+    private readonly SocketCommandContext Context = Context;
+    private readonly PokeTradeHub<T> Hub = Hub;
 
     private Color SetColor()
     {
@@ -33,13 +18,14 @@ public class TemplateTrade<T> where T : PKM, new()
     
     private EmbedAuthorBuilder SetAuthor()
     {
-        EmbedAuthorBuilder author = new EmbedAuthorBuilder
+        EmbedAuthorBuilder author = new()
         {
             Name = $"{Context.User.Username}'s Pokémon",
             IconUrl = pkmString.ballImg
         };
         return author;
     }
+
     private string SetThumbnailUrl()
     {
         return pkmString.pokeImg;
@@ -64,84 +50,82 @@ public class TemplateTrade<T> where T : PKM, new()
     private void SetFiled1(EmbedBuilder embed)
     {
         // Obtain species's info
-        string specieInfo = this.pkmString.Species;
+        string speciesInfo = pkmString.Species;
         // Obtain holditem's info
-        string Shiny = this.pkmString.Shiny;
+        string shiny = pkmString.Shiny;
         // Obtain Gender's info
-        string Gender = this.pkmString.Gender.Replace("(F)", "♀️").Replace("(M)", "♂️");
+        string gender = pkmString.Gender.Replace("(F)", "♀️").Replace("(M)", "♂️");
         // Obtain Mark's info
-        string Mark, markEntryText;
-        (Mark, markEntryText) = this.pkmString.Mark;
+        (_, string markEntryText) = pkmString.Mark;
 
         // Build info
-        string FiledName = $"{Shiny}{specieInfo}{Gender}{markEntryText}";
-        string FiledValue = $"** **";
+        string filedName = $"{shiny}{speciesInfo}{gender}{markEntryText}";
+        string filedValue = $"** **";
 
-        
-        embed.AddField(FiledName, FiledValue, false);
+        embed.AddField(filedName, filedValue, false);
     }
+
     private void SetFiled2(EmbedBuilder embed)
     {
-
         // Obtain holditem's info
-        string heldItem = this.pkmString.holdItem;
+        string heldItem = pkmString.holdItem;
         if (heldItem == "")
             return ;
 
-        string FiledName = $"**Item Held**: {heldItem}";
-        string FiledValue = "** **";
+        string filedName = $"**Item Held**: {heldItem}";
+        string filedValue = "** **";
 
-        embed.AddField(FiledName, FiledValue, false);
+        embed.AddField(filedName, filedValue, false);
     }
+
     private void SetFiled3_1(EmbedBuilder embed)
     {
         // Obtain teraType's info
-        string teraType = this.pkmString.TeraType;
+        string teraType = pkmString.TeraType;
         // Define Level's info
-        int Level = pkm.CurrentLevel;
+        int level = pkm.CurrentLevel;
         // Define Ability's info
-        string Ability = this.pkmString.Ability;
+        string ability = pkmString.Ability;
         // Obtain Nature's Nature
-        string Nature = this.pkmString.Nature;
+        string nature = pkmString.Nature;
         // Obtain Scale's info
-        string Scale = this.pkmString.Scale;
+        string scale = pkmString.Scale;
         // Obtain Mark's info
-        string Mark, markEntryText;
-        (Mark, markEntryText) = this.pkmString.Mark;
+        (string mark, _) = pkmString.Mark;
 
         // Build info 
         var trademessage = "";
         trademessage += pkm.Generation == 9 ? $"**TeraType:** {teraType}\n" : "";
-        trademessage += $"**Level:** {Level}\n";
-        trademessage += $"**Ability:** {Ability}\n";
-        trademessage += $"**Nature:** {Nature}\n";
-        trademessage += $"**Scale:** {Scale}\n";
-        trademessage += Mark!="" ? $"**Mark:** {Mark}\n" : "";
+        trademessage += $"**Level:** {level}\n";
+        trademessage += $"**Ability:** {ability}\n";
+        trademessage += $"**Nature:** {nature}\n";
+        trademessage += $"**Scale:** {scale}\n";
+        trademessage += mark!="" ? $"**Mark:** {mark}\n" : "";
                 
         // Build info
-        string FiledName = $"Pokémon Stats:";
-        string FiledValue = $"{trademessage}";
+        string filedName = $"Pokémon Stats:";
+        string filedValue = $"{trademessage}";
 
-        embed.AddField(FiledName, FiledValue, true);
+        embed.AddField(filedName, filedValue, true);
     }
 
     private void SetFiled3_2(EmbedBuilder embed)
     {                
-        string Moveset = "";
-        for (int i = 0; i < this.pkmString.Moves.Count; i++)
+        string moveset = "";
+        for (int i = 0; i < pkmString.Moves.Count; i++)
         {
             // Obtain Moveset
-            string moveString = this.pkmString.Moves[i];
+            string moveString = pkmString.Moves[i];
             // Obtain MovePP
             int movePP = i == 0 ? pkm.Move1_PP : i == 1 ? pkm.Move2_PP : i == 2 ? pkm.Move3_PP : pkm.Move4_PP;
             // Setup moveEmoji
-            string moveEmoji = Hub.Config.Discord.EmbedSetting.UseMoveEmoji ? this.pkmString.MovesEmoji[i] : "";
+            string moveEmoji = Hub.Config.Discord.EmbedSetting.UseMoveEmoji ? pkmString.MovesEmoji[i] : "";
             // Generate Moveset's info
-            Moveset += $"- {moveEmoji}{moveString} ({movePP}PP)\n";
+            moveset += $"- {moveEmoji}{moveString} ({movePP}PP)\n";
         }
 
         string FiledName = $"Moveset:";
-        string FiledValue = Moveset;
+        string FiledValue = moveset;
 
         embed.AddField(FiledName, FiledValue, true);
     }
@@ -149,19 +133,20 @@ public class TemplateTrade<T> where T : PKM, new()
     private void SetFiled4_1(EmbedBuilder embed)
     {            
         string IVs = "";
-        IVs += $"- {this.pkmString.IVs[0]} HP\n";
-        IVs += $"- {this.pkmString.IVs[1]} ATK\n";
-        IVs += $"- {this.pkmString.IVs[2]} DEF\n";
-        IVs += $"- {this.pkmString.IVs[3]} SPA\n";
-        IVs += $"- {this.pkmString.IVs[4]} SPD\n";
-        IVs += $"- {this.pkmString.IVs[5]} SPE\n";
+        IVs += $"- {pkmString.IVs[0]} HP\n";
+        IVs += $"- {pkmString.IVs[1]} ATK\n";
+        IVs += $"- {pkmString.IVs[2]} DEF\n";
+        IVs += $"- {pkmString.IVs[3]} SPA\n";
+        IVs += $"- {pkmString.IVs[4]} SPD\n";
+        IVs += $"- {pkmString.IVs[5]} SPE\n";
 
-        string FiledName = $"Pokémon IVs:";
-        string FiledValue = IVs;
+        string filedName = $"Pokémon IVs:";
+        string filedValue = IVs;
 
-        embed.AddField(FiledName, FiledValue, true);        
+        embed.AddField(filedName, filedValue, true);        
             
     }
+
     private void SetFiled4_2(EmbedBuilder embed)
     {            
         string EVs = "";
@@ -172,12 +157,13 @@ public class TemplateTrade<T> where T : PKM, new()
         EVs += $"- {pkm.EV_SPD} SPD\n";
         EVs += $"- {pkm.EV_SPE} SPE\n";
 
-        string FiledName = $"Pokémon EVs:";
-        string FiledValue = EVs;
+        string filedName = $"Pokémon EVs:";
+        string filedValue = EVs;
             
-        embed.AddField(FiledName, FiledValue, true);
+        embed.AddField(filedName, filedValue, true);
     }
-    private void SetFiledTemp(EmbedBuilder embed)
+
+    private static void SetFiledTemp(EmbedBuilder embed)
     {                
         embed.AddField($"** **", $"** **", true);
     }
@@ -186,21 +172,21 @@ public class TemplateTrade<T> where T : PKM, new()
     {   
         // Build discord Embed
         var embed = new EmbedBuilder { 
-            Color = this.SetColor(), 
-            Author = this.SetAuthor(), 
-            Footer = this.SetFooter(), 
-            ThumbnailUrl = this.SetThumbnailUrl(),
+            Color = SetColor(), 
+            Author = SetAuthor(), 
+            Footer = SetFooter(), 
+            ThumbnailUrl = SetThumbnailUrl(),
             };
 
         // Build embed files        
-        this.SetFiled1(embed);
-        this.SetFiled2(embed);
-        this.SetFiled3_1(embed);
-        this.SetFiledTemp(embed);
-        this.SetFiled3_2(embed);
-        this.SetFiled4_1(embed);
-        this.SetFiledTemp(embed);
-        this.SetFiled4_2(embed);
+        SetFiled1(embed);
+        SetFiled2(embed);
+        SetFiled3_1(embed);
+        SetFiledTemp(embed);
+        SetFiled3_2(embed);
+        SetFiled4_1(embed);
+        SetFiledTemp(embed);
+        SetFiled4_2(embed);
 
         return embed;
     }
