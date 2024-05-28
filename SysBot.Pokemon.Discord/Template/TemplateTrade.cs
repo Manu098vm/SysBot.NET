@@ -47,7 +47,6 @@ public class TemplateTrade<T> where T : PKM, new()
 
     private EmbedFooterBuilder SetFooter(int positionNum = 1, string etaMessage = "")
     {
-        int tradesNum = 3;
         // Current queue position
         string Position = $"Current Position:{positionNum}";
         // Trainer info

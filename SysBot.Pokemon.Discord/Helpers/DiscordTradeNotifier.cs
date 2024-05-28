@@ -42,7 +42,6 @@ public class DiscordTradeNotifier<T>(T Data, PokeTradeTrainerInfo Info, int Code
 
         // Obtain etaMessage
         int batchTradeNumber = 1;
-        int totalBatchTrades = 1;
         var botct = QueueInfo.Hub.Bots.Count;
         var baseEta = position.Position > botct ? QueueInfo.Hub.Config.Queues.EstimateDelay(position.Position, botct) : 0;
         var adjustedEta = baseEta + (batchTradeNumber - 1); // Increment ETA by 1 minute for each batch trade
