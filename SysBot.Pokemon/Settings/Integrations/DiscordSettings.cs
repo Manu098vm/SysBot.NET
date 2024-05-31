@@ -156,6 +156,7 @@ public class DiscordSettings
                 new MoveEmojiConfig("Dragon",15),
                 new MoveEmojiConfig("Dark",16),
                 new MoveEmojiConfig("Fairy",17),
+                new MoveEmojiConfig("Stellar",99),
             ];
         // public IEnumerator<MoveEmojiConfig> GetEnumerator() => MoveEmojiConfigs.GetEnumerator();
         // public IEnumerable<string> Summarize() => MoveEmojiConfigs.Select(z => z.ToString());
