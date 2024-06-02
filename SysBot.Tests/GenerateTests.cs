@@ -68,7 +68,8 @@ public class GenerateTests
 Ability: Cursed Body 
 Shiny: Yes 
 EVs: 252 SpA / 4 SpD / 252 Spe 
-Timid Nature 
+Timid Nature
+Tera Type: Stellar
 - Dream Eater 
 - Fling 
 - Giga Impact 

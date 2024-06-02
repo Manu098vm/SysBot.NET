@@ -58,9 +58,13 @@ public class PKMString<T> where T : PKM, new()
     private string GetTeraType(PKM pkm)
     {
         if (pkm.Generation == 9)
-            return $"{ this.Strings.types[(byte)((PK9)pkm).TeraType] }";
-        else
-            return "";
+        {
+            var pk = (PK9)pkm;
+            var teratype = pk.TeraType <= MoveType.Fairy ? (byte)pk.TeraType : (byte)18;
+            return $"{Strings.types[teratype]}";
+        }
+
+        return "";
     }
     private string GetBallImg(PKM pkm)
     {
