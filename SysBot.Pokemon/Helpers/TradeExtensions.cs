@@ -31,10 +31,20 @@ public class TradeExtensions<T> where T : PKM, new()
         }
 
         //Current handler cannot be past gen OT
-        if (pk.Generation == pk.Format && !config.Legality.ForceTradePartnerInfo)
+        if (pk.Generation != pk.Format && !config.Legality.ForceTradePartnerInfo)
         {
             Log("Can not apply Partner details: Current handler cannot be different gen OT.");
             return false;
+        }
+
+        //Better to not override OT data that has already been registered to Home servers
+        if (pk is PK8 or PB8 or PA8 or PK9)
+        {
+            if (((dynamic)pk).Tracker != 0)
+            {
+                Log("Can not apply Partner details: Home Tracker has already been set to the Pokemon.");
+                return false;
+            }
         }
 
         //Only override trainer details if user didn't specify OT details in the Showdown/PK9 request
