@@ -95,7 +95,8 @@ public class TemplateTrade<T>(PKM pkm, SocketCommandContext Context, PokeTradeHu
 
         // Build info 
         var trademessage = "";
-        trademessage += pkm.Generation == 9 ? $"**TeraType:** {teraType}\n" : "";
+        // trademessage += pkm.Generation == 9 ? $"**TeraType:** {teraType}\n" : "";
+        trademessage += pkm.Generation == 9 ? $"**Tera Type:**  {pkmString.TeraTypeEmoji}\n" : "";
         trademessage += $"**Level:** {level}\n";
         trademessage += $"**Ability:** {ability}\n";
         trademessage += $"**Nature:** {nature}\n";
