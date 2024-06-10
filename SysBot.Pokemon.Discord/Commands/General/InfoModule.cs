@@ -34,7 +34,7 @@ public class InfoModule : ModuleBase<SocketCommandContext>
         builder.AddField("Info",
             $"- [This fork Source Code]({repo}) by manu098vm\n" +
             $"Thanks to notzyro, santacrab2, berichan and 9Bitdo for portions of code, help and updating.\n" +
-            $"- [Upstream Source Code]({upstream} by kwsch\n" +
+            $"- [Upstream Source Code]({upstream}) by kwsch\n" +
             $"Thanks to Kurt, Anubis and Architdate for writing the original SysBot code.\n" +
             $"- {Format.Bold("Owner")}: {app.Owner} ({app.Owner.Id})\n" +
             $"- {Format.Bold("Library")}: Discord.Net ({DiscordConfig.Version})\n" +
