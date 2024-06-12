@@ -8,18 +8,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using static SysBot.Pokemon.PokeDataOffsetsSV;
 using static SysBot.Base.SwitchButton;
-using static System.Buffers.Binary.BinaryPrimitives;
 
 namespace SysBot.Pokemon;
 
-    public abstract class PokeRoutineExecutor9SV(PokeBotState cfg) : PokeRoutineExecutor<PK9>(cfg)
-    {
-        protected PokeDataOffsetsSV Offsets { get; } = new();
+public abstract class PokeRoutineExecutor9SV(PokeBotState cfg) : PokeRoutineExecutor<PK9>(cfg)
+{
 
-        public ulong returnOfs = 0;
-
-        protected const int HidWaitTime = 100;
-        protected const int KeyboardPressTime = 50;
+    protected PokeDataOffsetsSV Offsets { get; } = new();
 
     public override Task<PK9> ReadPokemon(ulong offset, CancellationToken token) => ReadPokemon(offset, BoxFormatSlotSize, token);
 
@@ -240,14 +235,14 @@ namespace SysBot.Pokemon;
         return data[0] == 0x11;
     }
 
-        // Only used to check if we made it off the title screen; the pointer isn't viable until a few seconds after clicking A.
-        public async Task<bool> IsOnOverworldTitle(CancellationToken token)
-        {
-            var (valid, offset) = await ValidatePointerAll(Offsets.OverworldPointer, token).ConfigureAwait(false);
-            if (!valid)
-                return false;
-            return await IsOnOverworld(offset, token).ConfigureAwait(false);
-        }
+    // Only used to check if we made it off the title screen; the pointer isn't viable until a few seconds after clicking A.
+    public async Task<bool> IsOnOverworldTitle(CancellationToken token)
+    {
+        var (valid, offset) = await ValidatePointerAll(Offsets.OverworldPointer, token).ConfigureAwait(false);
+        if (!valid)
+            return false;
+        return await IsOnOverworld(offset, token).ConfigureAwait(false);
+    }
 
     // 0x10 if fully loaded into Poké Portal.
     public async Task<bool> IsInPokePortal(ulong offset, CancellationToken token)
