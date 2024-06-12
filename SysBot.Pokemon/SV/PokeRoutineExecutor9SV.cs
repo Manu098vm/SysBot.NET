@@ -12,7 +12,7 @@ using static System.Buffers.Binary.BinaryPrimitives;
 
 namespace SysBot.Pokemon;
 
-    public abstract class PokeRoutineExecutor9SV : PokeRoutineExecutor<PK9>
+    public abstract class PokeRoutineExecutor9SV(PokeBotState cfg) : PokeRoutineExecutor<PK9>(cfg)
     {
         protected PokeDataOffsetsSV Offsets { get; } = new();
 
@@ -20,10 +20,6 @@ namespace SysBot.Pokemon;
 
         protected const int HidWaitTime = 100;
         protected const int KeyboardPressTime = 50;
-
-        protected PokeRoutineExecutor9SV(PokeBotState cfg) : base(cfg)
-        {
-        }
 
     public override Task<PK9> ReadPokemon(ulong offset, CancellationToken token) => ReadPokemon(offset, BoxFormatSlotSize, token);
 
@@ -143,29 +139,23 @@ namespace SysBot.Pokemon;
         await DetachController(token).ConfigureAwait(false);
     }
 
-        protected virtual async Task EnterLinkCode(int code, PokeTradeHubConfig config, CancellationToken token)
+    protected virtual async Task EnterLinkCode(int code, PokeTradeHubConfig config, CancellationToken token)
+    {
+        // Default implementation to just press directional arrows. Can do via Hid keys, but users are slower than bots at even the default code entry.
+        var keys = TradeUtil.GetPresses(code);
+        foreach (var key in keys)
         {
-            await Task.Delay(2_000, token).ConfigureAwait(false);
-
-            //Thanks Berichan
-            //https://github.com/berichan/SysBot.PokemonScarletViolet/blob/234739c7b2c47bf3a7ced779172dd9083a73c7a5/SysBot.Pokemon/SV/PokeRoutineExecutor9.cs#LL140C14-L140C14
-            var codeChars = $"{code:00000000}".ToCharArray();
-            var keysToPress = new HidKeyboardKey[codeChars.Length];
-            for (var i = 0; i < codeChars.Length; ++i)
-            {
-                keysToPress[i] = (HidKeyboardKey)Enum.Parse(typeof(HidKeyboardKey), codeChars[i] >= 'A' && codeChars[i] <= 'Z' ? $"{codeChars[i]}" : $"D{codeChars[i]}");
-                await Connection.SendAsync(SwitchCommand.TypeKey(keysToPress[i]), token).ConfigureAwait(false);
-                await Task.Delay(HidWaitTime, token).ConfigureAwait(false);
-            }
-            await Task.Delay(0_750, token).ConfigureAwait(false);
-            // Confirm Code outside of this method (allow synchronization)
+            int delay = config.Timings.KeypressTime;
+            await Click(key, delay, token).ConfigureAwait(false);
         }
+        // Confirm Code outside of this method (allow synchronization)
+    }
 
-        public async Task ReOpenGame(PokeTradeHubConfig config, CancellationToken token)
-        {
-            await CloseGame(config, token).ConfigureAwait(false);
-            await StartGame(config, token).ConfigureAwait(false);
-        }
+    public async Task ReOpenGame(PokeTradeHubConfig config, CancellationToken token)
+    {
+        await CloseGame(config, token).ConfigureAwait(false);
+        await StartGame(config, token).ConfigureAwait(false);
+    }
 
     public async Task CloseGame(PokeTradeHubConfig config, CancellationToken token)
     {
