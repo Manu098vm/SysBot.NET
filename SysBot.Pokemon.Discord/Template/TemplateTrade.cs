@@ -101,7 +101,7 @@ public class TemplateTrade<T>(PKM pkm, SocketCommandContext Context, PokeTradeHu
         trademessage += $"**Ability:** {ability}\n";
         trademessage += $"**Nature:** {nature}\n";
         trademessage += $"**Scale:** {scale}\n";
-        trademessage += mark!="" ? $"**Mark:** {mark}\n" : "";
+        trademessage += mark!="" ? $"**Pokemon Mark:** {mark}\n" : "";
                 
         // Build info
         string filedName = $"Pokémon Stats:";

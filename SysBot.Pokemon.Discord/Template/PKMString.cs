@@ -137,7 +137,7 @@ public class PKMString<T> where T : PKM, new()
 
     private (string,string) GetMark(PKM pkm)
     {
-        string Mark = (TradeExtensions<T>.HasMark((IRibbonIndex)pkm, out RibbonIndex mark) ? $"\nPokémon Mark: {mark.ToString().Replace("Mark", "")}{Environment.NewLine}" : "");
+        string Mark = (TradeExtensions<T>.HasMark((IRibbonIndex)pkm, out RibbonIndex mark) ? $"{mark.ToString().Replace("Mark", "")}{Environment.NewLine}" : "");
 
         string markEntryText = "";
         var index = (int)mark - (int)RibbonIndex.MarkLunchtime;
