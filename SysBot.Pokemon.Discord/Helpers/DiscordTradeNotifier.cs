@@ -63,7 +63,8 @@ public class DiscordTradeNotifier<T>(T Data, PokeTradeTrainerInfo Info, int Code
         PKM pkm = info.TradeData;
         
         // Sent Embed card
-        TradeEmbed(pkm, info);
+        if (info.Type is PokeTradeType.Specific)
+            TradeEmbed(pkm, info);
         
         // Text message sent
         var receive = Data.Species == 0 ? string.Empty : $" ({Data.Nickname})";
