@@ -53,13 +53,14 @@ public class TemplateTrade<T>(PKM pkm, SocketCommandContext Context, PokeTradeHu
         string speciesInfo = pkmString.Species;
         // Obtain holditem's info
         string shiny = pkmString.Shiny;
-        // Obtain Gender's info
-        string gender = pkmString.Gender.Replace("(F)", "♀️").Replace("(M)", "♂️");
+        // Obtain Gender's info (Display Emoji if used, otherwise Gender)
+        // LINQ C#: format is condition ? code when condition met : code when condition not met
+        // LINQ C#: if GenderEmoji's option is enabled in the settings use GenderEmoji, otherwise use text Gender
+        string gender = Hub.Config.Discord.EmbedSetting.GenderEmoji ? pkmString.GenderEmoji : pkmString.Gender;
         // Obtain Mark's info
         (_, string markEntryText) = pkmString.Mark;
-
         // Build info
-        string filedName = $"{shiny}{speciesInfo}{gender}{markEntryText}";
+        string filedName = $"{shiny} {speciesInfo} {gender} {markEntryText}";
         string filedValue = $"** **";
 
         embed.AddField(filedName, filedValue, false);
@@ -95,8 +96,12 @@ public class TemplateTrade<T>(PKM pkm, SocketCommandContext Context, PokeTradeHu
 
         // Build info 
         var trademessage = "";
-        // trademessage += pkm.Generation == 9 ? $"**TeraType:** {teraType}\n" : "";
-        trademessage += pkm.Generation == 9 ? $"**Tera Type:**  {pkmString.TeraTypeEmoji}\n" : "";
+        // trademessage += pkm.Generation != 9 ? "" : useEmoji ? $"**Emoji:** {Emoji}\n" : $"**TeraType:** {teraType}\n";
+        // LINQ C#: format is condition ? code when condition met : code when condition not met
+        // LINQ C#: If pkm.generation is 9, check secondCondition, if secondCondition is true, result will be valueIfTrue otherwise
+        // valueIfFalse if secondcondition is false, result will be empty string if pkm.generation is not 9
+        // LINQ C#: if TeraTypeEmoji's option is enabled in the settings, use TeraTypeEmoji, otherwise use text 
+        trademessage += pkm.Generation != 9 ? "" : Hub.Config.Discord.EmbedSetting.TeraTypeEmoji ? $"**TeraType:** {pkmString.TeraTypeEmoji}\n" : $"**Tera Type:** {teraType}\n";
         trademessage += $"**Level:** {level}\n";
         trademessage += $"**Ability:** {ability}\n";
         trademessage += $"**Nature:** {nature}\n";

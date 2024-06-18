@@ -26,6 +26,7 @@ public class PKMString<T> where T : PKM, new()
     public string Species => this.GetSpecies(pkm);
     public string Shiny => this.GetShiny(pkm);
     public string Gender => this.GetGender(pkm);
+    public string GenderEmoji => this.GetGenderEmoji(pkm);
     public List<string> Moves => this.GetMoves(pkm);
     public List<string> MovesEmoji => this.GetMovesEmoji(pkm);
     public string Scale => this.GetScale(pkm);
@@ -47,6 +48,18 @@ public class PKMString<T> where T : PKM, new()
     private string GetGender(PKM pkm)
     {
         return pkm.Gender == 0 ? " - (M)" : pkm.Gender == 1 ? " - (F)" : "";
+    }
+    private string GetGenderEmoji(PKM pkm)
+    {
+        // Extract pre-filled emojicodes in the setting and assign the emojicode to different Emoji variables
+        // "Where" = filter condition. "Select" = content needs to be provided.
+        // GenderEmojiConfig = Gender, EmojiCode, & GenderValue thus filter implemented for Male, Female & NoGender
+        // Where(x => x.Gender == "Male" , x = GenderEmojiConfig ， x.Gender = GenderEmojiConfig.Gender
+        // x.Gender == "Male" is a condition statement，therefore GenderEmojiConfig.Gender define as Male. Since Male，Female，NoGender's value existed but only Male is selected
+        string MaleEmoji = Hub.Config.Discord.EmbedSetting.GenderEmojiConfig.Where(x => x.Gender == "Male").Select(x => x.EmojiCode).ToList()[0];
+        string FemaleEmoji = Hub.Config.Discord.EmbedSetting.GenderEmojiConfig.Where(x => x.Gender == "Female").Select(x => x.EmojiCode).ToList()[0];
+        string NoGenderEmoji = Hub.Config.Discord.EmbedSetting.GenderEmojiConfig.Where(x => x.Gender == "NoGender").Select(x => x.EmojiCode).ToList()[0];
+        return pkm.Gender == 0 ? $"<:MoveEmoji:{MaleEmoji}>" : pkm.Gender == 1 ? $"<:MoveEmoji:{FemaleEmoji}>" : $"<:MoveEmoji:{NoGenderEmoji}>";
     }
     private string GetAbility(PKM pkm)
     {
