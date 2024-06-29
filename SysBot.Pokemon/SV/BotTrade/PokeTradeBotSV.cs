@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Pokemon.PokeDataOffsetsSV;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace SysBot.Pokemon;
 
@@ -59,8 +60,9 @@ public class PokeTradeBotSV(PokeTradeHub<PK9> Hub, PokeBotState Config) : PokeRo
 
     public override async Task MainLoop(CancellationToken token)
     {
-        try
+        while (true)
         {
+
             await InitializeHardware(Hub.Config.Trade, token).ConfigureAwait(false);
 
             Log("Identifying trainer data of the host console.");
@@ -75,18 +77,22 @@ public class PokeTradeBotSV(PokeTradeHub<PK9> Hub, PokeBotState Config) : PokeRo
             StartFromOverworld = true;
             LastTradeDistributionFixed = false;
 
-            Log($"Starting main {nameof(PokeTradeBotSV)} loop.");
-            await InnerLoop(sav, token).ConfigureAwait(false);
-        }
-        catch (Exception e)
-        {
-            Log(e.Message);
-        }
+            try
+            {
+                Log($"Start {nameof(PokeTradeBotSV)} main loop");
+                await InnerLoop(sav, token).ConfigureAwait(false);
+            }
 
-        Log($"Ending {nameof(PokeTradeBotSV)} loop.");
-        await HardStop().ConfigureAwait(false);
+
+            catch (Exception e)
+            {
+                continue;
+            }
+
+            Log($"Ending {nameof(PokeTradeBotSV)} loop.");
+            await HardStop().ConfigureAwait(false);
+        }
     }
-
     public override Task HardStop()
     {
         UpdateBarrier(false);

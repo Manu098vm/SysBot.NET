@@ -101,7 +101,7 @@ public class TemplateTrade<T>(PKM pkm, SocketCommandContext Context, PokeTradeHu
         // LINQ C#: If pkm.generation is 9, check secondCondition, if secondCondition is true, result will be valueIfTrue otherwise
         // valueIfFalse if secondcondition is false, result will be empty string if pkm.generation is not 9
         // LINQ C#: if TeraTypeEmoji's option is enabled in the settings, use TeraTypeEmoji, otherwise use text 
-        trademessage += pkm.Generation != 9 ? "" : Hub.Config.Discord.EmbedSetting.TeraTypeEmoji ? $"**TeraType:** {pkmString.TeraTypeEmoji}\n" : $"**Tera Type:** {teraType}\n";
+        trademessage += pkm.Generation != 9 ? "" : Hub.Config.Discord.EmbedSetting.TeraTypeEmoji ? $"**Tera Type:** {pkmString.TeraTypeEmoji}\n" : $"**Tera Type:** {teraType}\n";
         trademessage += $"**Level:** {level}\n";
         trademessage += $"**Ability:** {ability}\n";
         trademessage += $"**Nature:** {nature}\n";
