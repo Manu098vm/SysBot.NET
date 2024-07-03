@@ -59,7 +59,7 @@ public class PKMString<T> where T : PKM, new()
         string MaleEmoji = Hub.Config.Discord.EmbedSetting.GenderEmojiConfig.Where(x => x.Gender == "Male").Select(x => x.EmojiCode).ToList()[0];
         string FemaleEmoji = Hub.Config.Discord.EmbedSetting.GenderEmojiConfig.Where(x => x.Gender == "Female").Select(x => x.EmojiCode).ToList()[0];
         string NoGenderEmoji = Hub.Config.Discord.EmbedSetting.GenderEmojiConfig.Where(x => x.Gender == "NoGender").Select(x => x.EmojiCode).ToList()[0];
-        return pkm.Gender == 0 ? $"<:MoveEmoji:{MaleEmoji}>" : pkm.Gender == 1 ? $"<:MoveEmoji:{FemaleEmoji}>" : $"<:MoveEmoji:{NoGenderEmoji}>";
+        return pkm.Gender == 0 ? $"<:GenderEmoji:{MaleEmoji}>" : pkm.Gender == 1 ? $"<:GenderEmoji:{FemaleEmoji}>" : pkm.Gender == 2 ? $"<:GenderEmoji:{NoGenderEmoji}>" : "";
     }
     private string GetAbility(PKM pkm)
     {
