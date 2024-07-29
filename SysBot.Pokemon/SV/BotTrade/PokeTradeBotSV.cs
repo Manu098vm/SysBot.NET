@@ -60,9 +60,8 @@ public class PokeTradeBotSV(PokeTradeHub<PK9> Hub, PokeBotState Config) : PokeRo
 
     public override async Task MainLoop(CancellationToken token)
     {
-        while (true)
+        try
         {
-
             await InitializeHardware(Hub.Config.Trade, token).ConfigureAwait(false);
 
             Log("Identifying trainer data of the host console.");
@@ -77,23 +76,19 @@ public class PokeTradeBotSV(PokeTradeHub<PK9> Hub, PokeBotState Config) : PokeRo
             StartFromOverworld = true;
             LastTradeDistributionFixed = false;
 
-            try
-            {
-                Log($"Start {nameof(PokeTradeBotSV)} main loop");
-                await InnerLoop(sav, token).ConfigureAwait(false);
-            }
+            Log($"Starting main {nameof(PokeTradeBotSV)} loop.");
+            await InnerLoop(sav, token).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            Log(e.Message);
+        }
 
-
-            catch (Exception e)
-            {
-                continue;
-            }
-
-            Log($"Ending {nameof(PokeTradeBotSV)} loop.");
+        Log($"Ending {nameof(PokeTradeBotSV)} loop.");
             await HardStop().ConfigureAwait(false);
         }
-    }
-    public override Task HardStop()
+
+ public override Task HardStop()
     {
         UpdateBarrier(false);
         return CleanExit(CancellationToken.None);
