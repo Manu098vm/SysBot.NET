@@ -8,6 +8,10 @@
     <DebugType>embedded</DebugType>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Discord.Net" Version="3.13.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
