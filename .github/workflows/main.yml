@@ -51,10 +51,10 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: SysBot.Pokemon.WinForms
-        path: SysBot.Pokemon.WinForms\bin\Release\net8.0-windows
+        path: SysBot.Pokemon.WinForms\bin\Release\net9.0-windows7.0
 
     - name: Upload ConsoleApp artifacts
       uses: actions/upload-artifact@v4
       with:
         name: SysBot.Pokemon.ConsoleApp
-        path: SysBot.Pokemon.ConsoleApp\bin\Release\net8.0
+        path: SysBot.Pokemon.ConsoleApp\bin\Release\net9.0
