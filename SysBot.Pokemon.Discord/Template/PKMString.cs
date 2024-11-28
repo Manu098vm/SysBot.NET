@@ -71,10 +71,9 @@ public class PKMString<T> where T : PKM, new()
     }
     private string GetTeraType(PKM pkm)
     {
-        if (pkm.Generation == 9)
+        if (pkm is PK9 pk9)
         {
-            var pk = (PK9)pkm;
-            var teratype = pk.TeraType <= MoveType.Fairy ? (byte)pk.TeraType : (byte)18;
+            var teratype = pk9.TeraType <= MoveType.Fairy ? (byte)pk.TeraType : (byte)18;
             return $"{Strings.types[teratype]}";
         }
 
@@ -82,10 +81,9 @@ public class PKMString<T> where T : PKM, new()
     }
     private string GetTeraTypePic(PKM pkm)
     {
-        if (pkm.Generation == 9)
+        if (pkm is PK9 pk9)
         {
-            var pk = (PK9)pkm;
-            int TypeValue = (int)pk.TeraType;
+            int TypeValue = (int)pk9.TeraType;
             var linq = Hub.Config.Discord.EmbedSetting.MoveEmojiConfigs.Where(z => (z.MoveTypeValue == TypeValue)).Select(z => z.EmojiCode);
             string moveEmoji = linq.ToList()[0] != "" ? $"<:MoveEmoji:{linq.ToList()[0]}> " : "";
             return moveEmoji;
