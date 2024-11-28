@@ -73,7 +73,7 @@ public class PKMString<T> where T : PKM, new()
     {
         if (pkm is PK9 pk9)
         {
-            var teratype = pk9.TeraType <= MoveType.Fairy ? (byte)pk.TeraType : (byte)18;
+            var teratype = pk9.TeraType <= MoveType.Fairy ? (byte)pk9.TeraType : (byte)18;
             return $"{Strings.types[teratype]}";
         }
 
