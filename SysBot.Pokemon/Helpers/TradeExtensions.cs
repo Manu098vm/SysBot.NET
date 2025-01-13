@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using PKHeX.Core;
 using PKHeX.Core.AutoMod;
 using SysBot.Base;
@@ -71,6 +72,12 @@ public class TradeExtensions<T> where T : PKM, new()
             res.RefreshChecksum();
 
         var la = new LegalityAnalysis(res);
+        if (!la.Valid && la.Results.Any(l => l.Identifier is CheckIdentifier.TrashBytes))
+        {
+            res = (T)FixTrashChars(res);
+            la = new LegalityAnalysis(res);
+        }
+
         if (!la.Valid)
         {
             res.Version = pk.Version;
@@ -109,6 +116,25 @@ public class TradeExtensions<T> where T : PKM, new()
                 $"TID: {partner.TID7:000000}, SID: {partner.SID7:0000}, {(LanguageID)partner.Language} ({(GameVersion)res.Version})");
 
         return true;
+    }
+
+    public static PKM FixTrashChars(T pkm)
+    {
+        var data = pkm.Data;
+        for (int i = 0xF8; i < (0xF8 + 26); i++)
+        {
+            if (i >= pkm.OriginalTrainerName.Length * 2 + 0xF8)
+                data[i] = 0;
+        }
+
+        return pkm.Context switch
+        {
+            EntityContext.Gen8 => new PK8(data),
+            EntityContext.Gen8b => new PB8(data),
+            EntityContext.Gen8a => new PA8(data),
+            EntityContext.Gen9 => new PK9(data),
+            _ => throw new Exception("Invalid context"),
+        };
     }
 
     private static bool HasSetDetails(PokeTradeHubConfig config, PKM set, ITrainerInfo fallback)
