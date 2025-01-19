@@ -278,7 +278,7 @@ public class PokeTradeBotLA(PokeTradeHub<PA8> Hub, PokeBotState Config) : PokeRo
 
         var tradePartner = await GetTradePartnerInfo(token).ConfigureAwait(false);
         var trainerNID = await GetTradePartnerNID(TradePartnerNIDOffset, token).ConfigureAwait(false);
-        RecordUtil<PokeTradeBotSWSH>.Record($"Initiating\t{trainerNID:X16}\t{tradePartner.OT}\t{poke.Trainer.TrainerName}\t{poke.Trainer.ID}\t{poke.ID}\t{toSend.EncryptionConstant:X8}");
+        RecordUtil<PokeTradeBotLA>.Record($"Initiating\t{trainerNID:X16}\t{tradePartner.OT}\t{poke.Trainer.TrainerName}\t{poke.Trainer.ID}\t{poke.ID}\t{toSend.EncryptionConstant:X8}");
         Log($"Found Link Trade partner: {tradePartner.OT}-{tradePartner.TID7:000000} (ID: {trainerNID})");
 
         var partnerCheck = await CheckPartnerReputation(this, poke, trainerNID, tradePartner.OT, AbuseSettings, token);
