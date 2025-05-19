@@ -1,4 +1,4 @@
-﻿using PKHeX.Core;
+using PKHeX.Core;
 
 namespace SysBot.Pokemon;
 
@@ -31,7 +31,7 @@ public sealed record QueueCheckResult<T> where T : PKM, new()
         var msg = $"You are in the {Detail.Type} queue! Position: {position} (ID {Detail.Trade.ID})";
         var pk = Detail.Trade.TradeData;
         if (pk.Species != 0)
-            msg += $", Receiving: {GameInfo.GetStrings(1).Species[pk.Species]}";
+            msg += $", Receiving: {GameInfo.GetStrings("en").Species[pk.Species]}";
         return msg;
     }
 }

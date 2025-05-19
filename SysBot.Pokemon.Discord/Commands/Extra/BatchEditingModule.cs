@@ -1,4 +1,4 @@
-﻿using Discord;
+using Discord;
 using Discord.Commands;
 using PKHeX.Core;
 using System;
@@ -15,8 +15,8 @@ public class BatchEditingModule : ModuleBase<SocketCommandContext>
     [Summary("Tries to get info about the requested property.")]
     public async Task GetBatchInfo(string propertyName)
     {
-        var result = BatchEditing.GetPropertyType(propertyName);
-        if (string.IsNullOrWhiteSpace(result))
+        var success = BatchEditing.TryGetPropertyType(propertyName, out var result);
+        if (!success)
             await ReplyAsync($"Unable to find info for {propertyName}.").ConfigureAwait(false);
         else
             await ReplyAsync($"{propertyName}: {result}").ConfigureAwait(false);
@@ -46,8 +46,8 @@ public class BatchEditingModule : ModuleBase<SocketCommandContext>
         var set = new StringInstructionSet(split);
         foreach (var s in set.Filters.Concat(set.Instructions))
         {
-            var type = BatchEditing.GetPropertyType(s.PropertyName);
-            if (type == null)
+            var success = BatchEditing.TryGetPropertyType(s.PropertyName, out _);
+            if (!success)
                 invalid.Add(s);
         }
 

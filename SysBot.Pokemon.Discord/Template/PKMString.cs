@@ -16,7 +16,7 @@ public class PKMString<T> where T : PKM, new()
     private PKM pkm;
     private int PKMLanguage => pkm.Language;
     private int GameLanguage => PKMLanguage < 6 ? PKMLanguage - 1 : PKMLanguage == 6 || PKMLanguage == 7 ? 0 : PKMLanguage > 7 ? PKMLanguage - 2 : 0;
-    private GameStrings Strings => GameInfo.GetStrings(GameLanguage);
+    private GameStrings Strings => GameInfo.GetStrings(Language.GetLanguageCode((LanguageID)GameLanguage));
 
     // Data panel
     private PokeTradeHub<T> Hub;
