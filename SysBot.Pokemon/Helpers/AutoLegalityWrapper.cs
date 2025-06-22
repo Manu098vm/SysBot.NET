@@ -3,6 +3,7 @@ using PKHeX.Core.AutoMod;
 using System;
 using System.IO;
 using System.Linq;
+using System.Runtime.ConstrainedExecution;
 using System.Threading;
 
 namespace SysBot.Pokemon;
@@ -40,7 +41,13 @@ public static class AutoLegalityWrapper
         APILegality.AllowTrainerOverride = cfg.AllowTrainerDataOverride;
         APILegality.AllowBatchCommands = cfg.AllowBatchCommands;
         APILegality.PrioritizeGame = cfg.PrioritizeGame;
-        APILegality.PrioritizeGameVersion = cfg.PrioritizeGameVersion;
+        GameVersion[] validVersions = [.. Enum.GetValues<GameVersion>().Where(ver => ver <= (GameVersion)51 && ver > GameVersion.Any)];
+        foreach (var ver in validVersions)
+        {
+            if (!cfg.PriorityOrder.Contains(ver))
+                cfg.PriorityOrder.Add(ver);
+        }
+        APILegality.PriorityOrder = cfg.PriorityOrder;
         APILegality.SetBattleVersion = cfg.SetBattleVersion;
         APILegality.Timeout = cfg.Timeout;
         var settings = ParseSettings.Settings;
@@ -78,6 +85,7 @@ public static class AutoLegalityWrapper
         RegisterIfNoneExist(fallback, 7, GameVersion.GP);
         RegisterIfNoneExist(fallback, 7, GameVersion.GE);
     }
+
     private static SimpleTrainerInfo GetDefaultTrainer(LegalitySettings cfg)
     {
         var OT = cfg.GenerateOT;
@@ -93,6 +101,7 @@ public static class AutoLegalityWrapper
         };
         return fallback;
     }
+
     private static void RegisterIfNoneExist(SimpleTrainerInfo fallback, byte generation, GameVersion version)
     {
         fallback = new SimpleTrainerInfo(version)
@@ -107,6 +116,7 @@ public static class AutoLegalityWrapper
         if (exist is SimpleTrainerInfo) // not anything from files; this assumes ALM returns SimpleTrainerInfo for non-user-provided fake templates.
             TrainerSettings.Register(fallback);
     }
+
     private static void InitializeCoreStrings()
     {
         var lang = Thread.CurrentThread.CurrentCulture.TwoLetterISOLanguageName[..2];
@@ -162,9 +172,9 @@ public static class AutoLegalityWrapper
         var result = sav.GetLegalFromSet(set);
         res = result.Status switch
         {
-            LegalizationResult.Regenerated     => "Regenerated",
-            LegalizationResult.Failed          => "Failed",
-            LegalizationResult.Timeout         => "Timeout",
+            LegalizationResult.Regenerated => "Regenerated",
+            LegalizationResult.Failed => "Failed",
+            LegalizationResult.Timeout => "Timeout",
             LegalizationResult.VersionMismatch => "VersionMismatch",
             _ => "",
         };
@@ -172,6 +182,8 @@ public static class AutoLegalityWrapper
     }
 
     public static string GetLegalizationHint(IBattleTemplate set, ITrainerInfo sav, PKM pk) => set.SetAnalysis(sav, pk);
+
     public static PKM LegalizePokemon(this PKM pk) => pk.Legalize();
+
     public static IBattleTemplate GetTemplate(ShowdownSet set) => new RegenTemplate(set);
 }
