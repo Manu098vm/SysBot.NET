@@ -1,6 +1,8 @@
 using PKHeX.Core;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 
 namespace SysBot.Pokemon;
 
@@ -9,6 +11,7 @@ public class LegalitySettings
     private string DefaultTrainerName = "SysBot";
     private const string Generate = nameof(Generate);
     private const string Misc = nameof(Misc);
+
     public override string ToString() => "Legality Generating Settings";
 
     // Generate
@@ -42,10 +45,10 @@ public class LegalitySettings
     public byte GenerateGenderOT { get; set; } = 0;
 
     [Category(Generate), Description("If PrioritizeGame is set to \"True\", uses PrioritizeGameVersion to start looking for encounters. If \"False\", uses newest game as the version. It is recommended to leave this as \"True\".")]
-    public bool PrioritizeGame { get; set; } = true;
+    public bool PrioritizeGame { get; set; } = false;
 
-    [Category(Generate), Description("Specifies the first game to use to generate encounters, or current game if this field is set to \"Any\". Set PrioritizeGame to \"true\" to enable. It is recommended to leave this as \"Any\".")]
-    public GameVersion PrioritizeGameVersion { get; set; } = GameVersion.Any;
+    [Category(Generate), Description("The order of GameVersions ALM will attempt to legalize from.")]
+    public List<GameVersion> PriorityOrder { get; set; } = [.. Enum.GetValues<GameVersion>().Where(ver => ver > GameVersion.Any && ver <= (GameVersion)51)];
 
     [Category(Generate), Description("Set all possible legal ribbons for any generated Pokémon.")]
     public bool SetAllLegalRibbons { get; set; }
@@ -64,7 +67,7 @@ public class LegalitySettings
 
     [Category(Generate), Description("Prevents trading Pokémon that require a HOME Tracker, even if the file has one already."), DisplayName("Disallow Non-Native Pokémon")]
     public bool DisallowNonNatives { get; set; } = false;
-    
+
     [Category(Generate), Description("Prevents trading Pokémon that already have a HOME Tracker."), DisplayName("Disallow Home Tracked Pokémon")]
     public bool DisallowTracked { get; set; } = false;
 
